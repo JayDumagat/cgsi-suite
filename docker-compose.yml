@@ -1,0 +1,451 @@
+name: cgsi-suite
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cgsi
+      POSTGRES_USER: cgsi_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cgsi-local-change-me}
+    volumes:
+      - cgsi_postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cgsi_admin -d cgsi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  postgres-migrate:
+    image: postgres:17-alpine
+    command: ["sh", "/migrations/run.sh"]
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: cgsi
+      PGUSER: cgsi_admin
+      PGPASSWORD: ${POSTGRES_PASSWORD:-cgsi-local-change-me}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:-local-identity-db-change-me}
+    volumes:
+      - ./infra/postgres/migrations:/migrations:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  openbao:
+    image: openbao/openbao:2.7.1
+    profiles: ["secrets"]
+    command: ["server", "-config=/openbao/config/openbao.hcl"]
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "127.0.0.1:${OPENBAO_PORT:-8200}:8200"
+    volumes:
+      - ./infra/openbao/openbao.hcl:/openbao/config/openbao.hcl:ro
+      - cgsi_openbao_data:/openbao/data
+    healthcheck:
+      test: ["CMD-SHELL", "bao status -address=http://127.0.0.1:8200 >/dev/null 2>&1; result=$$?; [ $$result -eq 0 ] || [ $$result -eq 2 ]"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  redis:
+    image: redis:8.4.6-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-local-redis-change-me}"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - cgsi_redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-local-redis-change-me}
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.3.6-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-cgsi}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-local-rabbitmq-change-me}
+    ports:
+      - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672"
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - cgsi_rabbitmq_data:/var/lib/rabbitmq
+      - ./infra/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  minio:
+    # MinIO Community Edition is source-only upstream. This local-development
+    # image is pinned to the final upstream community release patched for CVE-2025-62506.
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-cgsi-local}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-local-minio-change-me}
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:${MINIO_CONSOLE_PORT:-9001}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - cgsi_minio_data:/data
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - cgsi_prometheus_data:/prometheus
+    depends_on:
+      otel-collector:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.7.0
+    command: ["-config.file=/etc/loki/config.yaml"]
+    ports:
+      - "127.0.0.1:${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./infra/loki/config.yaml:/etc/loki/config.yaml:ro
+      - cgsi_loki_data:/loki
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.10.8
+    command: ["-config.file=/etc/tempo/config.yaml"]
+    ports:
+      - "127.0.0.1:${TEMPO_PORT:-3200}:3200"
+    volumes:
+      - ./infra/tempo/config.yaml:/etc/tempo/config.yaml:ro
+      - cgsi_tempo_data:/var/tempo
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-local-redis-change-me}
+    ports:
+      - "127.0.0.1:${OTEL_GRPC_PORT:-4317}:4317"
+      - "127.0.0.1:${OTEL_HTTP_PORT:-4318}:4318"
+    volumes:
+      - ./infra/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    depends_on:
+      loki:
+        condition: service_started
+      tempo:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-enterprise:13.2.2
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-local-grafana-change-me}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - cgsi_grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+      tempo:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  jenkins:
+    image: jenkins/jenkins:2.580.1-lts-jdk21
+    environment:
+      JAVA_OPTS: -Djenkins.install.runSetupWizard=true
+    ports:
+      - "127.0.0.1:${JENKINS_PORT:-8081}:8080"
+    volumes:
+      - cgsi_jenkins_home:/var/jenkins_home
+    restart: unless-stopped
+
+  openfga-migrate:
+    image: openfga/openfga:v1.22.0
+    command: ["migrate"]
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://cgsi_admin:${POSTGRES_PASSWORD:-cgsi-local-change-me}@postgres:5432/cgsi?sslmode=disable
+    depends_on:
+      postgres-migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  openfga:
+    image: openfga/openfga:v1.22.0
+    command: ["run"]
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://cgsi_admin:${POSTGRES_PASSWORD:-cgsi-local-change-me}@postgres:5432/cgsi?sslmode=disable
+      OPENFGA_DATASTORE_MAX_OPEN_CONNS: 100
+      OPENFGA_PLAYGROUND_ENABLED: "false"
+    depends_on:
+      openfga-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=localhost:8081"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  authorization-service:
+    image: cgsi-suite/authorization-service:local
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: authorization-service
+    environment:
+      OPENFGA_URL: http://openfga:8080
+      AUTHORIZATION_SERVICE_TOKEN: ${AUTHORIZATION_SERVICE_TOKEN:-local-authz-check-token-change-me}
+      IDENTITY_PROVISIONING_TOKEN: ${IDENTITY_PROVISIONING_TOKEN:-local-identity-provisioning-token-change-me}
+      AUTHORIZATION_ADMIN_TOKEN: ${AUTHORIZATION_ADMIN_TOKEN:-local-authz-admin-token-change-me}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: authorization-service
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-development}
+      PORT: 8083
+    ports:
+      - "${AUTHORIZATION_PORT_BIND:-127.0.0.1:8083}:8083"
+    healthcheck:
+      test: ["CMD", "/healthcheck", "http://127.0.0.1:8083/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    depends_on:
+      openfga:
+        condition: service_healthy
+    restart: unless-stopped
+
+  identity-service:
+    image: cgsi-suite/identity-service:local
+    build:
+      context: .
+      dockerfile: services/authentication-service/Dockerfile
+    environment:
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:-}
+      ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-}
+      ENTRA_CLIENT_SECRET: ${ENTRA_CLIENT_SECRET:-}
+      ENTRA_REDIRECT_URL: ${ENTRA_REDIRECT_URL:-http://localhost:8080/api/auth/callback}
+      ENTRA_POST_LOGOUT_REDIRECT_URL: ${ENTRA_POST_LOGOUT_REDIRECT_URL:-http://localhost:8080/}
+      SESSION_SECRET: ${SESSION_SECRET:-local-development-only-change-this-32-byte-secret}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      AUTH_ALLOWED_RETURN_ORIGINS: ${AUTH_ALLOWED_RETURN_ORIGINS:-http://localhost:8080}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: cgsi
+      PGUSER: cgsi_identity
+      PGPASSWORD: ${IDENTITY_DB_PASSWORD:-local-identity-db-change-me}
+      AUTHORIZATION_SERVICE_URL: http://authorization-service:8083
+      IDENTITY_PROVISIONING_TOKEN: ${IDENTITY_PROVISIONING_TOKEN:-local-identity-provisioning-token-change-me}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: identity-service
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-development}
+      PORT: 8081
+    depends_on:
+      postgres-migrate:
+        condition: service_completed_successfully
+      authorization-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8081/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  cube-web:
+    image: cgsi-suite/cube-web:local
+    build:
+      context: .
+      dockerfile: apps/cube/Dockerfile
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  cdex-web:
+    image: cgsi-suite/cdex-web:local
+    build:
+      context: .
+      dockerfile: apps/cdex/Dockerfile
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  bils-web:
+    image: cgsi-suite/bils-web:local
+    build:
+      context: .
+      dockerfile: apps/bils/Dockerfile
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app-catalog-service:
+    image: cgsi-suite/app-catalog-service:local
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: app-catalog-service
+    environment:
+      IDENTITY_SERVICE_URL: http://identity-service:8081
+      AUTHORIZATION_SERVICE_URL: http://authorization-service:8083
+      AUTHORIZATION_SERVICE_TOKEN: ${AUTHORIZATION_SERVICE_TOKEN:-local-authz-check-token-change-me}
+      CDEX_APP_URL: ${CDEX_APP_URL:-/crm/}
+      BILS_APP_URL: ${BILS_APP_URL:-/billing/}
+      HUMA_APP_URL: ${HUMA_APP_URL:-/huma/}
+      RDES_APP_URL: ${RDES_APP_URL:-/rdes/}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: app-catalog-service
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-development}
+      PORT: 8082
+    depends_on:
+      identity-service:
+        condition: service_healthy
+      authorization-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/healthcheck", "http://127.0.0.1:8082/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  crm-service:
+    image: cgsi-suite/cdex-service:local
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: crm-service
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: crm-service
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-development}
+    healthcheck:
+      test: ["CMD", "/healthcheck", "http://127.0.0.1:8084/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  billing-service:
+    image: cgsi-suite/bils-service:local
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: billing-service
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: billing-service
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-development}
+    healthcheck:
+      test: ["CMD", "/healthcheck", "http://127.0.0.1:8085/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  gateway:
+    image: cgsi-suite/gateway:local
+    build:
+      context: .
+      dockerfile: infra/nginx/Dockerfile
+    environment:
+      CUBE_PUBLIC_URL: ${CUBE_PUBLIC_URL:-http://localhost:8080}
+      NGINX_ENVSUBST_FILTER: ^CUBE_PUBLIC_URL$
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    depends_on:
+      app-catalog-service:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+      crm-service:
+        condition: service_healthy
+      billing-service:
+        condition: service_healthy
+      cube-web:
+        condition: service_healthy
+      cdex-web:
+        condition: service_healthy
+      bils-web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  cgsi_postgres_data:
+  cgsi_openbao_data:
+  cgsi_redis_data:
+  cgsi_rabbitmq_data:
+  cgsi_minio_data:
+  cgsi_prometheus_data:
+  cgsi_grafana_data:
+  cgsi_loki_data:
+  cgsi_tempo_data:
+  cgsi_jenkins_home:

@@ -1,0 +1,13 @@
+.git
+.github
+**/node_modules
+**/dist
+**/.vite
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+.env
+.env.*
+!**/.env.example
+services/**/.state
+*.log

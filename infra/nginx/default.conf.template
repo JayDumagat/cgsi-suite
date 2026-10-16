@@ -1,0 +1,232 @@
+upstream cube_frontend {
+    server cube-web:80;
+    keepalive 16;
+}
+
+upstream cdex_frontend {
+    server cdex-web:80;
+    keepalive 16;
+}
+
+upstream bils_frontend {
+    server bils-web:80;
+    keepalive 16;
+}
+
+map $host $protected_app {
+    default "";
+    ~^cdex\..+\..+$ crm;
+    ~^bils\..+\..+$ billing;
+}
+
+map $host $subdomain_frontend {
+    default cube_frontend;
+    ~^cdex\..+\..+$ cdex_frontend;
+    ~^bils\..+\..+$ bils_frontend;
+}
+
+map $host $public_scheme {
+    default https;
+    localhost http;
+}
+
+server {
+    listen 80;
+    server_name _;
+    server_tokens off;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy no-referrer always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    location = /healthz {
+        access_log off;
+        default_type application/json;
+        return 200 '{"status":"ok"}';
+    }
+
+    location = /api/v1/apps {
+        proxy_pass http://app-catalog-service:8082/api/v1/apps;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $public_scheme;
+    }
+
+    location = /_internal/app-access {
+        internal;
+        proxy_pass http://app-catalog-service:8082/internal/app-access;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header X-CGSI-App-ID $protected_app;
+    }
+
+    location @cube_signin {
+        return 302 /signin?returnTo=$uri;
+    }
+
+    location ^~ /api/auth/ {
+        proxy_pass http://identity-service:8081/api/auth/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $public_scheme;
+    }
+
+    location ^~ /api/crm/ {
+        set $protected_app crm;
+        auth_request /_internal/app-access;
+        proxy_pass http://crm-service:8084/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $public_scheme;
+    }
+
+    location ^~ /api/billing/ {
+        set $protected_app billing;
+        auth_request /_internal/app-access;
+        proxy_pass http://billing-service:8085/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $public_scheme;
+    }
+
+    # Shared TailAdmin images stay owned by Cube and are reused by the other apps.
+    location ^~ /images/ {
+        proxy_pass http://cube_frontend;
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800, immutable";
+    }
+
+    location = /crm {
+        return 301 /crm/;
+    }
+
+    location = /billing {
+        return 301 /billing/;
+    }
+
+    location ^~ /crm/ {
+        set $protected_app crm;
+        auth_request /_internal/app-access;
+        error_page 401 = @cube_signin;
+        proxy_pass http://cdex_frontend;
+        proxy_set_header Host $host;
+    }
+
+    location ^~ /billing/ {
+        set $protected_app billing;
+        auth_request /_internal/app-access;
+        error_page 401 = @cube_signin;
+        proxy_pass http://bils_frontend;
+        proxy_set_header Host $host;
+    }
+
+    location / {
+        proxy_pass http://cube_frontend;
+        proxy_set_header Host $host;
+    }
+}
+
+# App bundles are separate images. The gateway keeps the same API and access
+# checks while the frontend upstream changes according to the production host.
+server {
+    listen 80;
+    server_name ~^cdex\..+\..+$ ~^bils\..+\..+$;
+    server_tokens off;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy no-referrer always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    location = /healthz {
+        access_log off;
+        default_type application/json;
+        return 200 '{"status":"ok"}';
+    }
+
+    location = /api/v1/apps {
+        proxy_pass http://app-catalog-service:8082/api/v1/apps;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $public_scheme;
+    }
+
+    location = /_internal/app-access {
+        internal;
+        proxy_pass http://app-catalog-service:8082/internal/app-access;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header X-CGSI-App-ID $protected_app;
+    }
+
+    location @cube_signin {
+        return 302 ${CUBE_PUBLIC_URL}/signin?returnTo=$public_scheme://$http_host$uri;
+    }
+
+    location ^~ /api/auth/ {
+        proxy_pass http://identity-service:8081/api/auth/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $public_scheme;
+    }
+
+    location ^~ /api/crm/ {
+        set $protected_app crm;
+        auth_request /_internal/app-access;
+        proxy_pass http://crm-service:8084/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $public_scheme;
+    }
+
+    location ^~ /api/billing/ {
+        set $protected_app billing;
+        auth_request /_internal/app-access;
+        proxy_pass http://billing-service:8085/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $public_scheme;
+    }
+
+    location ^~ /crm/ {
+        set $protected_app crm;
+        auth_request /_internal/app-access;
+        error_page 401 = @cube_signin;
+        proxy_pass http://cdex_frontend;
+        proxy_set_header Host $host;
+    }
+
+    location ^~ /billing/ {
+        set $protected_app billing;
+        auth_request /_internal/app-access;
+        error_page 401 = @cube_signin;
+        proxy_pass http://bils_frontend;
+        proxy_set_header Host $host;
+    }
+
+    location / {
+        auth_request /_internal/app-access;
+        error_page 401 = @cube_signin;
+        proxy_pass http://$subdomain_frontend;
+        proxy_set_header Host $host;
+    }
+}

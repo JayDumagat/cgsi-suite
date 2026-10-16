@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.1",
+  "type_definitions": [
+    { "type": "user" },
+    {
+      "type": "group",
+      "relations": { "member": { "this": {} } },
+      "metadata": { "relations": { "member": { "directly_related_user_types": [{ "type": "user" }] } } }
+    },
+    {
+      "type": "organization",
+      "relations": { "member": { "this": {} } },
+      "metadata": { "relations": { "member": { "directly_related_user_types": [
+        { "type": "user" },
+        { "type": "group", "relation": "member" }
+      ] } } }
+    },
+    {
+      "type": "app",
+      "relations": {
+        "owner": { "this": {} },
+        "viewer": { "this": {} },
+        "can_access": { "union": { "child": [
+          { "computedUserset": { "object": "", "relation": "viewer" } },
+          { "computedUserset": { "object": "", "relation": "owner" } }
+        ] } }
+      },
+      "metadata": { "relations": {
+        "owner": { "directly_related_user_types": [{ "type": "user" }] },
+        "viewer": { "directly_related_user_types": [
+          { "type": "user" },
+          { "type": "organization", "relation": "member" },
+          { "type": "group", "relation": "member" }
+        ] },
+        "can_access": { "directly_related_user_types": [] }
+      } }
+    },
+    {
+      "type": "crm_record",
+      "relations": {
+        "application": { "this": {} },
+        "viewer": { "union": { "child": [
+          { "this": {} },
+          { "tupleToUserset": { "tupleset": { "relation": "application" }, "computedUserset": { "object": "", "relation": "can_access" } } }
+        ] } },
+        "editor": { "this": {} },
+        "can_view": { "union": { "child": [
+          { "computedUserset": { "object": "", "relation": "viewer" } },
+          { "computedUserset": { "object": "", "relation": "editor" } }
+        ] } },
+        "can_edit": { "computedUserset": { "object": "", "relation": "editor" } }
+      },
+      "metadata": { "relations": {
+        "application": { "directly_related_user_types": [{ "type": "app" }] },
+        "viewer": { "directly_related_user_types": [{ "type": "user" }] },
+        "editor": { "directly_related_user_types": [{ "type": "user" }] },
+        "can_view": { "directly_related_user_types": [] },
+        "can_edit": { "directly_related_user_types": [] }
+      } }
+    },
+    {
+      "type": "billing_invoice",
+      "relations": {
+        "application": { "this": {} },
+        "viewer": { "union": { "child": [
+          { "this": {} },
+          { "tupleToUserset": { "tupleset": { "relation": "application" }, "computedUserset": { "object": "", "relation": "can_access" } } }
+        ] } },
+        "editor": { "this": {} },
+        "can_view": { "union": { "child": [
+          { "computedUserset": { "object": "", "relation": "viewer" } },
+          { "computedUserset": { "object": "", "relation": "editor" } }
+        ] } },
+        "can_edit": { "computedUserset": { "object": "", "relation": "editor" } }
+      },
+      "metadata": { "relations": {
+        "application": { "directly_related_user_types": [{ "type": "app" }] },
+        "viewer": { "directly_related_user_types": [{ "type": "user" }] },
+        "editor": { "directly_related_user_types": [{ "type": "user" }] },
+        "can_view": { "directly_related_user_types": [] },
+        "can_edit": { "directly_related_user_types": [] }
+      } }
+    }
+  ]
+}

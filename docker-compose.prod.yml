@@ -1,0 +1,38 @@
+# Use with docker-compose.yml after publishing images from a version tag.
+# Compose's !reset tag removes the local build definition inherited from the base file.
+services:
+  authorization-service:
+    image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-authorization-service:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
+    build: !reset null
+
+  identity-service:
+    image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-identity-service:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
+    build: !reset null
+
+  cube-web:
+    image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-cube-web:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
+    build: !reset null
+
+  cdex-web:
+    image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-cdex-web:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
+    build: !reset null
+
+  bils-web:
+    image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-bils-web:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
+    build: !reset null
+
+  app-catalog-service:
+    image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-app-catalog-service:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
+    build: !reset null
+
+  crm-service:
+    image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-cdex-service:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
+    build: !reset null
+
+  billing-service:
+    image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-bils-service:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
+    build: !reset null
+
+  gateway:
+    image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-gateway:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
+    build: !reset null
