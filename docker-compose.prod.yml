@@ -1,9 +1,28 @@
 # Use with docker-compose.yml after publishing images from a version tag.
 # Compose's !reset tag removes the local build definition inherited from the base file.
 services:
+  openfga:
+    environment:
+      OPENFGA_HTTP_ADDR: 0.0.0.0:8080
+      OPENFGA_PLAYGROUND_ENABLED: "false"
+    ports: !reset []
+
+  openfga-console:
+    profiles: [local-development]
+    ports: !reset []
+
+  nginx-proxy-manager:
+    profiles: [local-development]
+    ports: !reset []
+
+  nginx-proxy-manager-bootstrap:
+    profiles: [local-development]
+
   authorization-service:
     image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-authorization-service:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
     build: !reset null
+    environment:
+      OPENFGA_URL: http://openfga:8080
 
   identity-service:
     image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-identity-service:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
@@ -21,6 +40,10 @@ services:
     image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-bils-web:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
     build: !reset null
 
+  eris-web:
+    image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-eris-web:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
+    build: !reset null
+
   app-catalog-service:
     image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-app-catalog-service:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
     build: !reset null
@@ -36,3 +59,5 @@ services:
   gateway:
     image: "${CGSI_IMAGE_PREFIX:?Set CGSI_IMAGE_PREFIX, for example ghcr.io/your-org}/cgsi-suite-gateway:${CGSI_IMAGE_TAG:?Set CGSI_IMAGE_TAG to the release tag}"
     build: !reset null
+    ports:
+      - "${HTTP_PORT:-8080}:80"

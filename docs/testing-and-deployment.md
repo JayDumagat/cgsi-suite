@@ -2,7 +2,7 @@
 
 ## Local setup
 
-Install the locked dependencies for all four Node projects and the Go toolchain once:
+Install the locked dependencies for all five Node projects and the Go toolchain once:
 
 ```powershell
 npm run setup
@@ -30,7 +30,7 @@ The focused commands are `npm run test:go`, `npm run test:identity`, `npm run te
 For an integration smoke test against the local Compose services, run:
 
 ```powershell
-docker compose up --build --detach gateway
+docker compose up --build --detach nginx-proxy-manager-bootstrap
 npm run smoke:local
 ```
 
@@ -38,18 +38,20 @@ Or run both steps with `npm run test:integration`. It checks the gateway and Cub
 
 ## Local deployment
 
-Copy `.env.example` to `.env`, configure the local secrets and Entra app registration, then run:
+Copy `.env.example` to `.env`, replace the placeholder secrets (including `NPM_ADMIN_PASSWORD`) with private values, and configure the Entra app registration. Then run:
 
 ```powershell
 docker compose up --build --detach
 docker compose ps
 ```
 
-Open `http://localhost:8080`. Cube remains at `/`; CDEX and BILS use `/crm/` and `/billing/` locally so they can share the localhost sign-in cookie.
+Open `http://localhost:8080`. Cube remains at `/`; CDEX, BILS, and ERIS use `/crm/`, `/billing/`, and `/eris/` locally so they can share the localhost sign-in cookie. ERIS is permission-gated and has no all-employees access grant.
+
+Nginx Proxy Manager is the local front proxy. Set a private `NPM_ADMIN_PASSWORD` in `.env` for a fresh NPM data volume, then run `docker compose up --build --detach`. The first NPM administrator is created only when the data volume has no active user; an existing NPM account and password are preserved. Open the CGSI suite at `http://localhost:8080` and the Nginx Proxy Manager UI at `http://localhost:8181`. The manager creates a visible `localhost` proxy host that forwards to the `gateway` service on the Compose network, so app traffic passes through the NPM-managed Nginx instance before reaching the CGSI gateway. HTTP and HTTPS listeners bind only to loopback; HTTPS uses port `8443`. NPM stores its configuration and certificates in named Docker volumes. Do not publish the admin UI outside your workstation.
 
 ## Production images and Compose
 
-The GitHub Actions workflow runs tests and a Compose smoke check for pushes and pull requests. Pushing a version tag such as `v1.2.0` publishes nine images to GitHub Container Registry: the Cube, CDEX, and BILS web apps; identity, authorization, app catalog, CDEX, and BILS APIs; and the gateway. Frontend images build separately, so a production release can update one web app without rebuilding the others. The workflow uses the repository's built-in `GITHUB_TOKEN`; it does not need registry credentials stored as repository secrets.
+The GitHub Actions workflow runs tests and a Compose smoke check for pushes and pull requests. Pushing a version tag such as `v1.2.0` publishes ten images to GitHub Container Registry: the Cube, CDEX, BILS, and ERIS web apps; identity, authorization, app catalog, CDEX, and BILS APIs; and the gateway. Frontend images build separately, so a production release can update one web app without rebuilding the others. The workflow uses the repository's built-in `GITHUB_TOKEN`; it does not need registry credentials stored as repository secrets.
 
 On the production host, create a deployment `.env` with the application secrets and these image selectors:
 
@@ -58,10 +60,11 @@ CGSI_IMAGE_PREFIX=ghcr.io/your-github-owner
 CGSI_IMAGE_TAG=v1.2.0
 COOKIE_SECURE=true
 COOKIE_DOMAIN=.yourdomain.com
-AUTH_ALLOWED_RETURN_ORIGINS=https://cube.yourdomain.com,https://cdex.yourdomain.com,https://bils.yourdomain.com
+AUTH_ALLOWED_RETURN_ORIGINS=https://cube.yourdomain.com,https://cdex.yourdomain.com,https://bils.yourdomain.com,https://eris.yourdomain.com
 CUBE_PUBLIC_URL=https://cube.yourdomain.com
 CDEX_APP_URL=https://cdex.yourdomain.com
 BILS_APP_URL=https://bils.yourdomain.com
+ERIS_APP_URL=https://eris.yourdomain.com
 ```
 
 Set the remaining required Entra, database, service-token, and monitoring values from `.env.example` using production secrets. Do not copy its local fallback credentials to production. Configure DNS and TLS at the load balancer or reverse proxy in front of the gateway. The Entra redirect URI must use the public Cube host.

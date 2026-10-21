@@ -11,8 +11,11 @@ type Config struct {
 	AuthorizationToken string
 	CDEXHref           string
 	BILSHref           string
-	HUMAHref           string
+	ERISHref           string
 	RDESHref           string
+	CDEXAvailable      bool
+	BILSAvailable      bool
+	ERISAvailable      bool
 }
 
 func Load() Config {
@@ -22,8 +25,11 @@ func Load() Config {
 		AuthorizationToken: os.Getenv("AUTHORIZATION_SERVICE_TOKEN"),
 		CDEXHref:           envOr("CDEX_APP_URL", "/crm/"),
 		BILSHref:           envOr("BILS_APP_URL", "/billing/"),
-		HUMAHref:           envOr("HUMA_APP_URL", "/huma/"),
+		ERISHref:           envOr("ERIS_APP_URL", "/eris/"),
 		RDESHref:           envOr("RDES_APP_URL", "/rdes/"),
+		CDEXAvailable:      envEnabled("CDEX_APP_AVAILABLE"),
+		BILSAvailable:      envEnabled("BILS_APP_AVAILABLE"),
+		ERISAvailable:      envEnabled("ERIS_APP_AVAILABLE"),
 	}
 }
 
@@ -32,4 +38,8 @@ func envOr(name, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func envEnabled(name string) bool {
+	return strings.EqualFold(os.Getenv(name), "true")
 }

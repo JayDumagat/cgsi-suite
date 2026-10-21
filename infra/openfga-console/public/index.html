@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>OpenFGA Console · CGSI Suite</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="CGSI OpenFGA console home">
+        <span class="brand-mark">F</span>
+        <span>OpenFGA <span class="brand-muted">/ CGSI Suite</span></span>
+      </a>
+      <div class="topbar-right">
+        <span class="local-badge"><span></span> Local development</span>
+        <a class="api-link" href="http://localhost:8180/stores" target="_blank" rel="noreferrer">API</a>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">AUTHORIZATION INSPECTOR</p>
+          <h1>OpenFGA console</h1>
+          <p class="intro">Inspect the saved store, authorization model and relationships, then run a read-only access check.</p>
+        </div>
+        <button id="refreshButton" class="button button-secondary" type="button">Refresh data</button>
+      </section>
+
+      <div id="statusBanner" class="status-banner" role="status" aria-live="polite">Connecting to the local OpenFGA service…</div>
+
+      <section class="summary-grid" aria-label="Store summary">
+        <article class="summary-card store-card">
+          <span class="card-label">Store</span>
+          <label class="visually-hidden" for="storeSelect">Select OpenFGA store</label>
+          <select id="storeSelect" disabled>
+            <option>Loading stores…</option>
+          </select>
+          <code id="storeId" class="subtle-code">—</code>
+        </article>
+        <article class="summary-card">
+          <span class="card-label">Relationships</span>
+          <strong id="tupleCount" class="metric">—</strong>
+          <span class="metric-note">stored tuples</span>
+        </article>
+        <article class="summary-card">
+          <span class="card-label">Authorization model</span>
+          <strong id="modelTypes" class="metric">—</strong>
+          <span class="metric-note">types in latest model</span>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Relationship tuples</h2>
+            <p>These are the persisted facts OpenFGA uses when evaluating access.</p>
+          </div>
+          <span class="read-only-tag">READ ONLY</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Subject</th><th>Relation</th><th>Object</th></tr>
+            </thead>
+            <tbody id="tupleRows">
+              <tr><td class="empty-cell" colspan="3">Select a store to view its tuples.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="lower-grid">
+        <section class="panel model-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Latest authorization model</h2>
+              <p id="modelVersion">Waiting for a store.</p>
+            </div>
+            <span id="modelTypeBadge" class="model-badge">JSON</span>
+          </div>
+          <pre id="modelJson" class="model-json">No model loaded.</pre>
+        </section>
+
+        <section class="panel check-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Check access</h2>
+              <p>Run OpenFGA’s check query without changing stored permissions.</p>
+            </div>
+          </div>
+          <form id="checkForm" class="check-form">
+            <label for="checkUser">User or userset</label>
+            <input id="checkUser" name="user" autocomplete="off" placeholder="user:employee-id" required />
+            <div class="field-row">
+              <div>
+                <label for="checkRelation">Relation</label>
+                <input id="checkRelation" name="relation" value="can_access" autocomplete="off" required />
+              </div>
+              <div>
+                <label for="checkObject">Object</label>
+                <input id="checkObject" name="object" value="app:crm" autocomplete="off" required />
+              </div>
+            </div>
+            <button id="checkButton" class="button button-primary" type="submit">Run check</button>
+            <div id="checkResult" class="check-result" role="status" aria-live="polite">Enter a user, relation and object.</div>
+          </form>
+        </section>
+      </div>
+
+      <footer class="page-footer">Local development console · Reads and checks only · No permission changes are made here</footer>
+    </main>
+  </body>
+</html>

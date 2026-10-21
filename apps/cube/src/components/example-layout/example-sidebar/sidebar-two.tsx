@@ -133,17 +133,17 @@ export default function SidebarTwo() {
             <>
               <img
                 className="dark:hidden"
-                src="./images/logo/logo.svg"
+                src="/images/logo/caballes-go-logo.png"
                 alt="Logo"
               />
               <img
                 className="hidden dark:block"
-                src="./images/logo/logo-dark.svg"
+                src="/images/logo/caballes-go-logo-dark.png"
                 alt="Logo"
               />
             </>
           ) : (
-            <img src="./images/logo/logo-icon.svg" alt="Logo" />
+            <img src="/images/logo/caballes-go-icon.png" alt="Logo" />
           )}
         </a>
       </div>

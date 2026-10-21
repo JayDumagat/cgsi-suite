@@ -13,16 +13,23 @@ upstream bils_frontend {
     keepalive 16;
 }
 
+upstream eris_frontend {
+    server eris-web:80;
+    keepalive 16;
+}
+
 map $host $protected_app {
     default "";
     ~^cdex\..+\..+$ crm;
     ~^bils\..+\..+$ billing;
+    ~^eris\..+\..+$ eris;
 }
 
 map $host $subdomain_frontend {
     default cube_frontend;
     ~^cdex\..+\..+$ cdex_frontend;
     ~^bils\..+\..+$ bils_frontend;
+    ~^eris\..+\..+$ eris_frontend;
 }
 
 map $host $public_scheme {
@@ -65,6 +72,7 @@ server {
     }
 
     location @cube_signin {
+        absolute_redirect off;
         return 302 /signin?returnTo=$uri;
     }
 
@@ -99,7 +107,20 @@ server {
         proxy_set_header X-Forwarded-Proto $public_scheme;
     }
 
-    # Shared TailAdmin images stay owned by Cube and are reused by the other apps.
+    location ^~ /api/eris/ {
+        set $protected_app eris;
+        auth_request /_internal/app-access;
+        proxy_pass http://identity-service:8081/internal/eris/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header X-CGSI-Service-Token $ERIS_DIRECTORY_SERVICE_TOKEN;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $public_scheme;
+    }
+
+    # Shared public images are served by Cube and reused by the other apps.
     location ^~ /images/ {
         proxy_pass http://cube_frontend;
         expires 7d;
@@ -112,6 +133,19 @@ server {
 
     location = /billing {
         return 301 /billing/;
+    }
+
+    location = /eris {
+        return 301 /eris/;
+    }
+
+    # Vite's hashed frontend bundles contain no employee data; the app page
+    # and APIs remain protected by the app access check below.
+    location ^~ /crm/assets/ {
+        proxy_pass http://cdex_frontend;
+        proxy_set_header Host $host;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
     }
 
     location ^~ /crm/ {
@@ -130,6 +164,23 @@ server {
         proxy_set_header Host $host;
     }
 
+    # ERIS frontend bundles contain no employee data; its page and API remain
+    # protected by the app access check below.
+    location ^~ /eris/assets/ {
+        proxy_pass http://eris_frontend;
+        proxy_set_header Host $host;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    location ^~ /eris/ {
+        set $protected_app eris;
+        auth_request /_internal/app-access;
+        error_page 401 = @cube_signin;
+        proxy_pass http://eris_frontend;
+        proxy_set_header Host $host;
+    }
+
     location / {
         proxy_pass http://cube_frontend;
         proxy_set_header Host $host;
@@ -140,7 +191,7 @@ server {
 # checks while the frontend upstream changes according to the production host.
 server {
     listen 80;
-    server_name ~^cdex\..+\..+$ ~^bils\..+\..+$;
+    server_name ~^cdex\..+\..+$ ~^bils\..+\..+$ ~^eris\..+\..+$;
     server_tokens off;
 
     add_header X-Content-Type-Options nosniff always;
@@ -207,12 +258,41 @@ server {
         proxy_set_header X-Forwarded-Proto $public_scheme;
     }
 
+    location ^~ /api/eris/ {
+        set $protected_app eris;
+        auth_request /_internal/app-access;
+        proxy_pass http://identity-service:8081/internal/eris/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header X-CGSI-Service-Token $ERIS_DIRECTORY_SERVICE_TOKEN;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $public_scheme;
+    }
+
+    # Vite's hashed frontend bundles contain no employee data; the app page
+    # and APIs remain protected by the app access check below.
+    location ^~ /crm/assets/ {
+        proxy_pass http://cdex_frontend;
+        proxy_set_header Host $host;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
     location ^~ /crm/ {
         set $protected_app crm;
         auth_request /_internal/app-access;
         error_page 401 = @cube_signin;
         proxy_pass http://cdex_frontend;
         proxy_set_header Host $host;
+    }
+
+    location ^~ /eris/assets/ {
+        proxy_pass http://eris_frontend;
+        proxy_set_header Host $host;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
     }
 
     location ^~ /billing/ {

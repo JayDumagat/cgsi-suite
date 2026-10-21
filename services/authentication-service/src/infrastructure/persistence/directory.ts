@@ -2,6 +2,8 @@ import type { Pool } from "pg";
 import { withSpan } from "../../platform/telemetry.js";
 import type {
   EmployeeDirectoryProfile,
+  EmployeeDirectoryPage,
+  EmployeeDirectoryQuery,
   EntraEmployeeProfile,
   EmploymentStatus,
   ProvisionedEmployee,
@@ -10,6 +12,115 @@ import { mayAuthenticate } from "../../modules/directory/domain/employee.js";
 
 export class DirectoryRepository {
   constructor(private readonly pool: Pool) {}
+
+  async listEmployees(
+    query: EmployeeDirectoryQuery,
+    requestedByEmployeeId: string,
+  ): Promise<EmployeeDirectoryPage> {
+    return withSpan(
+      "directory.list_eris_employees",
+      { "db.system": "postgresql", "db.operation": "select" },
+      async () => {
+        const client = await this.pool.connect();
+        try {
+          await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+
+          const summaryResult = await client.query<{
+            total_employees: number;
+            active_employees: number;
+            inactive_employees: number;
+            departments: number;
+          }>(
+            `SELECT COUNT(*)::int AS total_employees,
+                    COUNT(*) FILTER (WHERE employment_status = 'active')::int AS active_employees,
+                    COUNT(*) FILTER (WHERE employment_status <> 'active')::int AS inactive_employees,
+                    COUNT(DISTINCT org_unit_id)::int AS departments
+               FROM directory.employees`,
+          );
+
+          const normalizedSearch = query.search.trim().toLowerCase();
+          const countResult = await client.query<{ total: number }>(
+            `SELECT COUNT(*)::int AS total
+               FROM directory.employees AS employee
+              WHERE $1 = ''
+                 OR position($1 in lower(employee.display_name)) > 0
+                 OR position($1 in lower(employee.work_email)) > 0
+                 OR EXISTS (
+                      SELECT 1 FROM directory.org_units AS org_unit
+                       WHERE org_unit.id = employee.org_unit_id
+                         AND position($1 in lower(org_unit.display_name)) > 0
+                    )`,
+            [normalizedSearch],
+          );
+
+          const offset = (query.page - 1) * query.pageSize;
+          const employeesResult = await client.query<{
+            id: string;
+            display_name: string;
+            work_email: string;
+            department: string | null;
+            employment_status: EmploymentStatus;
+          }>(
+            `SELECT employee.id::text AS id,
+                    employee.display_name,
+                    employee.work_email,
+                    org_unit.display_name AS department,
+                    employee.employment_status
+               FROM directory.employees AS employee
+               LEFT JOIN directory.org_units AS org_unit ON org_unit.id = employee.org_unit_id
+              WHERE $1 = ''
+                 OR position($1 in lower(employee.display_name)) > 0
+                 OR position($1 in lower(employee.work_email)) > 0
+                 OR position($1 in lower(COALESCE(org_unit.display_name, ''))) > 0
+              ORDER BY lower(employee.display_name), employee.id
+              LIMIT $2 OFFSET $3`,
+            [normalizedSearch, query.pageSize, offset],
+          );
+
+          await client.query(
+            `INSERT INTO audit.events
+               (actor_type, actor_employee_id, action, outcome, target_type, target_id, source, details)
+             VALUES ('employee', $1, 'eris.employee_directory.read', 'success',
+                     'employee_directory', 'directory', 'eris', $2::jsonb)`,
+            [
+              requestedByEmployeeId,
+              JSON.stringify({
+                resultCount: employeesResult.rowCount ?? 0,
+                page: query.page,
+                pageSize: query.pageSize,
+              }),
+            ],
+          );
+
+          await client.query("COMMIT");
+          const summary = summaryResult.rows[0]!;
+          return {
+            items: employeesResult.rows.map((employee) => ({
+              id: employee.id,
+              displayName: employee.display_name,
+              workEmail: employee.work_email,
+              department: employee.department,
+              employmentStatus: employee.employment_status,
+            })),
+            page: query.page,
+            pageSize: query.pageSize,
+            total: countResult.rows[0]?.total ?? 0,
+            summary: {
+              totalEmployees: summary.total_employees,
+              activeEmployees: summary.active_employees,
+              inactiveEmployees: summary.inactive_employees,
+              departments: summary.departments,
+            },
+          };
+        } catch (error) {
+          await client.query("ROLLBACK").catch(() => undefined);
+          throw error;
+        } finally {
+          client.release();
+        }
+      },
+    );
+  }
 
   async provisionEntraEmployee(profile: EntraEmployeeProfile): Promise<ProvisionedEmployee> {
     return withSpan("directory.provision_employee", { "db.system": "postgresql", "db.operation": "upsert" }, () =>
@@ -63,7 +174,7 @@ export class DirectoryRepository {
         await client.query(
           `INSERT INTO audit.events
              (actor_type, actor_employee_id, action, outcome, target_type, target_id, source)
-           VALUES ('employee', $1, 'identity.sign_in', $2, 'employee', $1::text, 'entra')`,
+           VALUES ('employee', $1, 'identity.sign_in', $2, 'employee', $1::uuid::text, 'entra')`,
           [row.id, active ? "success" : "denied"],
         );
         employee = {
@@ -103,15 +214,15 @@ export class DirectoryRepository {
         await client.query(
           `INSERT INTO audit.events
              (actor_type, actor_employee_id, action, outcome, target_type, target_id, source)
-           VALUES ('employee', $1, 'directory.employee.provisioned', 'success', 'employee', $1::text, 'entra'),
-                  ('employee', $1, 'identity.sign_in', 'success', 'employee', $1::text, 'entra')`,
+           VALUES ('employee', $1, 'directory.employee.provisioned', 'success', 'employee', $1::uuid::text, 'entra'),
+                  ('employee', $1, 'identity.sign_in', 'success', 'employee', $1::uuid::text, 'entra')`,
           [employeeId],
         );
         await client.query(
           `INSERT INTO platform.outbox_events
              (aggregate_type, aggregate_id, event_type, payload)
            VALUES ('employee', $1, 'authorization.employee_group.ensure',
-                   jsonb_build_object('objectId', $2, 'groupKey', 'all-employees'))`,
+                   jsonb_build_object('objectId', $2::text, 'groupKey', 'all-employees'))`,
           [employeeId, profile.objectId],
         );
         employee = {

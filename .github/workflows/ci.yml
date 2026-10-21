@@ -57,12 +57,18 @@ jobs:
         with:
           node-version: 24
       - run: docker compose config --quiet
+        env:
+          NPM_ADMIN_EMAIL: admin@cgsi.local
+          NPM_ADMIN_PASSWORD: ci-only-not-a-real-secret
       - run: docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
         env:
           CGSI_IMAGE_PREFIX: ghcr.io/example
           CGSI_IMAGE_TAG: ci
-      - run: docker compose build authorization-service identity-service app-catalog-service crm-service billing-service cube-web cdex-web bils-web gateway
-      - run: docker compose up --detach gateway
+      - run: docker compose build authorization-service identity-service app-catalog-service crm-service billing-service cube-web cdex-web bils-web eris-web gateway
+      - run: docker compose up --detach nginx-proxy-manager-bootstrap
+        env:
+          NPM_ADMIN_EMAIL: admin@cgsi.local
+          NPM_ADMIN_PASSWORD: ci-only-not-a-real-secret
       - run: npm run smoke:local
       - if: always()
         run: docker compose down --volumes --remove-orphans
@@ -93,6 +99,9 @@ jobs:
             service: ""
           - image: cgsi-suite-bils-web
             dockerfile: apps/bils/Dockerfile
+            service: ""
+          - image: cgsi-suite-eris-web
+            dockerfile: apps/eris/Dockerfile
             service: ""
           - image: cgsi-suite-app-catalog-service
             dockerfile: services/Dockerfile

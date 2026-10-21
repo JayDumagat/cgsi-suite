@@ -83,7 +83,7 @@ export default function SidebarSix() {
         href="#"
         className="mb-8 flex size-8 shrink-0 items-center justify-center rounded-xl bg-brand-500 xl:mb-16"
       >
-        <img src="./images/logo/logo-icon.svg" alt="Logo" className="h-8 w-8" />
+        <img src="/images/logo/caballes-go-icon.png" alt="Logo" className="h-8 w-8" />
       </a>
 
       {/* Nav Icons */}

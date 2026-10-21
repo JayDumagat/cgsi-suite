@@ -221,7 +221,12 @@ services:
       OPENFGA_DATASTORE_ENGINE: postgres
       OPENFGA_DATASTORE_URI: postgres://cgsi_admin:${POSTGRES_PASSWORD:-cgsi-local-change-me}@postgres:5432/cgsi?sslmode=disable
       OPENFGA_DATASTORE_MAX_OPEN_CONNS: 100
+      # The browser console uses a same-origin proxy, so the hosted/deprecated
+      # OpenFGA Playground iframe is disabled.
+      OPENFGA_HTTP_ADDR: 0.0.0.0:8180
       OPENFGA_PLAYGROUND_ENABLED: "false"
+    ports:
+      - "127.0.0.1:${OPENFGA_HTTP_PORT:-8180}:8180"
     depends_on:
       openfga-migrate:
         condition: service_completed_successfully
@@ -232,6 +237,23 @@ services:
       retries: 12
     restart: unless-stopped
 
+  openfga-console:
+    image: nginx:1.29-alpine
+    ports:
+      - "127.0.0.1:${OPENFGA_CONSOLE_PORT:-3001}:80"
+    volumes:
+      - ./infra/openfga-console/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infra/openfga-console/public:/usr/share/nginx/html:ro
+    depends_on:
+      openfga:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   authorization-service:
     image: cgsi-suite/authorization-service:local
     build:
@@ -240,7 +262,7 @@ services:
       args:
         SERVICE: authorization-service
     environment:
-      OPENFGA_URL: http://openfga:8080
+      OPENFGA_URL: http://openfga:8180
       AUTHORIZATION_SERVICE_TOKEN: ${AUTHORIZATION_SERVICE_TOKEN:-local-authz-check-token-change-me}
       IDENTITY_PROVISIONING_TOKEN: ${IDENTITY_PROVISIONING_TOKEN:-local-identity-provisioning-token-change-me}
       AUTHORIZATION_ADMIN_TOKEN: ${AUTHORIZATION_ADMIN_TOKEN:-local-authz-admin-token-change-me}
@@ -276,6 +298,7 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       AUTH_ALLOWED_RETURN_ORIGINS: ${AUTH_ALLOWED_RETURN_ORIGINS:-http://localhost:8080}
+      ERIS_DIRECTORY_SERVICE_TOKEN: ${ERIS_DIRECTORY_SERVICE_TOKEN:-local-eris-directory-token-change-me}
       PGHOST: postgres
       PGPORT: 5432
       PGDATABASE: cgsi
@@ -336,6 +359,18 @@ services:
       retries: 5
     restart: unless-stopped
 
+  eris-web:
+    image: cgsi-suite/eris-web:local
+    build:
+      context: .
+      dockerfile: apps/eris/Dockerfile
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   app-catalog-service:
     image: cgsi-suite/app-catalog-service:local
     build:
@@ -349,7 +384,10 @@ services:
       AUTHORIZATION_SERVICE_TOKEN: ${AUTHORIZATION_SERVICE_TOKEN:-local-authz-check-token-change-me}
       CDEX_APP_URL: ${CDEX_APP_URL:-/crm/}
       BILS_APP_URL: ${BILS_APP_URL:-/billing/}
-      HUMA_APP_URL: ${HUMA_APP_URL:-/huma/}
+      ERIS_APP_URL: ${ERIS_APP_URL:-/eris/}
+      CDEX_APP_AVAILABLE: ${CDEX_APP_AVAILABLE:-true}
+      BILS_APP_AVAILABLE: ${BILS_APP_AVAILABLE:-true}
+      ERIS_APP_AVAILABLE: ${ERIS_APP_AVAILABLE:-true}
       RDES_APP_URL: ${RDES_APP_URL:-/rdes/}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_NAME: app-catalog-service
@@ -413,9 +451,8 @@ services:
       dockerfile: infra/nginx/Dockerfile
     environment:
       CUBE_PUBLIC_URL: ${CUBE_PUBLIC_URL:-http://localhost:8080}
-      NGINX_ENVSUBST_FILTER: ^CUBE_PUBLIC_URL$
-    ports:
-      - "${HTTP_PORT:-8080}:80"
+      ERIS_DIRECTORY_SERVICE_TOKEN: ${ERIS_DIRECTORY_SERVICE_TOKEN:-local-eris-directory-token-change-me}
+      NGINX_ENVSUBST_FILTER: ^(CUBE_PUBLIC_URL|ERIS_DIRECTORY_SERVICE_TOKEN)$
     depends_on:
       app-catalog-service:
         condition: service_healthy
@@ -431,12 +468,55 @@ services:
         condition: service_healthy
       bils-web:
         condition: service_healthy
+      eris-web:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:2.16.0
+    environment:
+      TZ: ${TZ:-Asia/Manila}
+      DISABLE_IPV6: "true"
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-8080}:80"
+      - "127.0.0.1:${NPM_HTTPS_PORT:-8443}:443"
+      - "127.0.0.1:${NPM_UI_PORT:-8181}:81"
+    volumes:
+      - cgsi_nginx_proxy_manager_data:/data
+      - cgsi_nginx_proxy_manager_letsencrypt:/etc/letsencrypt
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/bin/check-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  nginx-proxy-manager-bootstrap:
+    image: jc21/nginx-proxy-manager:2.16.0
+    entrypoint: ["node"]
+    command: ["/bootstrap.mjs"]
+    environment:
+      NPM_API_URL: http://nginx-proxy-manager:81/api
+      NPM_ADMIN_EMAIL: ${NPM_ADMIN_EMAIL:-admin@cgsi.local}
+      NPM_ADMIN_PASSWORD: ${NPM_ADMIN_PASSWORD:-}
+    volumes:
+      - cgsi_nginx_proxy_manager_data:/data
+      - ./infra/nginx-proxy-manager/bootstrap.mjs:/bootstrap.mjs:ro
+    depends_on:
+      nginx-proxy-manager:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    restart: "no"
 
 volumes:
   cgsi_postgres_data:
@@ -449,3 +529,5 @@ volumes:
   cgsi_loki_data:
   cgsi_tempo_data:
   cgsi_jenkins_home:
+  cgsi_nginx_proxy_manager_data:
+  cgsi_nginx_proxy_manager_letsencrypt:

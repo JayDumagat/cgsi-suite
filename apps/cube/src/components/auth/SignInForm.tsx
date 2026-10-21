@@ -1,21 +1,10 @@
-import { ChevronLeftIcon } from "@/icons";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
 
 export default function SignInForm() {
   const { t } = useTranslation();
   const hasProviderError = new URLSearchParams(window.location.search).has("error");
   return (
     <div className="flex flex-1 flex-col">
-      <div className="mx-auto w-full max-w-md pt-10">
-        <Link
-          to="/"
-          className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        >
-          <ChevronLeftIcon className="size-5 rtl:rotate-180" />
-          {t("auth.backToCube")}
-        </Link>
-      </div>
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
         <div>
           <div className="mb-5 sm:mb-8">

@@ -31,12 +31,12 @@ export default function ComingSoon({ className }: ComingSoonProps) {
             <Link to="/" className="mb-6 inline-block">
               <img
                 className="dark:hidden"
-                src="/images/logo/logo.svg"
+                src="/images/logo/caballes-go-logo.png"
                 alt="Logo"
               />
               <img
                 className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
+                src="/images/logo/caballes-go-logo-dark.png"
                 alt="Logo"
               />
             </Link>

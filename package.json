@@ -7,13 +7,13 @@
   },
   "scripts": {
     "setup": "npm run setup:frontends && npm run setup:identity",
-    "setup:frontends": "npm ci --prefix apps/cube && npm ci --prefix apps/cdex && npm ci --prefix apps/bils",
+    "setup:frontends": "npm ci --prefix apps/cube && npm ci --prefix apps/cdex && npm ci --prefix apps/bils && npm ci --prefix apps/eris",
     "setup:identity": "npm ci --prefix services/authentication-service",
-    "lint:frontends": "npm run lint --prefix apps/cube && npm run lint --prefix apps/cdex && npm run lint --prefix apps/bils",
+    "lint:frontends": "npm run lint --prefix apps/cube && npm run lint --prefix apps/cdex && npm run lint --prefix apps/bils && npm run lint --prefix apps/eris",
     "lint:identity": "npm run lint --prefix services/authentication-service",
     "lint:go": "go -C services vet ./...",
     "lint": "npm run lint:frontends && npm run lint:identity && npm run lint:go",
-    "build:frontends": "npm run build --prefix apps/cube && npm run build --prefix apps/cdex && npm run build --prefix apps/bils",
+    "build:frontends": "npm run build --prefix apps/cube && npm run build --prefix apps/cdex && npm run build --prefix apps/bils && npm run build --prefix apps/eris",
     "build:identity": "npm run build --prefix services/authentication-service",
     "build:go": "go -C services build ./...",
     "build": "npm run build:frontends && npm run build:identity && npm run build:go",
@@ -23,7 +23,7 @@
     "test": "npm run test:go && npm run test:identity && npm run test:frontends",
     "ci": "npm run lint && npm test && npm run build",
     "compose:config": "docker compose config --quiet",
-    "test:integration": "docker compose up --build --detach gateway && node scripts/smoke-compose.mjs",
+    "test:integration": "docker compose up --build --detach nginx-proxy-manager-bootstrap && node scripts/smoke-compose.mjs",
     "smoke:local": "node scripts/smoke-compose.mjs"
   }
 }

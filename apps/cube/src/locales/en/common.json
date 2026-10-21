@@ -908,7 +908,7 @@
     },
     "apps": {
       "cube": {
-        "name": "CGSI Cube",
+        "name": "CGSI CUBE",
         "description": "Your secure home for CGSI work applications."
       },
       "crm": {
@@ -930,13 +930,13 @@
     }
   },
   "auth": {
-    "productName": "CGSI Cube",
-    "productShortName": "Cube",
-    "backToCube": "Back to Cube",
-    "signInTitle": "Sign in to CGSI Cube",
-    "signInDescription": "Use your work account to access CGSI applications.",
-    "signInWithMicrosoft": "Continue with Microsoft 365",
-    "organizationAccountOnly": "Sign-in is limited to CGSI Microsoft 365 accounts.",
+    "productName": "CGSI CUBE",
+    "productShortName": "CUBE",
+    "backToCube": "Back to CUBE",
+    "signInTitle": "Sign in to CGSI CUBE",
+    "signInDescription": "Use your CGSI account to access CGSI applications.",
+    "signInWithMicrosoft": "Continue with Microsoft",
+    "organizationAccountOnly": "Sign-in is limited to CGSI Microsoft accounts.",
     "deviceComplianceNote": "Your organization sign-in policies may require an Intune-managed, compliant device.",
       "providerError": "Microsoft sign-in could not be completed. Try again or contact your CGSI administrator.",
     "accountMenu": "Account menu",

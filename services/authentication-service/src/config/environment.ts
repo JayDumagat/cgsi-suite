@@ -11,6 +11,7 @@ export interface AuthenticationConfig {
   cookieDomain: string;
   allowedReturnOrigins: string[];
   sessionMaxAgeSeconds: number;
+  erisDirectoryServiceToken: string;
 }
 
 export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AuthenticationConfig {
@@ -30,6 +31,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): Authen
       .map((origin) => origin.trim())
       .filter(Boolean),
     sessionMaxAgeSeconds: 8 * 60 * 60,
+    erisDirectoryServiceToken: environment.ERIS_DIRECTORY_SERVICE_TOKEN ?? "",
   };
 
   if (config.sessionSecret.length < 32) {

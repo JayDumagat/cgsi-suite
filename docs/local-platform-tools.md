@@ -6,6 +6,7 @@ The root `docker-compose.yml` starts the application suite and its supporting de
 
 | Tool | Local address | Container address | Notes |
 | --- | --- | --- | --- |
+| OpenFGA console | `http://localhost:3001` | `openfga-console:80` | Lists the existing stores, current authorization model and relationship tuples; includes a read-only access check. The API is available at `http://localhost:8180`. Both host ports bind to loopback. |
 | Grafana | `http://localhost:3000` | `grafana:3000` | Uses `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD`; Prometheus, Loki, and Tempo are provisioned as data sources. |
 | Prometheus | `http://localhost:9090` | `prometheus:9090` | Scrapes itself, OpenTelemetry Collector metrics, and RabbitMQ metrics. |
 | Jenkins | `http://localhost:8081` | `jenkins:8080` | Complete the setup wizard. Retrieve its initial unlock key with `docker compose logs jenkins`. |

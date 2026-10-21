@@ -79,7 +79,7 @@ export default function SidebarFive({
           <div className="flex items-center gap-3">
             <a href="#" className="shrink-0">
               <img
-                src="./images/logo/logo-icon.svg"
+                src="/images/logo/caballes-go-icon.png"
                 alt="Logo"
                 className="h-8 w-8"
               />

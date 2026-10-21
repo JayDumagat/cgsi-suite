@@ -292,9 +292,13 @@ const AppSidebar: React.FC = () => {
         <Link to="/apps">
           {isExpanded || isHovered || isMobileOpen ? (
             <div className="flex items-center gap-3">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-brand-500 text-sm font-bold text-white">
-                C
-              </span>
+              <img
+                src="/images/logo/caballes-go-icon.png"
+                alt="Caballes-Go"
+                className="size-10 shrink-0"
+                width={40}
+                height={40}
+              />
               <span className="flex flex-col">
                 <span className="text-sm font-semibold text-gray-800 dark:text-white/90">
                   CGSI
@@ -305,9 +309,13 @@ const AppSidebar: React.FC = () => {
               </span>
             </div>
           ) : (
-            <span className="flex size-10 items-center justify-center rounded-xl bg-brand-500 text-sm font-bold text-white">
-              C
-            </span>
+            <img
+              src="/images/logo/caballes-go-icon.png"
+              alt="Caballes-Go"
+              className="size-10 shrink-0"
+              width={40}
+              height={40}
+            />
           )}
         </Link>
       </div>

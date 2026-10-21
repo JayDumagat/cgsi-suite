@@ -23,6 +23,8 @@ export default function UserDropdown() {
   const { language: locale, setLanguage } = useLanguage();
   const currentLang = getLanguage(locale as Locale);
   const CurrentFlagIcon = currentLang.FlagIcon;
+  const displayName = user?.name?.replace(/\s*\(CGSI\)\s*$/i, "").trim();
+  const visibleName = displayName || t("auth.userFallback");
   const accountLinks = [
     { label: t("userDropdown.editProfile"), Icon: ProfileMenuIcon },
     { label: t("userDropdown.accountSettings"), Icon: SettingsMenuIcon },
@@ -87,11 +89,11 @@ export default function UserDropdown() {
           <img
             className="h-11 w-11 rounded-full object-cover"
             src="/images/user/owner.png"
-            alt={user?.name || "User"}
+            alt={displayName || "User"}
           />
         </span>
         <span className="me-1 block max-w-36 truncate text-theme-sm font-medium">
-          {user?.name || t("auth.userFallback")}
+          {visibleName}
         </span>
         <svg
           className={`stroke-gray-500 transition-transform duration-200 dark:stroke-gray-400 ${
@@ -124,7 +126,7 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block truncate text-theme-sm font-medium text-gray-700 no-underline dark:text-gray-400">
-            {user?.name || t("auth.userFallback")}
+            {visibleName}
           </span>
           <span className="mt-0.5 block truncate text-theme-xs text-gray-500 no-underline dark:text-gray-400">
             {user?.email || ""}
