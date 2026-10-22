@@ -906,6 +906,8 @@
       "searchPlaceholder": "Buscar por nombre, número de empleado o departamento...",
       "empty": "No se encontraron registros de empleados.",
       "loading": "Cargando registros de empleados...",
+      "selectAllOnPage": "Seleccionar todos los empleados de esta página",
+      "selectEmployee": "Seleccionar a {name}",
       "showing": "Mostrando {start} a {end} de {total} empleados"
     },
     "create": {

@@ -906,6 +906,8 @@
       "searchPlaceholder": "Name, Personalnummer oder Abteilung suchen...",
       "empty": "Keine Mitarbeiterdatensätze gefunden.",
       "loading": "Mitarbeiterdatensätze werden geladen...",
+      "selectAllOnPage": "Alle Mitarbeitenden auf dieser Seite auswählen",
+      "selectEmployee": "{name} auswählen",
       "showing": "{start} bis {end} von {total} Mitarbeitern"
     },
     "create": {

@@ -391,6 +391,7 @@ function DefaultDataTableOne() {
 export interface DataTableOneColumn<T> {
   key: string;
   label: string;
+  header?: ReactNode;
   sortKey?: string;
   className?: string;
   render: (row: T) => ReactNode;
@@ -540,9 +541,9 @@ function ConfiguredDataTableOne<T>({
                 <TableCell
                   key={column.key}
                   isHeader
-                  className="border border-gray-100 px-4 py-3 text-start dark:border-white/[0.05]"
+                  className={`border border-gray-100 px-4 py-3 text-start dark:border-white/[0.05] ${column.className ?? ""}`}
                 >
-                  {column.sortKey && onSortChange ? (
+                  {column.header ?? (column.sortKey && onSortChange ? (
                     <button
                       type="button"
                       className="flex w-full items-center justify-between gap-3 text-start"
@@ -590,7 +591,7 @@ function ConfiguredDataTableOne<T>({
                     <span className="text-theme-xs font-medium text-gray-700 dark:text-gray-400">
                       {column.label}
                     </span>
-                  )}
+                  ))}
                 </TableCell>
               ))}
             </TableRow>

@@ -11,7 +11,7 @@ import {
   type EmployeeSortKey,
 } from "@/components/employee-directory/employeeDirectoryApi";
 import { PlusIcon } from "@/icons";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 
@@ -67,8 +67,30 @@ export default function EmployeeDirectoryPage() {
   const [pageSize, setPageSize] = useState(10);
   const [sortKey, setSortKey] = useState<EmployeeSortKey>("displayName");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<string>>(() => new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  const employees = directory?.items ?? [];
+
+  const setEmployeeSelected = useCallback((employeeId: string, selected: boolean) => {
+    setSelectedEmployeeIds((current) => {
+      const next = new Set(current);
+      if (selected) next.add(employeeId);
+      else next.delete(employeeId);
+      return next;
+    });
+  }, []);
+
+  const setCurrentPageSelected = useCallback((selected: boolean) => {
+    setSelectedEmployeeIds((current) => {
+      const next = new Set(current);
+      for (const employee of employees) {
+        if (selected) next.add(employee.id);
+        else next.delete(employee.id);
+      }
+      return next;
+    });
+  }, [employees]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -107,6 +129,39 @@ export default function EmployeeDirectoryPage() {
 
   const columns = useMemo<DataTableOneColumn<EmployeeDirectoryItem>[]>(
     () => [
+      {
+        key: "selection",
+        label: "",
+        className: "w-10 px-3 text-center",
+        header: (
+          <input
+            type="checkbox"
+            aria-label={t("employeeDirectory.table.selectAllOnPage")}
+            checked={employees.length > 0 && employees.every((employee) => selectedEmployeeIds.has(employee.id))}
+            ref={(checkbox) => {
+              if (checkbox) {
+                const selectedCount = employees.filter((employee) => selectedEmployeeIds.has(employee.id)).length;
+                checkbox.indeterminate = selectedCount > 0 && selectedCount < employees.length;
+              }
+            }}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onChange={(event) => setCurrentPageSelected(event.target.checked)}
+            className="size-4 cursor-pointer rounded border-gray-300 text-brand-600 shadow-theme-xs focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:checked:bg-brand-500"
+          />
+        ),
+        render: (employee) => (
+          <input
+            type="checkbox"
+            aria-label={t("employeeDirectory.table.selectEmployee", { name: employee.displayName })}
+            checked={selectedEmployeeIds.has(employee.id)}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onChange={(event) => setEmployeeSelected(employee.id, event.target.checked)}
+            className="size-4 cursor-pointer rounded border-gray-300 text-brand-600 shadow-theme-xs focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:checked:bg-brand-500"
+          />
+        ),
+      },
       {
         key: "employee",
         label: t("employeeDirectory.fields.employee"),
@@ -162,7 +217,7 @@ export default function EmployeeDirectoryPage() {
         ),
       },
     ],
-    [i18n.language, t],
+    [employees, i18n.language, selectedEmployeeIds, setCurrentPageSelected, setEmployeeSelected, t],
   );
 
   const summary = directory?.summary;
@@ -254,7 +309,7 @@ export default function EmployeeDirectoryPage() {
       )}
 
       <DataTableOne
-        rows={directory?.items ?? []}
+        rows={employees}
         columns={columns}
         getRowKey={(employee) => employee.id}
         getRowLabel={(employee) => employee.displayName}

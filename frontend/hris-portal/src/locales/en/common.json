@@ -906,6 +906,8 @@
       "searchPlaceholder": "Search name, employee number, department...",
       "empty": "No employee records found.",
       "loading": "Loading employee records...",
+      "selectAllOnPage": "Select all employees on this page",
+      "selectEmployee": "Select {name}",
       "showing": "Showing {start} to {end} of {total} employees"
     },
     "create": {

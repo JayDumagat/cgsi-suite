@@ -906,6 +906,8 @@
       "searchPlaceholder": "ابحث بالاسم أو الرقم الوظيفي أو القسم...",
       "empty": "لم يتم العثور على سجلات للموظفين.",
       "loading": "جارٍ تحميل سجلات الموظفين...",
+      "selectAllOnPage": "تحديد جميع الموظفين في هذه الصفحة",
+      "selectEmployee": "تحديد {name}",
       "showing": "عرض {start} إلى {end} من أصل {total} موظفًا"
     },
     "create": {
