@@ -885,7 +885,9 @@
     "notProvided": "Nicht angegeben",
     "sections": {
       "personalInformation": "Persönliche Angaben",
+      "personalContact": "Persönlicher Kontakt",
       "organization": "Organisation",
+      "education": "Bildung",
       "employment": "Beschäftigung",
       "workContact": "Geschäftlicher Kontakt"
     },
@@ -904,7 +906,7 @@
       "searchPlaceholder": "Name, Personalnummer oder Abteilung suchen...",
       "empty": "Keine Mitarbeiterdatensätze gefunden.",
       "loading": "Mitarbeiterdatensätze werden geladen...",
-      "showing": "{{start}} bis {{end}} von {{total}} Mitarbeitern"
+      "showing": "{start} bis {end} von {total} Mitarbeitern"
     },
     "create": {
       "title": "Mitarbeiter hinzufügen",
@@ -923,6 +925,12 @@
       "lastName": "Nachname",
       "suffix": "Namenszusatz",
       "suffixOptional": "Namenszusatz (optional)",
+      "personalEmail": "Private E-Mail-Adresse",
+      "personalPhone": "Private Telefonnummer",
+      "educationLevel": "Höchster Bildungsabschluss",
+      "educationInstitution": "Schule / Bildungseinrichtung",
+      "educationField": "Abschluss / Studienfach",
+      "graduationYear": "Abschlussjahr",
       "department": "Abteilung",
       "jobTitle": "Stellenbezeichnung",
       "status": "Status",
@@ -934,6 +942,8 @@
       "workPhone": "Geschäftliche Telefonnummer",
       "manager": "Vorgesetzte Person",
       "managerEmail": "E-Mail der vorgesetzten Person",
+      "managerEmailOptional": "E-Mail der vorgesetzten Person (optional)",
+      "managerEmailHint": "Die vorgesetzte Person benötigt einen aktiven Mitarbeiterdatensatz in ERIS. Leer lassen, wenn keine Person zugeordnet ist.",
       "preferredName": "Bevorzugter Name",
       "updatedAt": "Zuletzt aktualisiert"
     },
@@ -964,7 +974,8 @@
       "createFailed": "Der Mitarbeiterdatensatz konnte nicht erstellt werden. Bitte Angaben prüfen und erneut versuchen.",
       "sessionExpired": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
       "notFound": "Dieser Mitarbeiterdatensatz wurde nicht gefunden.",
-      "loadFailed": "Mitarbeiterdatensätze konnten nicht geladen werden. Bitte erneut versuchen."
+      "loadFailed": "Mitarbeiterdatensätze konnten nicht geladen werden. Bitte erneut versuchen.",
+      "invalidManager": "Die vorgesetzte Person benötigt einen aktiven Mitarbeiterdatensatz in ERIS. Dieses Feld leer lassen, wenn keine Person zugeordnet ist."
     }
   }
 }

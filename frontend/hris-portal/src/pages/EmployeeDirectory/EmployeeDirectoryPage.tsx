@@ -26,6 +26,13 @@ function initialsFor(name: string) {
     .join("");
 }
 
+function formatHireDate(value: string | null, locale: string) {
+  if (!value) return "—";
+  const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
+  if (!Number.isFinite(date.getTime())) return value;
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
+}
+
 function statusClass(status: EmployeeDirectoryItem["employmentStatus"]) {
   if (status === "active") {
     return "bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-400";
@@ -101,12 +108,6 @@ export default function EmployeeDirectoryPage() {
   const columns = useMemo<DataTableOneColumn<EmployeeDirectoryItem>[]>(
     () => [
       {
-        key: "employeeNumber",
-        label: t("employeeDirectory.fields.employeeNumber"),
-        sortKey: "employeeNumber",
-        render: (employee) => employee.employeeNumber || "—",
-      },
-      {
         key: "employee",
         label: t("employeeDirectory.fields.employee"),
         sortKey: "displayName",
@@ -143,6 +144,12 @@ export default function EmployeeDirectoryPage() {
         render: (employee) => employee.jobTitle || "—",
       },
       {
+        key: "hireDate",
+        label: t("employeeDirectory.fields.hireDate"),
+        sortKey: "hireDate",
+        render: (employee) => formatHireDate(employee.hireDate, i18n.language),
+      },
+      {
         key: "employmentStatus",
         label: t("employeeDirectory.fields.status"),
         sortKey: "employmentStatus",
@@ -155,7 +162,7 @@ export default function EmployeeDirectoryPage() {
         ),
       },
     ],
-    [t],
+    [i18n.language, t],
   );
 
   const summary = directory?.summary;

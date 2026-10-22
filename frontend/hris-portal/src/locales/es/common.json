@@ -885,7 +885,9 @@
     "notProvided": "No disponible",
     "sections": {
       "personalInformation": "Información personal",
+      "personalContact": "Contacto personal",
       "organization": "Organización",
+      "education": "Educación",
       "employment": "Empleo",
       "workContact": "Contacto laboral"
     },
@@ -904,7 +906,7 @@
       "searchPlaceholder": "Buscar por nombre, número de empleado o departamento...",
       "empty": "No se encontraron registros de empleados.",
       "loading": "Cargando registros de empleados...",
-      "showing": "Mostrando {{start}} a {{end}} de {{total}} empleados"
+      "showing": "Mostrando {start} a {end} de {total} empleados"
     },
     "create": {
       "title": "Añadir empleado",
@@ -923,6 +925,12 @@
       "lastName": "Apellido",
       "suffix": "Sufijo",
       "suffixOptional": "Sufijo (opcional)",
+      "personalEmail": "Correo personal",
+      "personalPhone": "Teléfono personal",
+      "educationLevel": "Nivel educativo más alto",
+      "educationInstitution": "Escuela / institución",
+      "educationField": "Título / campo de estudio",
+      "graduationYear": "Año de graduación",
       "department": "Departamento",
       "jobTitle": "Cargo",
       "status": "Estado",
@@ -934,6 +942,8 @@
       "workPhone": "Teléfono laboral",
       "manager": "Responsable",
       "managerEmail": "Correo del responsable",
+      "managerEmailOptional": "Correo del responsable (opcional)",
+      "managerEmailHint": "El responsable debe tener un registro de empleado activo en ERIS. Déjalo en blanco si no hay responsable asignado.",
       "preferredName": "Nombre preferido",
       "updatedAt": "Última actualización"
     },
@@ -964,7 +974,8 @@
       "createFailed": "No se pudo crear el registro del empleado. Revisa los datos e inténtalo de nuevo.",
       "sessionExpired": "Tu sesión ha caducado. Inicia sesión de nuevo para continuar.",
       "notFound": "No se encontró este registro de empleado.",
-      "loadFailed": "No se pudieron cargar los registros de empleados. Inténtalo de nuevo."
+      "loadFailed": "No se pudieron cargar los registros de empleados. Inténtalo de nuevo.",
+      "invalidManager": "El responsable debe tener un registro de empleado activo en ERIS. Deja este campo en blanco si no hay responsable asignado."
     }
   }
 }

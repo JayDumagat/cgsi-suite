@@ -93,13 +93,17 @@ const AppHeader: React.FC = () => {
           <Link to="/" className="xl:hidden">
             <img
               className="dark:hidden"
-              src="./images/logo/logo.svg"
-              alt="Logo"
+              src="/images/logo/caballes-go-logo.png"
+              alt="Caballes-Go Securities"
+              width={154}
+              height={40}
             />
             <img
               className="hidden dark:block"
-              src="./images/logo/logo-dark.svg"
-              alt="Logo"
+              src="/images/logo/caballes-go-logo-dark.png"
+              alt="Caballes-Go Securities"
+              width={154}
+              height={40}
             />
           </Link>
 

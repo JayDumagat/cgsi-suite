@@ -20,6 +20,7 @@ const directorySortExpressions = {
   department: "lower(COALESCE(employee.department, ''))",
   jobTitle: "lower(COALESCE(employee.job_title, ''))",
   employmentStatus: "employee.employment_status",
+  hireDate: "employee.hire_date",
 } as const;
 
 export class DirectoryRepository extends EmployeeMasterRepository {
@@ -99,6 +100,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
             work_email: string;
             department: string | null;
             job_title: string | null;
+            hire_date: string | null;
             employment_status: EmploymentStatus;
           }>(
             `SELECT employee.id::text AS id,
@@ -107,6 +109,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
                     employee.work_email,
                     employee.department,
                     employee.job_title,
+                    employee.hire_date::text AS hire_date,
                     employee.employment_status
                FROM huma.employees AS employee
               WHERE $1 = ''
@@ -115,7 +118,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
                  OR position($1 in lower(COALESCE(employee.employee_number, ''))) > 0
                  OR position($1 in lower(COALESCE(employee.department, ''))) > 0
                  OR position($1 in lower(COALESCE(employee.job_title, ''))) > 0
-              ORDER BY ${directorySortExpressions[query.sortBy]} ${query.sortOrder.toUpperCase()},
+              ORDER BY ${directorySortExpressions[query.sortBy]} ${query.sortOrder.toUpperCase()}${query.sortBy === "hireDate" ? " NULLS LAST" : ""},
                        lower(employee.display_name), employee.id
               LIMIT $2 OFFSET $3`,
             [normalizedSearch, query.pageSize, offset],
@@ -146,6 +149,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
               workEmail: employee.work_email,
               department: employee.department,
               jobTitle: employee.job_title,
+              hireDate: employee.hire_date,
               employmentStatus: employee.employment_status,
             })),
             page: query.page,

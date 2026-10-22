@@ -885,7 +885,9 @@
     "notProvided": "Not provided",
     "sections": {
       "personalInformation": "Personal information",
+      "personalContact": "Personal contact",
       "organization": "Organization",
+      "education": "Education",
       "employment": "Employment",
       "workContact": "Work contact"
     },
@@ -904,7 +906,7 @@
       "searchPlaceholder": "Search name, employee number, department...",
       "empty": "No employee records found.",
       "loading": "Loading employee records...",
-      "showing": "Showing {{start}} to {{end}} of {{total}} employees"
+      "showing": "Showing {start} to {end} of {total} employees"
     },
     "create": {
       "title": "Add employee",
@@ -923,6 +925,12 @@
       "lastName": "Last name",
       "suffix": "Suffix",
       "suffixOptional": "Suffix (optional)",
+      "personalEmail": "Personal email",
+      "personalPhone": "Personal phone",
+      "educationLevel": "Highest education level",
+      "educationInstitution": "School / institution",
+      "educationField": "Degree / field of study",
+      "graduationYear": "Graduation year",
       "department": "Department",
       "jobTitle": "Job title",
       "status": "Status",
@@ -934,6 +942,8 @@
       "workPhone": "Work phone",
       "manager": "Manager",
       "managerEmail": "Manager email",
+      "managerEmailOptional": "Manager email (optional)",
+      "managerEmailHint": "The manager must have an active employee record in ERIS. Leave this blank if no manager is assigned.",
       "preferredName": "Preferred name",
       "updatedAt": "Last updated"
     },
@@ -964,7 +974,8 @@
       "createFailed": "The employee record could not be created. Check the details and try again.",
       "sessionExpired": "Your session has expired. Sign in again to continue.",
       "notFound": "This employee record could not be found.",
-      "loadFailed": "Employee records could not be loaded. Try again."
+      "loadFailed": "Employee records could not be loaded. Try again.",
+      "invalidManager": "The manager must have an active employee record in ERIS. Leave the manager field blank if no manager is assigned."
     }
   }
 }

@@ -11,7 +11,8 @@ export type EmployeeSortKey =
   | "workEmail"
   | "department"
   | "jobTitle"
-  | "employmentStatus";
+  | "employmentStatus"
+  | "hireDate";
 
 export interface EmployeeDirectoryItem {
   id: string;
@@ -20,6 +21,7 @@ export interface EmployeeDirectoryItem {
   workEmail: string;
   department: string | null;
   jobTitle: string | null;
+  hireDate: string | null;
   employmentStatus: EmploymentStatus;
 }
 
@@ -46,10 +48,15 @@ export interface EmployeeMasterRecord extends EmployeeDirectoryItem {
   lastName: string | null;
   suffix: string | null;
   preferredName: string | null;
+  personalEmail: string | null;
+  personalPhone: string | null;
+  educationLevel: string | null;
+  educationInstitution: string | null;
+  educationField: string | null;
+  graduationYear: number | null;
   managerName: string | null;
   managerWorkEmail: string | null;
   employmentType: EmploymentType;
-  hireDate: string | null;
   terminationDate: string | null;
   workPhone: string | null;
   workLocation: string | null;
@@ -63,6 +70,12 @@ export interface EmployeeMasterInput {
   lastName: string;
   suffix: string | null;
   preferredName: string | null;
+  personalEmail: string | null;
+  personalPhone: string | null;
+  educationLevel: string | null;
+  educationInstitution: string | null;
+  educationField: string | null;
+  graduationYear: number | null;
   workEmail: string;
   department: string | null;
   managerWorkEmail: string | null;

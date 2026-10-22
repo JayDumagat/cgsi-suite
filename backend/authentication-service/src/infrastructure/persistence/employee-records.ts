@@ -16,6 +16,12 @@ interface EmployeeMasterRow {
   last_name: string | null;
   suffix: string | null;
   preferred_name: string | null;
+  personal_email: string | null;
+  personal_phone: string | null;
+  education_level: string | null;
+  education_institution: string | null;
+  education_field: string | null;
+  graduation_year: number | null;
   work_email: string;
   department: string | null;
   manager_name: string | null;
@@ -33,7 +39,9 @@ interface EmployeeMasterRow {
 const employeeMasterSelect = [
   "SELECT employee.id::text AS id, employee.employee_number, employee.display_name,",
   "       employee.first_name, employee.middle_name, employee.last_name, employee.suffix,",
-  "       employee.preferred_name, employee.work_email, employee.department,",
+  "       employee.preferred_name, employee.personal_email, employee.personal_phone,",
+  "       employee.education_level, employee.education_institution, employee.education_field,",
+  "       employee.graduation_year, employee.work_email, employee.department,",
   "       manager.display_name AS manager_name, manager.work_email AS manager_work_email,",
   "       employee.job_title, employee.employment_type, employee.employment_status,",
   "       employee.hire_date::text, employee.termination_date::text,",
@@ -94,10 +102,11 @@ export class EmployeeMasterRepository {
         [
           "INSERT INTO huma.employees",
           "  (employee_number, first_name, middle_name, last_name, suffix, display_name, preferred_name,",
+          "   personal_email, personal_phone, education_level, education_institution, education_field, graduation_year,",
           "   work_email, department, manager_employee_id, job_title, employment_type,",
           "   employment_status, hire_date, termination_date, work_phone, work_location,",
           "   created_by_employee_id, updated_by_employee_id)",
-          "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $18)",
+          "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $24)",
           "RETURNING id::text AS id",
         ].join("\n"),
         [
@@ -108,6 +117,12 @@ export class EmployeeMasterRepository {
           input.suffix,
           displayName,
           input.preferredName,
+          input.personalEmail,
+          input.personalPhone,
+          input.educationLevel,
+          input.educationInstitution,
+          input.educationField,
+          input.graduationYear,
           input.workEmail.toLowerCase(),
           input.department,
           managerId,
@@ -166,11 +181,12 @@ export class EmployeeMasterRepository {
         [
           "UPDATE huma.employees",
           "   SET employee_number = $1, first_name = $2, middle_name = $3, last_name = $4, suffix = $5,",
-          "       display_name = $6, preferred_name = $7, work_email = $8, department = $9,",
-          "       manager_employee_id = $10, job_title = $11, employment_type = $12,",
-          "       employment_status = $13, hire_date = $14, termination_date = $15,",
-          "       work_phone = $16, work_location = $17, updated_by_employee_id = $18, updated_at = now()",
-          " WHERE id = $19",
+          "       display_name = $6, preferred_name = $7, personal_email = $8, personal_phone = $9,",
+          "       education_level = $10, education_institution = $11, education_field = $12, graduation_year = $13,",
+          "       work_email = $14, department = $15, manager_employee_id = $16, job_title = $17,",
+          "       employment_type = $18, employment_status = $19, hire_date = $20, termination_date = $21,",
+          "       work_phone = $22, work_location = $23, updated_by_employee_id = $24, updated_at = now()",
+          " WHERE id = $25",
         ].join("\n"),
         [
           input.employeeNumber,
@@ -180,6 +196,12 @@ export class EmployeeMasterRepository {
           input.suffix,
           displayName,
           input.preferredName,
+          input.personalEmail,
+          input.personalPhone,
+          input.educationLevel,
+          input.educationInstitution,
+          input.educationField,
+          input.graduationYear,
           input.workEmail.toLowerCase(),
           input.department,
           managerId,
@@ -351,6 +373,12 @@ function toEmployeeMaster(row: EmployeeMasterRow): EmployeeMasterRecord {
     lastName: row.last_name,
     suffix: row.suffix,
     preferredName: row.preferred_name,
+    personalEmail: row.personal_email,
+    personalPhone: row.personal_phone,
+    educationLevel: row.education_level,
+    educationInstitution: row.education_institution,
+    educationField: row.education_field,
+    graduationYear: row.graduation_year,
     workEmail: row.work_email,
     department: row.department,
     managerName: row.manager_name,

@@ -13,12 +13,18 @@ import type { FormEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 
-type FormValues = Omit<EmployeeMasterInput, "employeeNumber" | "middleName" | "suffix" | "preferredName" | "department" | "managerWorkEmail" | "jobTitle" | "hireDate" | "terminationDate" | "workPhone" | "workLocation"> & {
+type FormValues = Omit<EmployeeMasterInput, "employeeNumber" | "middleName" | "suffix" | "preferredName" | "personalEmail" | "personalPhone" | "educationLevel" | "educationInstitution" | "educationField" | "graduationYear" | "department" | "managerWorkEmail" | "jobTitle" | "hireDate" | "terminationDate" | "workPhone" | "workLocation"> & {
   employeeNumber: string;
   middleName: string;
   suffix: string;
   department: string;
   preferredName: string;
+  personalEmail: string;
+  personalPhone: string;
+  educationLevel: string;
+  educationInstitution: string;
+  educationField: string;
+  graduationYear: string;
   managerWorkEmail: string;
   jobTitle: string;
   hireDate: string;
@@ -34,6 +40,12 @@ const initialValues: FormValues = {
   lastName: "",
   suffix: "",
   preferredName: "",
+  personalEmail: "",
+  personalPhone: "",
+  educationLevel: "",
+  educationInstitution: "",
+  educationField: "",
+  graduationYear: "",
   workEmail: "",
   department: "",
   managerWorkEmail: "",
@@ -50,6 +62,9 @@ function errorKey(error: unknown) {
   if (error instanceof EmployeeDirectoryRequestError) {
     if (error.status === 401) return "employeeDirectory.errors.sessionExpired";
     if (error.status === 403) return "employeeDirectory.errors.createDenied";
+    if (error.code === "manager_must_be_an_active_employee") {
+      return "employeeDirectory.errors.invalidManager";
+    }
   }
   return "employeeDirectory.errors.createFailed";
 }
@@ -76,6 +91,12 @@ export default function NewEmployeePage() {
         middleName: values.middleName.trim() || null,
         suffix: values.suffix.trim() || null,
         preferredName: values.preferredName.trim() || null,
+        personalEmail: values.personalEmail.trim() || null,
+        personalPhone: values.personalPhone.trim() || null,
+        educationLevel: values.educationLevel.trim() || null,
+        educationInstitution: values.educationInstitution.trim() || null,
+        educationField: values.educationField.trim() || null,
+        graduationYear: values.graduationYear ? Number(values.graduationYear) : null,
         department: values.department.trim() || null,
         managerWorkEmail: values.managerWorkEmail.trim() || null,
         jobTitle: values.jobTitle.trim() || null,
@@ -181,6 +202,26 @@ export default function NewEmployeePage() {
               />
             </FormSection>
 
+            <FormSection title={t("employeeDirectory.sections.personalContact")}>
+              <TextField
+                id="personalEmail"
+                label={t("employeeDirectory.fields.personalEmail")}
+                type="email"
+                autoComplete="email"
+                value={values.personalEmail}
+                onChange={(value) => setField("personalEmail", value)}
+              />
+              <TextField
+                id="personalPhone"
+                label={t("employeeDirectory.fields.personalPhone")}
+                type="tel"
+                autoComplete="tel"
+                maxLength={50}
+                value={values.personalPhone}
+                onChange={(value) => setField("personalPhone", value)}
+              />
+            </FormSection>
+
             <FormSection title={t("employeeDirectory.sections.organization")}>
               <TextField
                 id="employeeNumber"
@@ -205,9 +246,10 @@ export default function NewEmployeePage() {
               />
               <TextField
                 id="managerWorkEmail"
-                label={t("employeeDirectory.fields.managerEmail")}
+                label={t("employeeDirectory.fields.managerEmailOptional")}
                 type="email"
                 autoComplete="off"
+                hint={t("employeeDirectory.fields.managerEmailHint")}
                 value={values.managerWorkEmail}
                 onChange={(value) => setField("managerWorkEmail", value)}
               />
@@ -217,6 +259,39 @@ export default function NewEmployeePage() {
                 maxLength={120}
                 value={values.workLocation}
                 onChange={(value) => setField("workLocation", value)}
+              />
+            </FormSection>
+
+            <FormSection title={t("employeeDirectory.sections.education")}>
+              <TextField
+                id="educationLevel"
+                label={t("employeeDirectory.fields.educationLevel")}
+                maxLength={120}
+                value={values.educationLevel}
+                onChange={(value) => setField("educationLevel", value)}
+              />
+              <TextField
+                id="educationInstitution"
+                label={t("employeeDirectory.fields.educationInstitution")}
+                maxLength={200}
+                value={values.educationInstitution}
+                onChange={(value) => setField("educationInstitution", value)}
+              />
+              <TextField
+                id="educationField"
+                label={t("employeeDirectory.fields.educationField")}
+                maxLength={160}
+                value={values.educationField}
+                onChange={(value) => setField("educationField", value)}
+              />
+              <TextField
+                id="graduationYear"
+                label={t("employeeDirectory.fields.graduationYear")}
+                type="number"
+                min={1900}
+                max={2200}
+                value={values.graduationYear}
+                onChange={(value) => setField("graduationYear", value)}
               />
             </FormSection>
 
@@ -300,12 +375,15 @@ interface TextFieldProps {
   type?: string;
   required?: boolean;
   maxLength?: number;
+  min?: number;
+  max?: number;
   autoComplete?: string;
+  hint?: string;
   value: string;
   onChange: (value: string) => void;
 }
 
-function TextField({ id, label, type = "text", required, maxLength, autoComplete, value, onChange }: TextFieldProps) {
+function TextField({ id, label, type = "text", required, maxLength, min, max, autoComplete, hint, value, onChange }: TextFieldProps) {
   return (
     <div>
       <Label htmlFor={id}>{label}{required ? " *" : ""}</Label>
@@ -315,7 +393,10 @@ function TextField({ id, label, type = "text", required, maxLength, autoComplete
         type={type}
         required={required}
         maxLength={maxLength}
+        min={min}
+        max={max}
         autoComplete={autoComplete}
+        hint={hint}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />

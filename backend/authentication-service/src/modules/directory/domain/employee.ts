@@ -27,7 +27,7 @@ export interface EmployeeDirectoryQuery {
   search: string;
   page: number;
   pageSize: number;
-  sortBy: "employeeNumber" | "displayName" | "workEmail" | "department" | "jobTitle" | "employmentStatus";
+  sortBy: "employeeNumber" | "displayName" | "workEmail" | "department" | "jobTitle" | "employmentStatus" | "hireDate";
   sortOrder: "asc" | "desc";
 }
 
@@ -38,6 +38,7 @@ export interface EmployeeDirectoryItem {
   workEmail: string;
   department: string | null;
   jobTitle: string | null;
+  hireDate: string | null;
   employmentStatus: EmploymentStatus;
 }
 
@@ -69,6 +70,12 @@ export interface EmployeeMasterRecord {
   lastName: string | null;
   suffix: string | null;
   preferredName: string | null;
+  personalEmail: string | null;
+  personalPhone: string | null;
+  educationLevel: string | null;
+  educationInstitution: string | null;
+  educationField: string | null;
+  graduationYear: number | null;
   workEmail: string;
   department: string | null;
   managerName: string | null;
@@ -90,6 +97,12 @@ export interface EmployeeMasterInput {
   lastName: string;
   suffix: string | null;
   preferredName: string | null;
+  personalEmail: string | null;
+  personalPhone: string | null;
+  educationLevel: string | null;
+  educationInstitution: string | null;
+  educationField: string | null;
+  graduationYear: number | null;
   workEmail: string;
   department: string | null;
   managerWorkEmail: string | null;

@@ -19,6 +19,7 @@ const directoryQuerySchema = z.object({
     "department",
     "jobTitle",
     "employmentStatus",
+    "hireDate",
   ]).default("displayName"),
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
 });
@@ -28,6 +29,8 @@ const employmentTypeSchema = z.enum(["full_time", "part_time", "contractor", "te
 const nullableDateSchema = z.string().nullable().refine((value) => value === null || isCalendarDate(value));
 const nullableText = (maximum: number) =>
   z.string().trim().max(maximum).nullable().transform((value) => value || null);
+const nullableEmail = z.string().trim().toLowerCase().email().max(320).or(z.literal(""))
+  .nullable().optional().transform((value) => value || null);
 const employeeMasterSchema = z.object({
   employeeNumber: z.string().trim().max(50).nullable().optional().transform((value) => value || null),
   firstName: z.string().trim().min(1).max(100),
@@ -35,6 +38,13 @@ const employeeMasterSchema = z.object({
   lastName: z.string().trim().min(1).max(100),
   suffix: nullableText(20),
   preferredName: nullableText(200),
+  personalEmail: nullableEmail,
+  personalPhone: nullableText(50).optional().transform((value) => value ?? null),
+  educationLevel: nullableText(120).optional().transform((value) => value ?? null),
+  educationInstitution: nullableText(200).optional().transform((value) => value ?? null),
+  educationField: nullableText(160).optional().transform((value) => value ?? null),
+  graduationYear: z.number().int().min(1900).max(2200).nullable().optional()
+    .transform((value) => value ?? null),
   workEmail: z.string().trim().toLowerCase().email().max(320),
   department: nullableText(120),
   managerWorkEmail: z.union([z.string().trim().toLowerCase().email().max(320), z.literal("")]).nullable()

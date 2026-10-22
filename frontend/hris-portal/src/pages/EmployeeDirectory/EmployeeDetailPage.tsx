@@ -186,6 +186,18 @@ export default function EmployeeDetailPage() {
 
               <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/3">
                 <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">
+                  {t("employeeDirectory.sections.education")}
+                </h2>
+                <dl className="divide-y divide-gray-100 dark:divide-gray-800">
+                  <InfoRow label={t("employeeDirectory.fields.educationLevel")} value={employee.educationLevel || notProvided} />
+                  <InfoRow label={t("employeeDirectory.fields.educationInstitution")} value={employee.educationInstitution || notProvided} />
+                  <InfoRow label={t("employeeDirectory.fields.educationField")} value={employee.educationField || notProvided} />
+                  <InfoRow label={t("employeeDirectory.fields.graduationYear")} value={employee.graduationYear?.toString() || notProvided} />
+                </dl>
+              </section>
+
+              <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/3">
+                <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">
                   {t("employeeDirectory.details.employmentInformation")}
                 </h2>
                 <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800">
@@ -224,6 +236,22 @@ export default function EmployeeDetailPage() {
             </div>
 
             <div className="space-y-6 lg:col-span-4 2xl:col-span-3">
+              <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/3">
+                <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">
+                  {t("employeeDirectory.sections.personalContact")}
+                </h2>
+                <dl className="divide-y divide-gray-100 dark:divide-gray-800">
+                  <InfoRow
+                    label={t("employeeDirectory.fields.personalEmail")}
+                    value={employee.personalEmail || notProvided}
+                  />
+                  <InfoRow
+                    label={t("employeeDirectory.fields.personalPhone")}
+                    value={employee.personalPhone || notProvided}
+                  />
+                </dl>
+              </section>
+
               <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/3">
                 <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">
                   {t("employeeDirectory.details.workContact")}
