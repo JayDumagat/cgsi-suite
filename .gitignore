@@ -7,3 +7,23 @@
 **/coverage/
 **/*.tsbuildinfo
 services/**/.state/
+
+# Shared frontend workspace defaults
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+**/dist-ssr/
+*.local
+
+# Common editor files
+.commandcode
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

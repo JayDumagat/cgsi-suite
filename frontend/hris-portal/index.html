@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      const baseElement = document.createElement("base");
+      const pathname = window.location.pathname;
+      baseElement.href =
+        pathname === "/eris" || pathname.startsWith("/eris/")
+          ? "/eris/"
+          : "/";
+      document.head.appendChild(baseElement);
+    </script>
+    <link rel="icon" type="image/png" href="./favicon.png?v=eris-brand" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body class="dark:bg-gray-900">
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>

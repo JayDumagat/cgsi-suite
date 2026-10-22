@@ -1,20 +1,26 @@
+resolver 127.0.0.11 valid=10s ipv6=off;
+
 upstream cube_frontend {
-    server cube-web:80;
+    zone cube_frontend 64k;
+    server cube-web:80 resolve;
     keepalive 16;
 }
 
 upstream cdex_frontend {
-    server cdex-web:80;
+    zone cdex_frontend 64k;
+    server cdex-web:80 resolve;
     keepalive 16;
 }
 
 upstream bils_frontend {
-    server bils-web:80;
+    zone bils_frontend 64k;
+    server bils-web:80 resolve;
     keepalive 16;
 }
 
 upstream eris_frontend {
-    server eris-web:80;
+    zone eris_frontend 64k;
+    server eris-web:80 resolve;
     keepalive 16;
 }
 
@@ -136,6 +142,9 @@ server {
     }
 
     location = /eris {
+        # NPM forwards Host without the published :8080 port. Keep this redirect
+        # relative so local subpath assets stay under /eris/.
+        absolute_redirect off;
         return 301 /eris/;
     }
 
@@ -167,7 +176,7 @@ server {
     # ERIS frontend bundles contain no employee data; its page and API remain
     # protected by the app access check below.
     location ^~ /eris/assets/ {
-        proxy_pass http://eris_frontend;
+        proxy_pass http://eris_frontend/assets/;
         proxy_set_header Host $host;
         expires 1y;
         add_header Cache-Control "public, max-age=31536000, immutable";
@@ -177,7 +186,7 @@ server {
         set $protected_app eris;
         auth_request /_internal/app-access;
         error_page 401 = @cube_signin;
-        proxy_pass http://eris_frontend;
+        proxy_pass http://eris_frontend/;
         proxy_set_header Host $host;
     }
 

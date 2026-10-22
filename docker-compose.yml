@@ -258,7 +258,7 @@ services:
     image: cgsi-suite/authorization-service:local
     build:
       context: .
-      dockerfile: services/Dockerfile
+      dockerfile: backend/Dockerfile
       args:
         SERVICE: authorization-service
     environment:
@@ -287,7 +287,7 @@ services:
     image: cgsi-suite/identity-service:local
     build:
       context: .
-      dockerfile: services/authentication-service/Dockerfile
+      dockerfile: backend/authentication-service/Dockerfile
     environment:
       ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:-}
       ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-}
@@ -327,7 +327,7 @@ services:
     image: cgsi-suite/cube-web:local
     build:
       context: .
-      dockerfile: apps/cube/Dockerfile
+      dockerfile: frontend/cube-portal/Dockerfile
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
       interval: 10s
@@ -339,7 +339,7 @@ services:
     image: cgsi-suite/cdex-web:local
     build:
       context: .
-      dockerfile: apps/cdex/Dockerfile
+      dockerfile: frontend/crm-portal/Dockerfile
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
       interval: 10s
@@ -351,7 +351,7 @@ services:
     image: cgsi-suite/bils-web:local
     build:
       context: .
-      dockerfile: apps/bils/Dockerfile
+      dockerfile: frontend/billing-portal/Dockerfile
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
       interval: 10s
@@ -363,7 +363,7 @@ services:
     image: cgsi-suite/eris-web:local
     build:
       context: .
-      dockerfile: apps/eris/Dockerfile
+      dockerfile: frontend/hris-portal/Dockerfile
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
       interval: 10s
@@ -375,7 +375,7 @@ services:
     image: cgsi-suite/app-catalog-service:local
     build:
       context: .
-      dockerfile: services/Dockerfile
+      dockerfile: backend/Dockerfile
       args:
         SERVICE: app-catalog-service
     environment:
@@ -410,7 +410,7 @@ services:
     image: cgsi-suite/cdex-service:local
     build:
       context: .
-      dockerfile: services/Dockerfile
+      dockerfile: backend/Dockerfile
       args:
         SERVICE: crm-service
     environment:
@@ -429,7 +429,7 @@ services:
     image: cgsi-suite/bils-service:local
     build:
       context: .
-      dockerfile: services/Dockerfile
+      dockerfile: backend/Dockerfile
       args:
         SERVICE: billing-service
     environment:
