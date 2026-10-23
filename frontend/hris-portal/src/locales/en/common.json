@@ -48,6 +48,9 @@
       "singleTransaction": "Single Transaction",
       "calendar": "Calendar",
       "employeeDirectory": "Employees",
+      "organization": "Organization",
+      "attendance": "Attendance",
+      "leaveManagement": "Leave management",
       "userProfile": "User Profile",
       "task": "Task",
       "taskList": "List",
@@ -878,6 +881,151 @@
       }
     }
   },
+  "leaveManagementPage": {
+    "title": "Leave management",
+    "description": "Review, approve, and track employee leave requests.",
+    "createRequest": "New request",
+    "summary": {
+      "title": "Leave overview",
+      "pending": "Pending requests",
+      "approved": "Approved requests",
+      "rejected": "Rejected requests",
+      "onLeaveToday": "On leave today"
+    },
+    "requestsTitle": "Leave requests",
+    "requestsCount": "Requests: {{count}}",
+    "search": "Search requests",
+    "filterLabel": "Filter leave requests",
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "columns": {
+      "employee": "Employee",
+      "leaveType": "Leave type",
+      "dates": "Dates",
+      "days": "Days",
+      "reason": "Reason",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "leaveTypes": {
+      "annual": "Annual",
+      "sick": "Sick",
+      "emergency": "Emergency",
+      "parental": "Parental",
+      "unpaid": "Unpaid",
+      "other": "Other"
+    },
+    "statuses": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "actions": {
+      "approve": "Approve request",
+      "reject": "Reject request"
+    },
+    "form": {
+      "title": "Create leave request",
+      "employee": "Employee",
+      "selectEmployee": "Select employee",
+      "leaveType": "Leave type",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "days": "Days requested",
+      "reason": "Reason",
+      "submit": "Submit request",
+      "saving": "Submitting...",
+      "cancel": "Cancel",
+      "close": "Close form"
+    },
+    "loading": "Loading leave requests...",
+    "empty": "No leave requests match this view.",
+    "messages": {
+      "created": "Leave request submitted for review.",
+      "approved": "Leave request approved.",
+      "rejected": "Leave request rejected."
+    },
+    "errors": {
+      "loadFailed": "We couldn't load leave requests. Please try again.",
+      "saveFailed": "We couldn't save this leave request. Please try again.",
+      "overlap": "This employee already has a pending or approved request for overlapping dates.",
+      "notPending": "This request has already been reviewed. Refresh the page and try again."
+    }
+  },
+  "attendancePage": {
+    "title": "Attendance",
+    "description": "Review and record daily employee attendance and worked hours.",
+    "date": "Attendance date",
+    "search": "Search employees",
+    "summary": {
+      "title": "Attendance summary",
+      "present": "Present",
+      "late": "Late arrivals",
+      "absent": "Absent",
+      "onLeave": "On leave"
+    },
+    "recordsTitle": "Daily attendance",
+    "recordsCount": "Employee records: {{count}}",
+    "viewEmployees": "Employee directory",
+    "loading": "Loading attendance records...",
+    "noEmployees": "No active employees found for this date.",
+    "noMatches": "No employees match your search.",
+    "employee": "Employee",
+    "department": "Department",
+    "unassigned": "Unassigned",
+    "status": "Status",
+    "clockIn": "Clock in",
+    "clockOut": "Clock out",
+    "hours": "Hours",
+    "actions": "Actions",
+    "breakMinutes": "Break (minutes)",
+    "notes": "Notes",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "record": "Record",
+    "saving": "Saving...",
+    "save": "Save attendance",
+    "saved": "Attendance record saved.",
+    "statuses": {
+      "present": "Present",
+      "late": "Late",
+      "absent": "Absent",
+      "on_leave": "On leave",
+      "unrecorded": "Not recorded"
+    },
+    "errors": {
+      "loadFailed": "We couldn't load attendance. Please try again.",
+      "saveFailed": "We couldn't save this attendance record. Please try again."
+    }
+  },
+  "organizationPage": {
+    "title": "Organization",
+    "description": "Explore departments and employee distribution using the employee directory.",
+    "viewEmployeeDirectory": "Employee directory",
+    "overview": "Organization overview",
+    "totalEmployees": "Total employees",
+    "departments": "Departments",
+    "activeEmployees": "Active employees",
+    "onLeave": "On leave",
+    "departmentOverview": "Department overview",
+    "departmentDescription": "See department size and active or leave headcount at a glance.",
+    "unassigned": "Unassigned",
+    "activeInDepartment": "Active",
+    "ofWorkforce": "of workforce",
+    "workforceComposition": "Workforce composition",
+    "workforceDescription": "Distribution by employment type and status.",
+    "employmentTypeDistribution": "Employment type",
+    "employmentStatusDistribution": "Employment status",
+    "loading": "Loading organization...",
+    "noDepartments": "No department data is available yet.",
+    "errors": {
+      "loadFailed": "We couldn't load the organization. Please try again."
+    }
+  },
   "employeeDirectory": {
     "title": "Employee Directory",
     "breadcrumb": "Employees",
@@ -889,7 +1037,9 @@
       "organization": "Organization",
       "education": "Education",
       "employment": "Employment",
-      "workContact": "Work contact"
+      "workContact": "Work contact",
+      "addresses": "Addresses",
+      "emergencyContact": "Emergency contact"
     },
     "summary": {
       "totalEmployees": "Total employees",
@@ -918,6 +1068,13 @@
       "cancel": "Cancel",
       "creating": "Creating employee..."
     },
+    "edit": {
+      "title": "Edit employee",
+      "description": "Update this employee master record.",
+      "submit": "Save employee",
+      "saving": "Saving employee...",
+      "loading": "Loading employee record..."
+    },
     "fields": {
       "employeeNumber": "Employee number",
       "employeeNumberOptional": "Employee number (optional)",
@@ -932,11 +1089,14 @@
       "educationLevel": "Highest education level",
       "educationInstitution": "School / institution",
       "educationField": "Degree / field of study",
+      "educationStartYear": "Start year",
       "graduationYear": "Graduation year",
       "department": "Department",
       "jobTitle": "Job title",
       "status": "Status",
       "employmentType": "Employment type",
+      "probationaryStatus": "Probationary status",
+      "regularizationDate": "Regularization date",
       "hireDate": "Hire date",
       "terminationDate": "Termination date",
       "workLocation": "Work location",
@@ -947,6 +1107,35 @@
       "managerEmailOptional": "Manager email (optional)",
       "managerEmailHint": "The manager must have an active employee record in ERIS. Leave this blank if no manager is assigned.",
       "preferredName": "Preferred name",
+      "gender": "Gender",
+      "dateOfBirth": "Date of birth",
+      "placeOfBirth": "Place of birth",
+      "bloodType": "Blood type",
+      "maritalStatus": "Marital status",
+      "permanentAddress": "Permanent address",
+      "currentAddress": "Current address",
+      "emergencyContactName": "Contact name",
+      "emergencyContactRelationship": "Relationship",
+      "emergencyContactPhone": "Contact phone",
+      "emergencyContactEmail": "Contact email",
+      "workSchedule": "Work schedule",
+      "weeklyHours": "Hours per week",
+      "annualLeaveEntitlementDays": "Annual leave entitlement",
+      "annualLeaveUsedDays": "Annual leave used",
+      "annualLeaveRemainingDays": "Annual leave remaining",
+      "baseSalary": "Base salary",
+      "currency": "Currency code",
+      "payFrequency": "Pay frequency",
+      "payGrade": "Pay grade",
+      "taxId": "Tax identification number",
+      "sssNumber": "SSS number",
+      "philhealthNumber": "PhilHealth number",
+      "pagibigNumber": "Pag-IBIG number",
+      "allergies": "Allergies",
+      "medicalConditions": "Medical conditions",
+      "currentMedications": "Current medications",
+      "healthInsuranceProvider": "Health insurance provider",
+      "healthInsurancePolicyNumber": "Health insurance policy number",
       "updatedAt": "Last updated"
     },
     "statuses": {
@@ -962,18 +1151,109 @@
       "temporary": "Temporary",
       "intern": "Intern"
     },
+    "probationaryStatuses": {
+      "unspecified": "Not specified",
+      "probationary": "Probationary",
+      "not_probationary": "Not probationary"
+    },
+    "bloodTypes": {
+      "a_positive": "A+",
+      "a_negative": "A−",
+      "b_positive": "B+",
+      "b_negative": "B−",
+      "ab_positive": "AB+",
+      "ab_negative": "AB−",
+      "o_positive": "O+",
+      "o_negative": "O−"
+    },
+    "maritalStatuses": {
+      "single": "Single",
+      "married": "Married",
+      "separated": "Separated",
+      "divorced": "Divorced",
+      "widowed": "Widowed",
+      "domestic_partner": "Domestic partner",
+      "other": "Other"
+    },
+    "educationHistory": {
+      "entry": "Education background",
+      "record": "Education record {number}",
+      "add": "Add education record",
+      "remove": "Remove",
+      "attended": "Attended {startYear}–{endYear}",
+      "startedIn": "Started {year}",
+      "graduatedIn": "Graduated {year}",
+      "empty": "No education background has been added."
+    },
+    "documents": {
+      "emptyTitle": "No employee documents yet",
+      "emptyDescription": "Documents uploaded for this employee will appear here."
+    },
+    "assets": {
+      "emptyTitle": "No assets assigned yet",
+      "emptyDescription": "Assets assigned to this employee will appear here."
+    },
+    "activity": {
+      "title": "Recent activity",
+      "loading": "Loading employee activity...",
+      "loadFailed": "Employee activity could not be loaded. Try again.",
+      "empty": "No employee record changes have been recorded yet.",
+      "unknownActor": "Unknown user",
+      "changedFields": "Changed",
+      "actions": {
+        "created": "created the employee record",
+        "updated": "updated the employee record"
+      }
+    },
+    "hrDetails": {
+      "attendanceAndLeaveTitle": "Time",
+      "attendanceAndLeaveDescription": "Work schedule and annual leave summary.",
+      "payrollTitle": "Compensation",
+      "payrollDescription": "Compensation and payroll identifiers. Access is restricted to employee editors.",
+      "medicalTitle": "Medical information",
+      "medicalDescription": "Confidential health and insurance information. Access is restricted to employee editors.",
+      "loading": "Loading restricted employee information...",
+      "accessDenied": "You do not have permission to view or edit these restricted details.",
+      "loadFailed": "Restricted employee information could not be loaded. Try again.",
+      "saveFailed": "These employee details could not be saved. Check the values and try again.",
+      "payFrequencies": {
+        "weekly": "Weekly",
+        "biweekly": "Every two weeks",
+        "semimonthly": "Twice a month",
+        "monthly": "Monthly"
+      },
+      "units": {
+        "hoursPerWeek": "{value} hours per week",
+        "days": "{value} days"
+      }
+    },
     "details": {
       "title": "Employee Details",
       "description": "Employee master record and employment details.",
       "backToDirectory": "Back to directory",
+      "editEmployee": "Edit employee",
       "employmentInformation": "Employment information",
       "workContact": "Work contact",
-      "recordInformation": "Record information"
+      "recordInformation": "Record information",
+      "tabs": {
+        "label": "Employee details sections",
+        "overview": "Overview",
+        "personalInformation": "Personal information",
+        "employmentDetails": "Employment details",
+        "attendanceAndLeave": "Time",
+        "payroll": "Compensation",
+        "medical": "Medical",
+        "documents": "Documents",
+        "assets": "Assets",
+        "activity": "Activity"
+      }
     },
     "errors": {
       "accessDenied": "You do not have permission to view employee records.",
       "createDenied": "You do not have permission to create employee records.",
       "createFailed": "The employee record could not be created. Check the details and try again.",
+      "editDenied": "You do not have permission to edit employee records.",
+      "editFailed": "The employee record could not be updated. Check the details and try again.",
       "sessionExpired": "Your session has expired. Sign in again to continue.",
       "notFound": "This employee record could not be found.",
       "loadFailed": "Employee records could not be loaded. Try again.",

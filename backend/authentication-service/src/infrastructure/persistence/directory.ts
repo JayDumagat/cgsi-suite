@@ -6,6 +6,7 @@ import type {
   EmployeeDirectoryPage,
   EmployeeDirectoryQuery,
   EntraEmployeeProfile,
+  EmploymentType,
   EmploymentStatus,
   DirectoryAccountStatus,
   ProvisionedEmployee,
@@ -19,6 +20,7 @@ const directorySortExpressions = {
   workEmail: "lower(employee.work_email)",
   department: "lower(COALESCE(employee.department, ''))",
   jobTitle: "lower(COALESCE(employee.job_title, ''))",
+  employmentType: "employee.employment_type",
   employmentStatus: "employee.employment_status",
   hireDate: "employee.hire_date",
 } as const;
@@ -42,11 +44,6 @@ export class DirectoryRepository extends EmployeeMasterRepository {
           if (!(await hasEmployeePermission(client, requestedByEmployeeId, "hris.employee.read"))) {
             throw new EmployeeRecordError("forbidden");
           }
-          const canManageEmployees = await hasEmployeePermission(
-            client,
-            requestedByEmployeeId,
-            "hris.employee.update",
-          );
           const canCreateEmployees = await hasEmployeePermission(
             client,
             requestedByEmployeeId,
@@ -100,6 +97,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
             work_email: string;
             department: string | null;
             job_title: string | null;
+            employment_type: EmploymentType;
             hire_date: string | null;
             employment_status: EmploymentStatus;
           }>(
@@ -109,6 +107,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
                     employee.work_email,
                     employee.department,
                     employee.job_title,
+                    employee.employment_type,
                     employee.hire_date::text AS hire_date,
                     employee.employment_status
                FROM huma.employees AS employee
@@ -149,6 +148,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
               workEmail: employee.work_email,
               department: employee.department,
               jobTitle: employee.job_title,
+              employmentType: employee.employment_type,
               hireDate: employee.hire_date,
               employmentStatus: employee.employment_status,
             })),
@@ -161,7 +161,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
               newHires: summary.new_hires,
               averageTenureYears: summary.average_tenure_years,
             },
-            permissions: { canManageEmployees, canCreateEmployees },
+            permissions: { canManageEmployees: false, canCreateEmployees },
           };
         } catch (error) {
           await client.query("ROLLBACK").catch(() => undefined);

@@ -3,6 +3,7 @@ import { AuthenticationService } from "./modules/authentication/application/serv
 import { config } from "./config/environment.js";
 import { EntraClient } from "./infrastructure/entra/client.js";
 import { writeEmployeeGroupMembership } from "./infrastructure/authorization/membership-client.js";
+import { canEditEmployeeInformation } from "./infrastructure/authorization/employee-permissions-client.js";
 import { sessionPool, createSessionMiddleware } from "./infrastructure/persistence/session-store.js";
 import { DirectoryRepository } from "./infrastructure/persistence/directory.js";
 import { AuthorizationOutboxDispatcher } from "./infrastructure/persistence/outbox-dispatcher.js";
@@ -16,7 +17,11 @@ import { httpTelemetry } from "./platform/telemetry.js";
 export function createAuthenticationApp(): Express {
   const app = createApp();
   const directory = new EmployeeDirectoryService(new DirectoryRepository(sessionPool));
-  const erisDirectory = new ErisDirectoryController(directory, config.erisDirectoryServiceToken);
+  const erisDirectory = new ErisDirectoryController(
+    directory,
+    config.erisDirectoryServiceToken,
+    canEditEmployeeInformation,
+  );
   const outbox = new AuthorizationOutboxDispatcher(sessionPool, writeEmployeeGroupMembership);
   dispatchAuthorizationOutbox = () => outbox.dispatchPending();
   app.set("trust proxy", 1);
@@ -53,6 +58,14 @@ export function createAuthenticationApp(): Express {
   );
   app.use("/api/auth", createAuthenticationRoutes(controller));
   app.get("/internal/eris/employees", erisDirectory.listEmployees);
+  app.get("/internal/eris/attendance", erisDirectory.getAttendanceReport);
+  app.put("/internal/eris/attendance/:employeeId/:attendanceDate", erisDirectory.updateAttendanceRecord);
+  app.get("/internal/eris/leave-requests", erisDirectory.getLeaveManagementReport);
+  app.post("/internal/eris/leave-requests", erisDirectory.createLeaveRequest);
+  app.put("/internal/eris/leave-requests/:requestId/decision", erisDirectory.decideLeaveRequest);
+  app.get("/internal/eris/employees/:employeeId/activity", erisDirectory.getEmployeeActivity);
+  app.get("/internal/eris/employees/:employeeId/hr-details", erisDirectory.getEmployeeHrDetails);
+  app.put("/internal/eris/employees/:employeeId/hr-details", erisDirectory.updateEmployeeHrDetails);
   app.get("/internal/eris/employees/:employeeId", erisDirectory.getEmployee);
   app.post("/internal/eris/employees", erisDirectory.createEmployee);
   app.put("/internal/eris/employees/:employeeId", erisDirectory.updateEmployee);

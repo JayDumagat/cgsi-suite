@@ -5,6 +5,7 @@ export interface AuthenticationConfig {
   redirectUri: string;
   postLogoutRedirectUri: string;
   authorizationUrl: string;
+  authorizationServiceToken: string;
   provisioningToken: string;
   sessionSecret: string;
   cookieSecure: boolean;
@@ -22,6 +23,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): Authen
     redirectUri: environment.ENTRA_REDIRECT_URL?.trim() ?? "",
     postLogoutRedirectUri: environment.ENTRA_POST_LOGOUT_REDIRECT_URL?.trim() || "http://localhost:8080/",
     authorizationUrl: environment.AUTHORIZATION_SERVICE_URL?.trim() || "http://authorization-service:8083",
+    authorizationServiceToken: environment.AUTHORIZATION_SERVICE_TOKEN ?? "",
     provisioningToken: environment.IDENTITY_PROVISIONING_TOKEN ?? "",
     sessionSecret: environment.SESSION_SECRET ?? "",
     cookieSecure: environment.COOKIE_SECURE === "true",

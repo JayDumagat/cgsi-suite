@@ -20,10 +20,12 @@
       "relations": {
         "owner": { "this": {} },
         "viewer": { "this": {} },
+        "employee_editor": { "this": {} },
         "can_access": { "union": { "child": [
           { "computedUserset": { "object": "", "relation": "viewer" } },
           { "computedUserset": { "object": "", "relation": "owner" } }
-        ] } }
+        ] } },
+        "can_edit_employees": { "computedUserset": { "object": "", "relation": "employee_editor" } }
       },
       "metadata": { "relations": {
         "owner": { "directly_related_user_types": [{ "type": "user" }] },
@@ -32,7 +34,9 @@
           { "type": "organization", "relation": "member" },
           { "type": "group", "relation": "member" }
         ] },
-        "can_access": { "directly_related_user_types": [] }
+        "employee_editor": { "directly_related_user_types": [{ "type": "user" }] },
+        "can_access": { "directly_related_user_types": [] },
+        "can_edit_employees": { "directly_related_user_types": [] }
       } }
     },
     {

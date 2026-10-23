@@ -6,6 +6,7 @@ import { authenticatedUserSchema } from "../../authentication/http/schemas.js";
 import { telemetryLog } from "../../../platform/telemetry.js";
 import {
   EmployeeRecordError,
+  EmployeeLeaveRequestError,
 } from "../domain/employee.js";
 
 const directoryQuerySchema = z.object({
@@ -18,19 +19,98 @@ const directoryQuerySchema = z.object({
     "workEmail",
     "department",
     "jobTitle",
+    "employmentType",
     "employmentStatus",
     "hireDate",
   ]).default("displayName"),
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
 });
 
+const attendanceQuerySchema = z.object({
+  date: z.string().refine(isCalendarDate),
+  q: z.string().trim().max(100).default(""),
+});
+
 const employmentStatusSchema = z.enum(["active", "on_leave", "disabled", "offboarded"]);
 const employmentTypeSchema = z.enum(["full_time", "part_time", "contractor", "temporary", "intern"]);
+const bloodTypeSchema = z.enum([
+  "a_positive",
+  "a_negative",
+  "b_positive",
+  "b_negative",
+  "ab_positive",
+  "ab_negative",
+  "o_positive",
+  "o_negative",
+]).nullable();
+const maritalStatusSchema = z.enum([
+  "single",
+  "married",
+  "separated",
+  "divorced",
+  "widowed",
+  "domestic_partner",
+  "other",
+]).nullable();
 const nullableDateSchema = z.string().nullable().refine((value) => value === null || isCalendarDate(value));
 const nullableText = (maximum: number) =>
   z.string().trim().max(maximum).nullable().transform((value) => value || null);
+const attendanceRecordSchema = z.object({
+  status: z.enum(["present", "late", "absent", "on_leave"]),
+  clockIn: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable(),
+  clockOut: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable(),
+  breakMinutes: z.number().int().min(0).max(1440),
+  notes: nullableText(1000),
+}).superRefine((record, context) => {
+  if ((record.status === "absent" || record.status === "on_leave") && (record.clockIn || record.clockOut)) {
+    context.addIssue({
+      code: "custom",
+      path: ["clockIn"],
+      message: "Clock times cannot be set for absent or on-leave records.",
+    });
+  }
+});
+const leaveRequestSchema = z.object({
+  employeeId: z.string().uuid(),
+  leaveType: z.enum(["annual", "sick", "emergency", "parental", "unpaid", "other"]),
+  startDate: z.string().refine(isCalendarDate),
+  endDate: z.string().refine(isCalendarDate),
+  requestedDays: z.number().min(0.5).max(366).multipleOf(0.5),
+  reason: z.string().trim().min(1).max(2000),
+}).superRefine((request, context) => {
+  if (request.endDate < request.startDate) {
+    context.addIssue({ code: "custom", path: ["endDate"], message: "End date must be on or after the start date." });
+  }
+});
+const leaveDecisionSchema = z.object({
+  status: z.enum(["approved", "rejected"]),
+  decisionNote: nullableText(1000),
+});
 const nullableEmail = z.string().trim().toLowerCase().email().max(320).or(z.literal(""))
   .nullable().optional().transform((value) => value || null);
+const nullableYear = z.number().int().min(1900).max(2200).nullable();
+const educationHistoryEntrySchema = z.object({
+  educationLevel: nullableText(120),
+  institution: nullableText(200),
+  fieldOfStudy: nullableText(160),
+  startYear: nullableYear,
+  graduationYear: nullableYear,
+}).superRefine((entry, context) => {
+  if (!entry.educationLevel && !entry.institution && !entry.fieldOfStudy) {
+    context.addIssue({
+      code: "custom",
+      path: ["institution"],
+      message: "Add an education level, institution, or field of study.",
+    });
+  }
+  if (entry.startYear && entry.graduationYear && entry.graduationYear < entry.startYear) {
+    context.addIssue({
+      code: "custom",
+      path: ["graduationYear"],
+      message: "Graduation year must be on or after the start year.",
+    });
+  }
+});
 const employeeMasterSchema = z.object({
   employeeNumber: z.string().trim().max(50).nullable().optional().transform((value) => value || null),
   firstName: z.string().trim().min(1).max(100),
@@ -38,13 +118,25 @@ const employeeMasterSchema = z.object({
   lastName: z.string().trim().min(1).max(100),
   suffix: nullableText(20),
   preferredName: nullableText(200),
+  gender: nullableText(100),
+  dateOfBirth: nullableDateSchema,
+  placeOfBirth: nullableText(200),
+  bloodType: bloodTypeSchema,
+  maritalStatus: maritalStatusSchema,
+  permanentAddress: nullableText(1000),
+  currentAddress: nullableText(1000),
   personalEmail: nullableEmail,
   personalPhone: nullableText(50).optional().transform((value) => value ?? null),
+  emergencyContactName: nullableText(200),
+  emergencyContactRelationship: nullableText(80),
+  emergencyContactPhone: nullableText(50),
+  emergencyContactEmail: nullableEmail,
   educationLevel: nullableText(120).optional().transform((value) => value ?? null),
   educationInstitution: nullableText(200).optional().transform((value) => value ?? null),
   educationField: nullableText(160).optional().transform((value) => value ?? null),
   graduationYear: z.number().int().min(1900).max(2200).nullable().optional()
     .transform((value) => value ?? null),
+  educationHistory: z.array(educationHistoryEntrySchema).max(30).optional(),
   workEmail: z.string().trim().toLowerCase().email().max(320),
   department: nullableText(120),
   managerWorkEmail: z.union([z.string().trim().toLowerCase().email().max(320), z.literal("")]).nullable()
@@ -52,6 +144,8 @@ const employeeMasterSchema = z.object({
   jobTitle: nullableText(120),
   employmentType: employmentTypeSchema,
   employmentStatus: employmentStatusSchema,
+  isProbationary: z.boolean().nullable(),
+  regularizationDate: nullableDateSchema,
   hireDate: nullableDateSchema,
   terminationDate: nullableDateSchema,
   workPhone: nullableText(50),
@@ -64,12 +158,53 @@ const employeeMasterSchema = z.object({
       message: "Termination date must be on or after the hire date.",
     });
   }
+  if (record.hireDate && record.regularizationDate && record.regularizationDate < record.hireDate) {
+    context.addIssue({
+      code: "custom",
+      path: ["regularizationDate"],
+      message: "Regularization date must be on or after the hire date.",
+    });
+  }
+  if (record.isProbationary && !record.regularizationDate) {
+    context.addIssue({
+      code: "custom",
+      path: ["regularizationDate"],
+      message: "A regularization date is required for probationary employees.",
+    });
+  }
+});
+
+const employeeHrDetailsSchema = z.object({
+  attendanceAndLeave: z.object({
+    workSchedule: nullableText(160),
+    weeklyHours: z.number().min(0).max(168).nullable(),
+    annualLeaveEntitlementDays: z.number().min(0).max(365).nullable(),
+    annualLeaveUsedDays: z.number().min(0).max(365).nullable(),
+  }),
+  payroll: z.object({
+    baseSalary: z.string().regex(/^\d{1,12}(\.\d{1,2})?$/).nullable(),
+    currency: z.string().trim().regex(/^[A-Za-z]{3}$/).transform((value) => value.toUpperCase()).nullable(),
+    payFrequency: z.enum(["weekly", "biweekly", "semimonthly", "monthly"]).nullable(),
+    payGrade: nullableText(80),
+    taxId: nullableText(80),
+    sssNumber: nullableText(80),
+    philhealthNumber: nullableText(80),
+    pagibigNumber: nullableText(80),
+  }),
+  medical: z.object({
+    allergies: nullableText(2000),
+    medicalConditions: nullableText(2000),
+    currentMedications: nullableText(2000),
+    healthInsuranceProvider: nullableText(160),
+    healthInsurancePolicyNumber: nullableText(120),
+  }),
 });
 
 export class ErisDirectoryController {
   constructor(
     private readonly directory: EmployeeDirectoryService,
     private readonly serviceToken: string,
+    private readonly canEditEmployeeInformation: (objectId: string) => Promise<boolean>,
   ) {}
 
   listEmployees = async (request: Request, response: Response): Promise<void> => {
@@ -101,31 +236,211 @@ export class ErisDirectoryController {
         },
         user.data.employeeId,
       );
-      response.status(200).json(result);
+      const canManageEmployees = await this.canEditEmployeeInformation(user.data.oid);
+      response.status(200).json({
+        ...result,
+        permissions: { ...result.permissions, canManageEmployees },
+      });
     } catch (error) {
       writeDirectoryError(response, error, "eris_employee_directory_read_failed");
     }
   };
 
+  getAttendanceReport = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const parsed = attendanceQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_attendance_query" });
+      return;
+    }
+    try {
+      const report = await this.directory.getAttendanceReport(
+        parsed.data.date,
+        parsed.data.q,
+        user.employeeId!,
+      );
+      response.status(200).json(report);
+    } catch (error) {
+      writeDirectoryError(response, error, "eris_attendance_read_failed");
+    }
+  };
+
+  updateAttendanceRecord = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const employeeId = z.string().uuid().safeParse(request.params.employeeId);
+    const date = z.string().refine(isCalendarDate).safeParse(request.params.attendanceDate);
+    const parsed = attendanceRecordSchema.safeParse(request.body);
+    if (!employeeId.success || !date.success) {
+      response.status(400).json({ error: "invalid_attendance_target" });
+      return;
+    }
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_attendance_record", fields: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const record = await this.directory.updateAttendanceRecord(
+        employeeId.data,
+        date.data,
+        parsed.data,
+        user.employeeId!,
+      );
+      response.status(200).json(record);
+    } catch (error) {
+      writeDirectoryError(response, error, "eris_attendance_update_failed");
+    }
+  };
+
+  getLeaveManagementReport = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const report = await this.directory.getLeaveManagementReport(user.employeeId!);
+      response.status(200).json(report);
+    } catch (error) {
+      writeLeaveManagementError(response, error, "eris_leave_management_read_failed");
+    }
+  };
+
+  createLeaveRequest = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const parsed = leaveRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_leave_request", fields: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const created = await this.directory.createLeaveRequest(parsed.data, user.employeeId!);
+      response.status(201).json(created);
+    } catch (error) {
+      writeLeaveManagementError(response, error, "eris_leave_request_create_failed");
+    }
+  };
+
+  decideLeaveRequest = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const requestId = z.string().uuid().safeParse(request.params.requestId);
+    const parsed = leaveDecisionSchema.safeParse(request.body);
+    if (!requestId.success) {
+      response.status(400).json({ error: "invalid_leave_request_id" });
+      return;
+    }
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_leave_decision", fields: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const decided = await this.directory.decideLeaveRequest(requestId.data, parsed.data, user.employeeId!);
+      response.status(200).json(decided);
+    } catch (error) {
+      writeLeaveManagementError(response, error, "eris_leave_request_decide_failed");
+    }
+  };
+
   getEmployee = async (request: Request, response: Response): Promise<void> => {
     const employeeId = z.string().uuid().safeParse(request.params.employeeId);
-    const actorEmployeeId = this.authenticate(request, response);
-    if (!actorEmployeeId) return;
+    const user = this.authenticate(request, response);
+    if (!user) return;
     if (!employeeId.success) {
       response.status(400).json({ error: "invalid_employee_id" });
       return;
     }
     try {
-      const record = await this.directory.getEmployeeRecord(employeeId.data, actorEmployeeId);
+      const record = await this.directory.getEmployeeRecord(employeeId.data, user.employeeId!);
       response.status(200).json(record);
     } catch (error) {
       writeDirectoryError(response, error, "eris_employee_record_read_failed");
     }
   };
 
+  getEmployeeActivity = async (request: Request, response: Response): Promise<void> => {
+    const employeeId = z.string().uuid().safeParse(request.params.employeeId);
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    if (!employeeId.success) {
+      response.status(400).json({ error: "invalid_employee_id" });
+      return;
+    }
+    try {
+      const activity = await this.directory.getEmployeeActivity(employeeId.data, user.employeeId!);
+      response.status(200).json(activity);
+    } catch (error) {
+      writeDirectoryError(response, error, "eris_employee_activity_read_failed");
+    }
+  };
+
+  getEmployeeHrDetails = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const employeeId = z.string().uuid().safeParse(request.params.employeeId);
+    if (!employeeId.success) {
+      response.status(400).json({ error: "invalid_employee_id" });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const details = await this.directory.getEmployeeHrDetails(employeeId.data, user.employeeId!);
+      response.status(200).json(details);
+    } catch (error) {
+      writeDirectoryError(response, error, "eris_employee_hr_details_read_failed");
+    }
+  };
+
+  updateEmployeeHrDetails = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const employeeId = z.string().uuid().safeParse(request.params.employeeId);
+    const parsed = employeeHrDetailsSchema.safeParse(request.body);
+    if (!employeeId.success) {
+      response.status(400).json({ error: "invalid_employee_id" });
+      return;
+    }
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_employee_hr_details", fields: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const details = await this.directory.updateEmployeeHrDetails(
+        employeeId.data,
+        parsed.data,
+        user.employeeId!,
+      );
+      response.status(200).json(details);
+    } catch (error) {
+      writeDirectoryError(response, error, "eris_employee_hr_details_update_failed");
+    }
+  };
+
   createEmployee = async (request: Request, response: Response): Promise<void> => {
-    const actorEmployeeId = this.authenticate(request, response);
-    if (!actorEmployeeId) return;
+    const user = this.authenticate(request, response);
+    if (!user) return;
     const parsed = employeeMasterSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: "invalid_employee_record", fields: parsed.error.flatten().fieldErrors });
@@ -134,7 +449,7 @@ export class ErisDirectoryController {
     try {
       const record = await this.directory.createEmployeeRecord(
         parsed.data,
-        actorEmployeeId,
+        user.employeeId!,
       );
       response.status(201).json(record);
     } catch (error) {
@@ -143,8 +458,8 @@ export class ErisDirectoryController {
   };
 
   updateEmployee = async (request: Request, response: Response): Promise<void> => {
-    const actorEmployeeId = this.authenticate(request, response);
-    if (!actorEmployeeId) return;
+    const user = this.authenticate(request, response);
+    if (!user) return;
     const employeeId = z.string().uuid().safeParse(request.params.employeeId);
     const parsed = employeeMasterSchema.safeParse(request.body);
     if (!employeeId.success) {
@@ -156,10 +471,14 @@ export class ErisDirectoryController {
       return;
     }
     try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
       const record = await this.directory.updateEmployeeRecord(
         employeeId.data,
         parsed.data,
-        actorEmployeeId,
+        user.employeeId!,
       );
       response.status(200).json(record);
     } catch (error) {
@@ -167,7 +486,7 @@ export class ErisDirectoryController {
     }
   };
 
-  private authenticate(request: Request, response: Response): string | null {
+  private authenticate(request: Request, response: Response): z.infer<typeof authenticatedUserSchema> | null {
     if (!constantTimeMatch(this.serviceToken, request.header("X-CGSI-Service-Token") ?? "")) {
       response.status(401).json({ error: "unauthorized" });
       return null;
@@ -177,7 +496,7 @@ export class ErisDirectoryController {
       response.status(401).json({ error: "unauthenticated" });
       return null;
     }
-    return user.data.employeeId;
+    return user.data;
   }
 }
 
@@ -204,6 +523,14 @@ function writeDirectoryError(response: Response, error: unknown, event: string):
     error_type: error instanceof Error ? error.name : "unknown",
   });
   response.status(503).json({ error: "employee_directory_unavailable" });
+}
+
+function writeLeaveManagementError(response: Response, error: unknown, event: string): void {
+  if (error instanceof EmployeeLeaveRequestError) {
+    response.status(409).json({ error: error.code === "overlap" ? "leave_request_overlap" : "leave_request_not_pending" });
+    return;
+  }
+  writeDirectoryError(response, error, event);
 }
 
 function constantTimeMatch(expected: string, actual: string): boolean {

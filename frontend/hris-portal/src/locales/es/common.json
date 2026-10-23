@@ -48,6 +48,9 @@
       "singleTransaction": "Transacción individual",
       "calendar": "Calendario",
       "employeeDirectory": "Empleados",
+      "organization": "Organización",
+      "attendance": "Asistencia",
+      "leaveManagement": "Gestión de permisos",
       "userProfile": "Perfil de usuario",
       "task": "Tareas",
       "taskList": "Lista",
@@ -878,6 +881,151 @@
       }
     }
   },
+  "leaveManagementPage": {
+    "title": "Gestión de permisos",
+    "description": "Revisa, aprueba y consulta las solicitudes de permiso de los empleados.",
+    "createRequest": "Nueva solicitud",
+    "summary": {
+      "title": "Resumen de permisos",
+      "pending": "Solicitudes pendientes",
+      "approved": "Solicitudes aprobadas",
+      "rejected": "Solicitudes rechazadas",
+      "onLeaveToday": "De permiso hoy"
+    },
+    "requestsTitle": "Solicitudes de permiso",
+    "requestsCount": "Solicitudes: {{count}}",
+    "search": "Buscar solicitudes",
+    "filterLabel": "Filtrar solicitudes de permiso",
+    "filters": {
+      "all": "Todas",
+      "pending": "Pendientes",
+      "approved": "Aprobadas",
+      "rejected": "Rechazadas"
+    },
+    "columns": {
+      "employee": "Empleado",
+      "leaveType": "Tipo de permiso",
+      "dates": "Fechas",
+      "days": "Días",
+      "reason": "Motivo",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "leaveTypes": {
+      "annual": "Anual",
+      "sick": "Médico",
+      "emergency": "Emergencia",
+      "parental": "Parental",
+      "unpaid": "Sin sueldo",
+      "other": "Otro"
+    },
+    "statuses": {
+      "pending": "Pendiente",
+      "approved": "Aprobada",
+      "rejected": "Rechazada"
+    },
+    "actions": {
+      "approve": "Aprobar solicitud",
+      "reject": "Rechazar solicitud"
+    },
+    "form": {
+      "title": "Crear solicitud de permiso",
+      "employee": "Empleado",
+      "selectEmployee": "Seleccionar empleado",
+      "leaveType": "Tipo de permiso",
+      "startDate": "Fecha de inicio",
+      "endDate": "Fecha de fin",
+      "days": "Días solicitados",
+      "reason": "Motivo",
+      "submit": "Enviar solicitud",
+      "saving": "Enviando...",
+      "cancel": "Cancelar",
+      "close": "Cerrar formulario"
+    },
+    "loading": "Cargando solicitudes de permiso...",
+    "empty": "No hay solicitudes que coincidan con esta vista.",
+    "messages": {
+      "created": "La solicitud de permiso se envió para revisión.",
+      "approved": "Solicitud de permiso aprobada.",
+      "rejected": "Solicitud de permiso rechazada."
+    },
+    "errors": {
+      "loadFailed": "No se pudieron cargar las solicitudes. Inténtalo de nuevo.",
+      "saveFailed": "No se pudo guardar la solicitud. Inténtalo de nuevo.",
+      "overlap": "Este empleado ya tiene una solicitud pendiente o aprobada para fechas coincidentes.",
+      "notPending": "Esta solicitud ya se revisó. Actualiza la página e inténtalo de nuevo."
+    }
+  },
+  "attendancePage": {
+    "title": "Asistencia",
+    "description": "Consulta y registra la asistencia diaria y las horas trabajadas.",
+    "date": "Fecha de asistencia",
+    "search": "Buscar empleados",
+    "summary": {
+      "title": "Resumen de asistencia",
+      "present": "Presentes",
+      "late": "Llegadas tarde",
+      "absent": "Ausentes",
+      "onLeave": "De permiso"
+    },
+    "recordsTitle": "Asistencia diaria",
+    "recordsCount": "Registros de empleados: {{count}}",
+    "viewEmployees": "Directorio de empleados",
+    "loading": "Cargando registros de asistencia...",
+    "noEmployees": "No hay empleados activos para esta fecha.",
+    "noMatches": "Ningún empleado coincide con la búsqueda.",
+    "employee": "Empleado",
+    "department": "Departamento",
+    "unassigned": "Sin asignar",
+    "status": "Estado",
+    "clockIn": "Entrada",
+    "clockOut": "Salida",
+    "hours": "Horas",
+    "actions": "Acciones",
+    "breakMinutes": "Descanso (minutos)",
+    "notes": "Notas",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "record": "Registrar",
+    "saving": "Guardando...",
+    "save": "Guardar asistencia",
+    "saved": "Registro de asistencia guardado.",
+    "statuses": {
+      "present": "Presente",
+      "late": "Tarde",
+      "absent": "Ausente",
+      "on_leave": "De permiso",
+      "unrecorded": "Sin registrar"
+    },
+    "errors": {
+      "loadFailed": "No se pudo cargar la asistencia. Inténtalo de nuevo.",
+      "saveFailed": "No se pudo guardar el registro. Inténtalo de nuevo."
+    }
+  },
+  "organizationPage": {
+    "title": "Organización",
+    "description": "Explora los departamentos y la distribución de empleados del directorio.",
+    "viewEmployeeDirectory": "Directorio de empleados",
+    "overview": "Resumen de la organización",
+    "totalEmployees": "Total de empleados",
+    "departments": "Departamentos",
+    "activeEmployees": "Empleados activos",
+    "onLeave": "De permiso",
+    "departmentOverview": "Resumen de departamentos",
+    "departmentDescription": "Consulta el tamaño de cada departamento y sus empleados activos o de permiso.",
+    "unassigned": "Sin asignar",
+    "activeInDepartment": "Activos",
+    "ofWorkforce": "de la plantilla",
+    "workforceComposition": "Composición de la plantilla",
+    "workforceDescription": "Distribución por tipo de empleo y estado.",
+    "employmentTypeDistribution": "Tipo de empleo",
+    "employmentStatusDistribution": "Estado laboral",
+    "loading": "Cargando organización...",
+    "noDepartments": "Aún no hay datos de departamentos.",
+    "errors": {
+      "loadFailed": "No se pudo cargar la organización. Inténtalo de nuevo."
+    }
+  },
   "employeeDirectory": {
     "title": "Directorio de empleados",
     "breadcrumb": "Empleados",
@@ -889,7 +1037,9 @@
       "organization": "Organización",
       "education": "Educación",
       "employment": "Empleo",
-      "workContact": "Contacto laboral"
+      "workContact": "Contacto laboral",
+      "addresses": "Direcciones",
+      "emergencyContact": "Contacto de emergencia"
     },
     "summary": {
       "totalEmployees": "Total de empleados",
@@ -918,6 +1068,13 @@
       "cancel": "Cancelar",
       "creating": "Creando empleado..."
     },
+    "edit": {
+      "title": "Editar empleado",
+      "description": "Actualiza este registro maestro de empleado.",
+      "submit": "Guardar empleado",
+      "saving": "Guardando empleado...",
+      "loading": "Cargando registro del empleado..."
+    },
     "fields": {
       "employeeNumber": "Número de empleado",
       "employeeNumberOptional": "Número de empleado (opcional)",
@@ -932,11 +1089,14 @@
       "educationLevel": "Nivel educativo más alto",
       "educationInstitution": "Escuela / institución",
       "educationField": "Título / campo de estudio",
+      "educationStartYear": "Año de inicio",
       "graduationYear": "Año de graduación",
       "department": "Departamento",
       "jobTitle": "Cargo",
       "status": "Estado",
       "employmentType": "Tipo de empleo",
+      "probationaryStatus": "Estado del período de prueba",
+      "regularizationDate": "Fecha de regularización",
       "hireDate": "Fecha de contratación",
       "terminationDate": "Fecha de baja",
       "workLocation": "Ubicación de trabajo",
@@ -947,6 +1107,35 @@
       "managerEmailOptional": "Correo del responsable (opcional)",
       "managerEmailHint": "El responsable debe tener un registro de empleado activo en ERIS. Déjalo en blanco si no hay responsable asignado.",
       "preferredName": "Nombre preferido",
+      "gender": "Género",
+      "dateOfBirth": "Fecha de nacimiento",
+      "placeOfBirth": "Lugar de nacimiento",
+      "bloodType": "Grupo sanguíneo",
+      "maritalStatus": "Estado civil",
+      "permanentAddress": "Dirección permanente",
+      "currentAddress": "Dirección actual",
+      "emergencyContactName": "Nombre del contacto",
+      "emergencyContactRelationship": "Parentesco",
+      "emergencyContactPhone": "Teléfono del contacto",
+      "emergencyContactEmail": "Correo del contacto",
+      "workSchedule": "Horario laboral",
+      "weeklyHours": "Horas por semana",
+      "annualLeaveEntitlementDays": "Días de vacaciones anuales asignados",
+      "annualLeaveUsedDays": "Días de vacaciones anuales utilizados",
+      "annualLeaveRemainingDays": "Días de vacaciones anuales restantes",
+      "baseSalary": "Salario base",
+      "currency": "Código de moneda",
+      "payFrequency": "Frecuencia de pago",
+      "payGrade": "Nivel salarial",
+      "taxId": "Número de identificación fiscal",
+      "sssNumber": "Número de SSS",
+      "philhealthNumber": "Número de PhilHealth",
+      "pagibigNumber": "Número de Pag-IBIG",
+      "allergies": "Alergias",
+      "medicalConditions": "Afecciones médicas",
+      "currentMedications": "Medicamentos actuales",
+      "healthInsuranceProvider": "Proveedor del seguro médico",
+      "healthInsurancePolicyNumber": "Número de póliza médica",
       "updatedAt": "Última actualización"
     },
     "statuses": {
@@ -962,18 +1151,109 @@
       "temporary": "Temporal",
       "intern": "Practicante"
     },
+    "probationaryStatuses": {
+      "unspecified": "Sin especificar",
+      "probationary": "En período de prueba",
+      "not_probationary": "No está en período de prueba"
+    },
+    "bloodTypes": {
+      "a_positive": "A+",
+      "a_negative": "A−",
+      "b_positive": "B+",
+      "b_negative": "B−",
+      "ab_positive": "AB+",
+      "ab_negative": "AB−",
+      "o_positive": "O+",
+      "o_negative": "O−"
+    },
+    "maritalStatuses": {
+      "single": "Soltero/a",
+      "married": "Casado/a",
+      "separated": "Separado/a",
+      "divorced": "Divorciado/a",
+      "widowed": "Viudo/a",
+      "domestic_partner": "Pareja de hecho",
+      "other": "Otro"
+    },
+    "educationHistory": {
+      "entry": "Formación académica",
+      "record": "Registro académico {number}",
+      "add": "Añadir formación académica",
+      "remove": "Eliminar",
+      "attended": "Estudios: {startYear}–{endYear}",
+      "startedIn": "Inicio: {year}",
+      "graduatedIn": "Graduación: {year}",
+      "empty": "No se ha añadido información académica."
+    },
+    "documents": {
+      "emptyTitle": "Aún no hay documentos del empleado",
+      "emptyDescription": "Los documentos que se carguen para este empleado aparecerán aquí."
+    },
+    "assets": {
+      "emptyTitle": "Aún no hay activos asignados",
+      "emptyDescription": "Los activos asignados a este empleado aparecerán aquí."
+    },
+    "activity": {
+      "title": "Actividad reciente",
+      "loading": "Cargando actividad del empleado...",
+      "loadFailed": "No se pudo cargar la actividad del empleado. Inténtalo de nuevo.",
+      "empty": "Aún no se han registrado cambios en el expediente del empleado.",
+      "unknownActor": "Usuario desconocido",
+      "changedFields": "Modificado",
+      "actions": {
+        "created": "creó el expediente del empleado",
+        "updated": "actualizó el expediente del empleado"
+      }
+    },
+    "hrDetails": {
+      "attendanceAndLeaveTitle": "Tiempo",
+      "attendanceAndLeaveDescription": "Horario laboral y resumen de vacaciones anuales.",
+      "payrollTitle": "Compensación",
+      "payrollDescription": "Compensación e identificadores de nómina. El acceso está limitado a editores de empleados.",
+      "medicalTitle": "Información médica",
+      "medicalDescription": "Información confidencial de salud y seguro. El acceso está limitado a editores de empleados.",
+      "loading": "Cargando información restringida del empleado...",
+      "accessDenied": "No tienes permiso para ver o editar estos datos restringidos.",
+      "loadFailed": "No se pudo cargar la información restringida del empleado. Inténtalo de nuevo.",
+      "saveFailed": "No se pudieron guardar estos datos. Revisa los valores e inténtalo de nuevo.",
+      "payFrequencies": {
+        "weekly": "Semanal",
+        "biweekly": "Cada dos semanas",
+        "semimonthly": "Dos veces al mes",
+        "monthly": "Mensual"
+      },
+      "units": {
+        "hoursPerWeek": "{value} horas por semana",
+        "days": "{value} días"
+      }
+    },
     "details": {
       "title": "Detalles del empleado",
       "description": "Registro maestro y datos laborales del empleado.",
       "backToDirectory": "Volver al directorio",
+      "editEmployee": "Editar empleado",
       "employmentInformation": "Información laboral",
       "workContact": "Contacto laboral",
-      "recordInformation": "Información del registro"
+      "recordInformation": "Información del registro",
+      "tabs": {
+        "label": "Secciones de los detalles del empleado",
+        "overview": "Resumen",
+        "personalInformation": "Información personal",
+        "employmentDetails": "Datos laborales",
+        "attendanceAndLeave": "Tiempo",
+        "payroll": "Compensación",
+        "medical": "Médica",
+        "documents": "Documentos",
+        "assets": "Activos",
+        "activity": "Actividad"
+      }
     },
     "errors": {
       "accessDenied": "No tienes permiso para ver los registros de empleados.",
       "createDenied": "No tienes permiso para crear registros de empleados.",
       "createFailed": "No se pudo crear el registro del empleado. Revisa los datos e inténtalo de nuevo.",
+      "editDenied": "No tienes permiso para editar registros de empleados.",
+      "editFailed": "No se pudo actualizar el registro del empleado. Revisa los datos e inténtalo de nuevo.",
       "sessionExpired": "Tu sesión ha caducado. Inicia sesión de nuevo para continuar.",
       "notFound": "No se encontró este registro de empleado.",
       "loadFailed": "No se pudieron cargar los registros de empleados. Inténtalo de nuevo.",

@@ -48,6 +48,9 @@
       "singleTransaction": "معاملة واحدة",
       "calendar": "التقويم",
       "employeeDirectory": "الموظفون",
+      "organization": "الهيكل التنظيمي",
+      "attendance": "الحضور",
+      "leaveManagement": "إدارة الإجازات",
       "userProfile": "الملف الشخصي",
       "task": "المهام",
       "taskList": "القائمة",
@@ -878,6 +881,151 @@
       }
     }
   },
+  "leaveManagementPage": {
+    "title": "إدارة الإجازات",
+    "description": "راجع طلبات إجازات الموظفين واعتمدها وتابعها.",
+    "createRequest": "طلب جديد",
+    "summary": {
+      "title": "ملخص الإجازات",
+      "pending": "طلبات قيد الانتظار",
+      "approved": "طلبات معتمدة",
+      "rejected": "طلبات مرفوضة",
+      "onLeaveToday": "في إجازة اليوم"
+    },
+    "requestsTitle": "طلبات الإجازة",
+    "requestsCount": "الطلبات: {{count}}",
+    "search": "البحث في الطلبات",
+    "filterLabel": "تصفية طلبات الإجازة",
+    "filters": {
+      "all": "الكل",
+      "pending": "قيد الانتظار",
+      "approved": "معتمدة",
+      "rejected": "مرفوضة"
+    },
+    "columns": {
+      "employee": "الموظف",
+      "leaveType": "نوع الإجازة",
+      "dates": "التواريخ",
+      "days": "الأيام",
+      "reason": "السبب",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "leaveTypes": {
+      "annual": "سنوية",
+      "sick": "مرضية",
+      "emergency": "طارئة",
+      "parental": "والدية",
+      "unpaid": "بدون راتب",
+      "other": "أخرى"
+    },
+    "statuses": {
+      "pending": "قيد الانتظار",
+      "approved": "معتمدة",
+      "rejected": "مرفوضة"
+    },
+    "actions": {
+      "approve": "اعتماد الطلب",
+      "reject": "رفض الطلب"
+    },
+    "form": {
+      "title": "إنشاء طلب إجازة",
+      "employee": "الموظف",
+      "selectEmployee": "اختر موظفًا",
+      "leaveType": "نوع الإجازة",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "days": "الأيام المطلوبة",
+      "reason": "السبب",
+      "submit": "إرسال الطلب",
+      "saving": "جارٍ الإرسال...",
+      "cancel": "إلغاء",
+      "close": "إغلاق النموذج"
+    },
+    "loading": "جارٍ تحميل طلبات الإجازة...",
+    "empty": "لا توجد طلبات تطابق هذا العرض.",
+    "messages": {
+      "created": "تم إرسال طلب الإجازة للمراجعة.",
+      "approved": "تم اعتماد طلب الإجازة.",
+      "rejected": "تم رفض طلب الإجازة."
+    },
+    "errors": {
+      "loadFailed": "تعذر تحميل طلبات الإجازة. حاول مرة أخرى.",
+      "saveFailed": "تعذر حفظ طلب الإجازة. حاول مرة أخرى.",
+      "overlap": "لدى هذا الموظف طلب قيد الانتظار أو معتمد يتداخل مع هذه التواريخ.",
+      "notPending": "تمت مراجعة هذا الطلب بالفعل. حدّث الصفحة وحاول مرة أخرى."
+    }
+  },
+  "attendancePage": {
+    "title": "الحضور",
+    "description": "راجع وسجل الحضور اليومي للموظفين وساعات العمل.",
+    "date": "تاريخ الحضور",
+    "search": "ابحث عن موظفين",
+    "summary": {
+      "title": "ملخص الحضور",
+      "present": "حاضرون",
+      "late": "متأخرون",
+      "absent": "غائبون",
+      "onLeave": "في إجازة"
+    },
+    "recordsTitle": "الحضور اليومي",
+    "recordsCount": "سجلات الموظفين: {{count}}",
+    "viewEmployees": "دليل الموظفين",
+    "loading": "جارٍ تحميل سجلات الحضور...",
+    "noEmployees": "لم يتم العثور على موظفين نشطين في هذا التاريخ.",
+    "noMatches": "لا يوجد موظفون يطابقون البحث.",
+    "employee": "الموظف",
+    "department": "القسم",
+    "unassigned": "غير محدد",
+    "status": "الحالة",
+    "clockIn": "وقت الحضور",
+    "clockOut": "وقت الانصراف",
+    "hours": "الساعات",
+    "actions": "الإجراءات",
+    "breakMinutes": "الاستراحة (دقائق)",
+    "notes": "ملاحظات",
+    "cancel": "إلغاء",
+    "edit": "تعديل",
+    "record": "تسجيل",
+    "saving": "جارٍ الحفظ...",
+    "save": "حفظ الحضور",
+    "saved": "تم حفظ سجل الحضور.",
+    "statuses": {
+      "present": "حاضر",
+      "late": "متأخر",
+      "absent": "غائب",
+      "on_leave": "في إجازة",
+      "unrecorded": "غير مسجل"
+    },
+    "errors": {
+      "loadFailed": "تعذر تحميل الحضور. يرجى المحاولة مرة أخرى.",
+      "saveFailed": "تعذر حفظ سجل الحضور. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "organizationPage": {
+    "title": "الهيكل التنظيمي",
+    "description": "استكشف الأقسام وتوزيع الموظفين بالاستناد إلى دليل الموظفين.",
+    "viewEmployeeDirectory": "دليل الموظفين",
+    "overview": "نظرة عامة على المؤسسة",
+    "totalEmployees": "إجمالي الموظفين",
+    "departments": "الأقسام",
+    "activeEmployees": "الموظفون النشطون",
+    "onLeave": "في إجازة",
+    "departmentOverview": "نظرة عامة على الأقسام",
+    "departmentDescription": "عرض حجم كل قسم وعدد الموظفين النشطين وفي الإجازة.",
+    "unassigned": "غير محدد",
+    "activeInDepartment": "نشطون",
+    "ofWorkforce": "من إجمالي الموظفين",
+    "workforceComposition": "تكوين القوى العاملة",
+    "workforceDescription": "التوزيع حسب نوع التوظيف والحالة.",
+    "employmentTypeDistribution": "نوع التوظيف",
+    "employmentStatusDistribution": "حالة التوظيف",
+    "loading": "جارٍ تحميل الهيكل التنظيمي...",
+    "noDepartments": "لا تتوفر بيانات للأقسام بعد.",
+    "errors": {
+      "loadFailed": "تعذر تحميل الهيكل التنظيمي. يرجى المحاولة مرة أخرى."
+    }
+  },
   "employeeDirectory": {
     "title": "دليل الموظفين",
     "breadcrumb": "الموظفون",
@@ -889,7 +1037,9 @@
       "organization": "الهيكل التنظيمي",
       "education": "التعليم",
       "employment": "بيانات التوظيف",
-      "workContact": "بيانات اتصال العمل"
+      "workContact": "بيانات اتصال العمل",
+      "addresses": "العناوين",
+      "emergencyContact": "جهة اتصال الطوارئ"
     },
     "summary": {
       "totalEmployees": "إجمالي الموظفين",
@@ -918,6 +1068,13 @@
       "cancel": "إلغاء",
       "creating": "جارٍ إنشاء الموظف..."
     },
+    "edit": {
+      "title": "تعديل الموظف",
+      "description": "تحديث السجل الرئيسي لهذا الموظف.",
+      "submit": "حفظ الموظف",
+      "saving": "جارٍ حفظ الموظف...",
+      "loading": "جارٍ تحميل سجل الموظف..."
+    },
     "fields": {
       "employeeNumber": "الرقم الوظيفي",
       "employeeNumberOptional": "الرقم الوظيفي (اختياري)",
@@ -932,11 +1089,14 @@
       "educationLevel": "أعلى مستوى تعليمي",
       "educationInstitution": "المدرسة / المؤسسة التعليمية",
       "educationField": "الشهادة / مجال الدراسة",
+      "educationStartYear": "سنة البدء",
       "graduationYear": "سنة التخرج",
       "department": "القسم",
       "jobTitle": "المسمى الوظيفي",
       "status": "الحالة",
       "employmentType": "نوع التوظيف",
+      "probationaryStatus": "حالة فترة التجربة",
+      "regularizationDate": "تاريخ التثبيت",
       "hireDate": "تاريخ التعيين",
       "terminationDate": "تاريخ انتهاء الخدمة",
       "workLocation": "موقع العمل",
@@ -947,6 +1107,35 @@
       "managerEmailOptional": "البريد الإلكتروني للمدير (اختياري)",
       "managerEmailHint": "يجب أن يكون للمدير سجل موظف نشط في ERIS. اترك الحقل فارغًا إذا لم يتم تعيين مدير.",
       "preferredName": "الاسم المفضل",
+      "gender": "الجنس",
+      "dateOfBirth": "تاريخ الميلاد",
+      "placeOfBirth": "مكان الميلاد",
+      "bloodType": "فصيلة الدم",
+      "maritalStatus": "الحالة الاجتماعية",
+      "permanentAddress": "العنوان الدائم",
+      "currentAddress": "العنوان الحالي",
+      "emergencyContactName": "اسم جهة الاتصال",
+      "emergencyContactRelationship": "صلة القرابة",
+      "emergencyContactPhone": "هاتف جهة الاتصال",
+      "emergencyContactEmail": "البريد الإلكتروني لجهة الاتصال",
+      "workSchedule": "جدول العمل",
+      "weeklyHours": "ساعات العمل الأسبوعية",
+      "annualLeaveEntitlementDays": "رصيد الإجازة السنوية المستحق",
+      "annualLeaveUsedDays": "أيام الإجازة السنوية المستخدمة",
+      "annualLeaveRemainingDays": "أيام الإجازة السنوية المتبقية",
+      "baseSalary": "الراتب الأساسي",
+      "currency": "رمز العملة",
+      "payFrequency": "دورية صرف الراتب",
+      "payGrade": "الدرجة الوظيفية",
+      "taxId": "رقم التعريف الضريبي",
+      "sssNumber": "رقم SSS",
+      "philhealthNumber": "رقم PhilHealth",
+      "pagibigNumber": "رقم Pag-IBIG",
+      "allergies": "الحساسية",
+      "medicalConditions": "الحالات الطبية",
+      "currentMedications": "الأدوية الحالية",
+      "healthInsuranceProvider": "مقدم التأمين الصحي",
+      "healthInsurancePolicyNumber": "رقم وثيقة التأمين الصحي",
       "updatedAt": "آخر تحديث"
     },
     "statuses": {
@@ -962,18 +1151,109 @@
       "temporary": "مؤقت",
       "intern": "متدرب"
     },
+    "probationaryStatuses": {
+      "unspecified": "غير محدد",
+      "probationary": "تحت الاختبار",
+      "not_probationary": "ليس تحت الاختبار"
+    },
+    "bloodTypes": {
+      "a_positive": "A+",
+      "a_negative": "A−",
+      "b_positive": "B+",
+      "b_negative": "B−",
+      "ab_positive": "AB+",
+      "ab_negative": "AB−",
+      "o_positive": "O+",
+      "o_negative": "O−"
+    },
+    "maritalStatuses": {
+      "single": "أعزب",
+      "married": "متزوج",
+      "separated": "منفصل",
+      "divorced": "مطلق",
+      "widowed": "أرمل",
+      "domestic_partner": "شريك حياة",
+      "other": "أخرى"
+    },
+    "educationHistory": {
+      "entry": "الخلفية التعليمية",
+      "record": "المؤهل التعليمي {number}",
+      "add": "إضافة مؤهل تعليمي",
+      "remove": "إزالة",
+      "attended": "فترة الدراسة {startYear}–{endYear}",
+      "startedIn": "بدأ في {year}",
+      "graduatedIn": "سنة التخرج {year}",
+      "empty": "لم تتم إضافة معلومات تعليمية."
+    },
+    "documents": {
+      "emptyTitle": "لا توجد مستندات للموظف حتى الآن",
+      "emptyDescription": "ستظهر هنا المستندات التي يتم تحميلها لهذا الموظف."
+    },
+    "assets": {
+      "emptyTitle": "لا توجد أصول مخصصة حتى الآن",
+      "emptyDescription": "ستظهر هنا الأصول المخصصة لهذا الموظف."
+    },
+    "activity": {
+      "title": "النشاط الأخير",
+      "loading": "جارٍ تحميل نشاط الموظف...",
+      "loadFailed": "تعذر تحميل نشاط الموظف. حاول مرة أخرى.",
+      "empty": "لم يتم تسجيل أي تغييرات على سجل الموظف حتى الآن.",
+      "unknownActor": "مستخدم غير معروف",
+      "changedFields": "تم التغيير",
+      "actions": {
+        "created": "أنشأ سجل الموظف",
+        "updated": "حدّث سجل الموظف"
+      }
+    },
+    "hrDetails": {
+      "attendanceAndLeaveTitle": "الوقت",
+      "attendanceAndLeaveDescription": "جدول العمل وملخص الإجازة السنوية.",
+      "payrollTitle": "التعويضات",
+      "payrollDescription": "بيانات التعويض ومعرّفات الرواتب. الوصول مقتصر على محرري سجلات الموظفين.",
+      "medicalTitle": "المعلومات الطبية",
+      "medicalDescription": "معلومات صحية وتأمينية سرية. الوصول مقتصر على محرري سجلات الموظفين.",
+      "loading": "جارٍ تحميل معلومات الموظف المقيدة...",
+      "accessDenied": "ليس لديك إذن لعرض هذه التفاصيل المقيدة أو تعديلها.",
+      "loadFailed": "تعذر تحميل معلومات الموظف المقيدة. حاول مرة أخرى.",
+      "saveFailed": "تعذر حفظ تفاصيل الموظف هذه. تحقق من القيم وحاول مرة أخرى.",
+      "payFrequencies": {
+        "weekly": "أسبوعيًا",
+        "biweekly": "كل أسبوعين",
+        "semimonthly": "مرتين في الشهر",
+        "monthly": "شهريًا"
+      },
+      "units": {
+        "hoursPerWeek": "{value} ساعة أسبوعيًا",
+        "days": "{value} يوم"
+      }
+    },
     "details": {
       "title": "تفاصيل الموظف",
       "description": "السجل الرئيسي للموظف وتفاصيل التوظيف.",
       "backToDirectory": "العودة إلى الدليل",
+      "editEmployee": "تعديل الموظف",
       "employmentInformation": "معلومات التوظيف",
       "workContact": "بيانات اتصال العمل",
-      "recordInformation": "معلومات السجل"
+      "recordInformation": "معلومات السجل",
+      "tabs": {
+        "label": "أقسام تفاصيل الموظف",
+        "overview": "نظرة عامة",
+        "personalInformation": "المعلومات الشخصية",
+        "employmentDetails": "تفاصيل التوظيف",
+        "attendanceAndLeave": "الوقت",
+        "payroll": "التعويضات",
+        "medical": "طبي",
+        "documents": "المستندات",
+        "assets": "الأصول",
+        "activity": "النشاط"
+      }
     },
     "errors": {
       "accessDenied": "ليس لديك إذن لعرض سجلات الموظفين.",
       "createDenied": "ليس لديك إذن لإنشاء سجلات الموظفين.",
       "createFailed": "تعذر إنشاء سجل الموظف. تحقق من البيانات وحاول مرة أخرى.",
+      "editDenied": "ليس لديك إذن لتعديل سجلات الموظفين.",
+      "editFailed": "تعذر تحديث سجل الموظف. تحقق من البيانات وحاول مرة أخرى.",
       "sessionExpired": "انتهت جلستك. سجّل الدخول مجددًا للمتابعة.",
       "notFound": "تعذر العثور على سجل الموظف هذا.",
       "loadFailed": "تعذر تحميل سجلات الموظفين. حاول مرة أخرى.",

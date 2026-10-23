@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router";
 import { useSidebar } from "../context/SidebarContext";
 import {
   AiIcon,
+  ClockIcon,
   BoxCubeIcon,
   CalenderIcon,
   CallIcon,
@@ -11,6 +12,7 @@ import {
   ChatIcon,
   ChevronDownIcon,
   GridIcon,
+  GroupIcon,
   HorizontaLDots,
   LayoutIcon,
   ListIcon,
@@ -66,6 +68,24 @@ const navItems: NavItem[] = [
     name: "Employees",
     key: "employeeDirectory",
     path: "/employees",
+  },
+  {
+    icon: <GroupIcon />,
+    name: "Organization",
+    key: "organization",
+    path: "/organization",
+  },
+  {
+    icon: <ClockIcon />,
+    name: "Attendance",
+    key: "attendance",
+    path: "/attendance",
+  },
+  {
+    icon: <CalenderIcon />,
+    name: "Leave Management",
+    key: "leaveManagement",
+    path: "/leave-management",
   },
   {
     name: "AI Assistant",

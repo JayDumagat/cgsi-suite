@@ -3,6 +3,7 @@ import PageMeta from "@/components/common/PageMeta";
 import DataTableOne, {
   type DataTableOneColumn,
 } from "@/components/tables/DataTables/TableOne/DataTableOne";
+import Checkbox from "@/components/form/input/Checkbox";
 import {
   EmployeeDirectoryRequestError,
   listEmployees,
@@ -134,32 +135,41 @@ export default function EmployeeDirectoryPage() {
         label: "",
         className: "w-10 px-3 text-center",
         header: (
-          <input
-            type="checkbox"
-            aria-label={t("employeeDirectory.table.selectAllOnPage")}
-            checked={employees.length > 0 && employees.every((employee) => selectedEmployeeIds.has(employee.id))}
-            ref={(checkbox) => {
-              if (checkbox) {
-                const selectedCount = employees.filter((employee) => selectedEmployeeIds.has(employee.id)).length;
-                checkbox.indeterminate = selectedCount > 0 && selectedCount < employees.length;
-              }
-            }}
+          <div
+            className="flex justify-center"
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
-            onChange={(event) => setCurrentPageSelected(event.target.checked)}
-            className="size-4 cursor-pointer rounded border-gray-300 text-brand-600 shadow-theme-xs focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:checked:bg-brand-500"
-          />
+          >
+            <Checkbox
+              id="employee-select-all"
+              ariaLabel={t("employeeDirectory.table.selectAllOnPage")}
+              checked={
+                employees.length > 0 &&
+                employees.every((employee) => selectedEmployeeIds.has(employee.id))
+              }
+              indeterminate={
+                employees.some((employee) => selectedEmployeeIds.has(employee.id)) &&
+                employees.some((employee) => !selectedEmployeeIds.has(employee.id))
+              }
+              onChange={setCurrentPageSelected}
+              className="size-4 shadow-theme-xs focus:ring-2 focus:ring-brand-500/20"
+            />
+          </div>
         ),
         render: (employee) => (
-          <input
-            type="checkbox"
-            aria-label={t("employeeDirectory.table.selectEmployee", { name: employee.displayName })}
-            checked={selectedEmployeeIds.has(employee.id)}
+          <div
+            className="flex justify-center"
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
-            onChange={(event) => setEmployeeSelected(employee.id, event.target.checked)}
-            className="size-4 cursor-pointer rounded border-gray-300 text-brand-600 shadow-theme-xs focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:checked:bg-brand-500"
-          />
+          >
+            <Checkbox
+              id={`employee-select-${employee.id}`}
+              ariaLabel={t("employeeDirectory.table.selectEmployee", { name: employee.displayName })}
+              checked={selectedEmployeeIds.has(employee.id)}
+              onChange={(selected) => setEmployeeSelected(employee.id, selected)}
+              className="size-4 shadow-theme-xs focus:ring-2 focus:ring-brand-500/20"
+            />
+          </div>
         ),
       },
       {
@@ -197,6 +207,12 @@ export default function EmployeeDirectoryPage() {
         label: t("employeeDirectory.fields.jobTitle"),
         sortKey: "jobTitle",
         render: (employee) => employee.jobTitle || "—",
+      },
+      {
+        key: "employmentType",
+        label: t("employeeDirectory.fields.employmentType"),
+        sortKey: "employmentType",
+        render: (employee) => t(`employeeDirectory.employmentTypes.${employee.employmentType}`),
       },
       {
         key: "hireDate",

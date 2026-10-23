@@ -48,6 +48,9 @@
       "singleTransaction": "Einzelne Transaktion",
       "calendar": "Kalender",
       "employeeDirectory": "Mitarbeitende",
+      "organization": "Organisation",
+      "attendance": "Anwesenheit",
+      "leaveManagement": "Urlaubsverwaltung",
       "userProfile": "Benutzerprofil",
       "task": "Aufgaben",
       "taskList": "Liste",
@@ -878,6 +881,151 @@
       }
     }
   },
+  "leaveManagementPage": {
+    "title": "Urlaubsverwaltung",
+    "description": "Urlaubsanträge prüfen, genehmigen und verwalten.",
+    "createRequest": "Neuer Antrag",
+    "summary": {
+      "title": "Urlaubsübersicht",
+      "pending": "Ausstehende Anträge",
+      "approved": "Genehmigte Anträge",
+      "rejected": "Abgelehnte Anträge",
+      "onLeaveToday": "Heute abwesend"
+    },
+    "requestsTitle": "Urlaubsanträge",
+    "requestsCount": "Anträge: {{count}}",
+    "search": "Anträge suchen",
+    "filterLabel": "Urlaubsanträge filtern",
+    "filters": {
+      "all": "Alle",
+      "pending": "Ausstehend",
+      "approved": "Genehmigt",
+      "rejected": "Abgelehnt"
+    },
+    "columns": {
+      "employee": "Mitarbeiter",
+      "leaveType": "Urlaubsart",
+      "dates": "Daten",
+      "days": "Tage",
+      "reason": "Grund",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "leaveTypes": {
+      "annual": "Jahresurlaub",
+      "sick": "Krankheit",
+      "emergency": "Notfall",
+      "parental": "Elternzeit",
+      "unpaid": "Unbezahlt",
+      "other": "Sonstige"
+    },
+    "statuses": {
+      "pending": "Ausstehend",
+      "approved": "Genehmigt",
+      "rejected": "Abgelehnt"
+    },
+    "actions": {
+      "approve": "Antrag genehmigen",
+      "reject": "Antrag ablehnen"
+    },
+    "form": {
+      "title": "Urlaubsantrag erstellen",
+      "employee": "Mitarbeiter",
+      "selectEmployee": "Mitarbeiter auswählen",
+      "leaveType": "Urlaubsart",
+      "startDate": "Startdatum",
+      "endDate": "Enddatum",
+      "days": "Beantragte Tage",
+      "reason": "Grund",
+      "submit": "Antrag senden",
+      "saving": "Wird gesendet...",
+      "cancel": "Abbrechen",
+      "close": "Formular schließen"
+    },
+    "loading": "Urlaubsanträge werden geladen...",
+    "empty": "Keine Anträge für diese Ansicht gefunden.",
+    "messages": {
+      "created": "Der Urlaubsantrag wurde zur Prüfung eingereicht.",
+      "approved": "Urlaubsantrag genehmigt.",
+      "rejected": "Urlaubsantrag abgelehnt."
+    },
+    "errors": {
+      "loadFailed": "Urlaubsanträge konnten nicht geladen werden. Bitte erneut versuchen.",
+      "saveFailed": "Urlaubsantrag konnte nicht gespeichert werden. Bitte erneut versuchen.",
+      "overlap": "Für diesen Mitarbeiter gibt es bereits einen offenen oder genehmigten Antrag mit überschneidenden Daten.",
+      "notPending": "Dieser Antrag wurde bereits geprüft. Bitte Seite aktualisieren."
+    }
+  },
+  "attendancePage": {
+    "title": "Anwesenheit",
+    "description": "Tägliche Anwesenheit und Arbeitsstunden anzeigen und erfassen.",
+    "date": "Anwesenheitsdatum",
+    "search": "Mitarbeitende suchen",
+    "summary": {
+      "title": "Anwesenheitsübersicht",
+      "present": "Anwesend",
+      "late": "Verspätet",
+      "absent": "Abwesend",
+      "onLeave": "Im Urlaub"
+    },
+    "recordsTitle": "Tägliche Anwesenheit",
+    "recordsCount": "Mitarbeiterdatensätze: {{count}}",
+    "viewEmployees": "Mitarbeiterverzeichnis",
+    "loading": "Anwesenheitsdaten werden geladen...",
+    "noEmployees": "Für dieses Datum wurden keine aktiven Mitarbeitenden gefunden.",
+    "noMatches": "Keine Mitarbeitenden entsprechen der Suche.",
+    "employee": "Mitarbeiter",
+    "department": "Abteilung",
+    "unassigned": "Nicht zugeordnet",
+    "status": "Status",
+    "clockIn": "Arbeitsbeginn",
+    "clockOut": "Arbeitsende",
+    "hours": "Stunden",
+    "actions": "Aktionen",
+    "breakMinutes": "Pause (Minuten)",
+    "notes": "Notizen",
+    "cancel": "Abbrechen",
+    "edit": "Bearbeiten",
+    "record": "Erfassen",
+    "saving": "Wird gespeichert...",
+    "save": "Anwesenheit speichern",
+    "saved": "Anwesenheitsdatensatz gespeichert.",
+    "statuses": {
+      "present": "Anwesend",
+      "late": "Verspätet",
+      "absent": "Abwesend",
+      "on_leave": "Im Urlaub",
+      "unrecorded": "Nicht erfasst"
+    },
+    "errors": {
+      "loadFailed": "Anwesenheit konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
+      "saveFailed": "Anwesenheitsdatensatz konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
+    }
+  },
+  "organizationPage": {
+    "title": "Organisation",
+    "description": "Entdecken Sie Abteilungen und die Verteilung der Mitarbeitenden im Verzeichnis.",
+    "viewEmployeeDirectory": "Mitarbeiterverzeichnis",
+    "overview": "Organisationsübersicht",
+    "totalEmployees": "Mitarbeitende gesamt",
+    "departments": "Abteilungen",
+    "activeEmployees": "Aktive Mitarbeitende",
+    "onLeave": "Im Urlaub",
+    "departmentOverview": "Abteilungsübersicht",
+    "departmentDescription": "Abteilungsgröße sowie aktive und abwesende Mitarbeitende im Überblick.",
+    "unassigned": "Nicht zugeordnet",
+    "activeInDepartment": "Aktiv",
+    "ofWorkforce": "der Belegschaft",
+    "workforceComposition": "Belegschaftszusammensetzung",
+    "workforceDescription": "Verteilung nach Beschäftigungsart und Status.",
+    "employmentTypeDistribution": "Beschäftigungsart",
+    "employmentStatusDistribution": "Beschäftigungsstatus",
+    "loading": "Organisation wird geladen...",
+    "noDepartments": "Noch keine Abteilungsdaten verfügbar.",
+    "errors": {
+      "loadFailed": "Die Organisation konnte nicht geladen werden. Bitte versuchen Sie es erneut."
+    }
+  },
   "employeeDirectory": {
     "title": "Mitarbeiterverzeichnis",
     "breadcrumb": "Mitarbeitende",
@@ -889,7 +1037,9 @@
       "organization": "Organisation",
       "education": "Bildung",
       "employment": "Beschäftigung",
-      "workContact": "Geschäftlicher Kontakt"
+      "workContact": "Geschäftlicher Kontakt",
+      "addresses": "Adressen",
+      "emergencyContact": "Notfallkontakt"
     },
     "summary": {
       "totalEmployees": "Mitarbeiter insgesamt",
@@ -918,6 +1068,13 @@
       "cancel": "Abbrechen",
       "creating": "Mitarbeiter wird erstellt..."
     },
+    "edit": {
+      "title": "Mitarbeiter bearbeiten",
+      "description": "Diesen Mitarbeiterstammsatz aktualisieren.",
+      "submit": "Mitarbeiter speichern",
+      "saving": "Mitarbeiter wird gespeichert...",
+      "loading": "Mitarbeiterdatensatz wird geladen..."
+    },
     "fields": {
       "employeeNumber": "Personalnummer",
       "employeeNumberOptional": "Personalnummer (optional)",
@@ -932,11 +1089,14 @@
       "educationLevel": "Höchster Bildungsabschluss",
       "educationInstitution": "Schule / Bildungseinrichtung",
       "educationField": "Abschluss / Studienfach",
+      "educationStartYear": "Beginn",
       "graduationYear": "Abschlussjahr",
       "department": "Abteilung",
       "jobTitle": "Stellenbezeichnung",
       "status": "Status",
       "employmentType": "Beschäftigungsart",
+      "probationaryStatus": "Probezeitstatus",
+      "regularizationDate": "Datum der Übernahme",
       "hireDate": "Eintrittsdatum",
       "terminationDate": "Austrittsdatum",
       "workLocation": "Arbeitsort",
@@ -947,6 +1107,35 @@
       "managerEmailOptional": "E-Mail der vorgesetzten Person (optional)",
       "managerEmailHint": "Die vorgesetzte Person benötigt einen aktiven Mitarbeiterdatensatz in ERIS. Leer lassen, wenn keine Person zugeordnet ist.",
       "preferredName": "Bevorzugter Name",
+      "gender": "Geschlecht",
+      "dateOfBirth": "Geburtsdatum",
+      "placeOfBirth": "Geburtsort",
+      "bloodType": "Blutgruppe",
+      "maritalStatus": "Familienstand",
+      "permanentAddress": "Hauptwohnsitz",
+      "currentAddress": "Aktuelle Adresse",
+      "emergencyContactName": "Name des Notfallkontakts",
+      "emergencyContactRelationship": "Beziehung",
+      "emergencyContactPhone": "Telefon des Notfallkontakts",
+      "emergencyContactEmail": "E-Mail des Notfallkontakts",
+      "workSchedule": "Arbeitszeitplan",
+      "weeklyHours": "Stunden pro Woche",
+      "annualLeaveEntitlementDays": "Jahresurlaubsanspruch",
+      "annualLeaveUsedDays": "Genutzte Urlaubstage",
+      "annualLeaveRemainingDays": "Verbleibende Urlaubstage",
+      "baseSalary": "Grundgehalt",
+      "currency": "Währungscode",
+      "payFrequency": "Zahlungsrhythmus",
+      "payGrade": "Gehaltsstufe",
+      "taxId": "Steueridentifikationsnummer",
+      "sssNumber": "SSS-Nummer",
+      "philhealthNumber": "PhilHealth-Nummer",
+      "pagibigNumber": "Pag-IBIG-Nummer",
+      "allergies": "Allergien",
+      "medicalConditions": "Erkrankungen",
+      "currentMedications": "Aktuelle Medikamente",
+      "healthInsuranceProvider": "Krankenversicherer",
+      "healthInsurancePolicyNumber": "Krankenversicherungspolicennummer",
       "updatedAt": "Zuletzt aktualisiert"
     },
     "statuses": {
@@ -962,18 +1151,109 @@
       "temporary": "Befristet",
       "intern": "Praktikum"
     },
+    "probationaryStatuses": {
+      "unspecified": "Nicht angegeben",
+      "probationary": "In der Probezeit",
+      "not_probationary": "Nicht in der Probezeit"
+    },
+    "bloodTypes": {
+      "a_positive": "A+",
+      "a_negative": "A−",
+      "b_positive": "B+",
+      "b_negative": "B−",
+      "ab_positive": "AB+",
+      "ab_negative": "AB−",
+      "o_positive": "O+",
+      "o_negative": "O−"
+    },
+    "maritalStatuses": {
+      "single": "Ledig",
+      "married": "Verheiratet",
+      "separated": "Getrennt lebend",
+      "divorced": "Geschieden",
+      "widowed": "Verwitwet",
+      "domestic_partner": "In eingetragener Partnerschaft",
+      "other": "Andere"
+    },
+    "educationHistory": {
+      "entry": "Bildungsweg",
+      "record": "Bildungseintrag {number}",
+      "add": "Bildungseintrag hinzufügen",
+      "remove": "Entfernen",
+      "attended": "Besucht {startYear}–{endYear}",
+      "startedIn": "Beginn {year}",
+      "graduatedIn": "Abschluss {year}",
+      "empty": "Es wurden keine Bildungsdaten hinzugefügt."
+    },
+    "documents": {
+      "emptyTitle": "Noch keine Mitarbeiterdokumente",
+      "emptyDescription": "Für diesen Mitarbeiter hochgeladene Dokumente werden hier angezeigt."
+    },
+    "assets": {
+      "emptyTitle": "Noch keine Assets zugewiesen",
+      "emptyDescription": "Diesem Mitarbeiter zugewiesene Assets werden hier angezeigt."
+    },
+    "activity": {
+      "title": "Letzte Aktivitäten",
+      "loading": "Mitarbeiteraktivitäten werden geladen...",
+      "loadFailed": "Mitarbeiteraktivitäten konnten nicht geladen werden. Bitte erneut versuchen.",
+      "empty": "Es wurden noch keine Änderungen am Mitarbeiterdatensatz erfasst.",
+      "unknownActor": "Unbekannter Benutzer",
+      "changedFields": "Geändert",
+      "actions": {
+        "created": "hat den Mitarbeiterdatensatz erstellt",
+        "updated": "hat den Mitarbeiterdatensatz aktualisiert"
+      }
+    },
+    "hrDetails": {
+      "attendanceAndLeaveTitle": "Zeit",
+      "attendanceAndLeaveDescription": "Arbeitsplan und Übersicht zum Jahresurlaub.",
+      "payrollTitle": "Vergütung",
+      "payrollDescription": "Vergütung und Kennungen für die Gehaltsabrechnung. Zugriff nur für Mitarbeitereditoren.",
+      "medicalTitle": "Medizinische Angaben",
+      "medicalDescription": "Vertrauliche Gesundheits- und Versicherungsangaben. Zugriff nur für Mitarbeitereditoren.",
+      "loading": "Vertrauliche Mitarbeiterangaben werden geladen...",
+      "accessDenied": "Du darfst diese vertraulichen Angaben nicht anzeigen oder bearbeiten.",
+      "loadFailed": "Vertrauliche Mitarbeiterangaben konnten nicht geladen werden. Bitte erneut versuchen.",
+      "saveFailed": "Diese Mitarbeiterangaben konnten nicht gespeichert werden. Bitte Werte prüfen und erneut versuchen.",
+      "payFrequencies": {
+        "weekly": "Wöchentlich",
+        "biweekly": "Alle zwei Wochen",
+        "semimonthly": "Zweimal im Monat",
+        "monthly": "Monatlich"
+      },
+      "units": {
+        "hoursPerWeek": "{value} Stunden pro Woche",
+        "days": "{value} Tage"
+      }
+    },
     "details": {
       "title": "Mitarbeiterdetails",
       "description": "Mitarbeiterstammsatz und Beschäftigungsdetails.",
       "backToDirectory": "Zurück zum Verzeichnis",
+      "editEmployee": "Mitarbeiter bearbeiten",
       "employmentInformation": "Beschäftigungsinformationen",
       "workContact": "Geschäftlicher Kontakt",
-      "recordInformation": "Datensatzinformationen"
+      "recordInformation": "Datensatzinformationen",
+      "tabs": {
+        "label": "Abschnitte der Mitarbeiterdetails",
+        "overview": "Übersicht",
+        "personalInformation": "Persönliche Angaben",
+        "employmentDetails": "Beschäftigungsdetails",
+        "attendanceAndLeave": "Zeit",
+        "payroll": "Vergütung",
+        "medical": "Medizin",
+        "documents": "Dokumente",
+        "assets": "Assets",
+        "activity": "Aktivität"
+      }
     },
     "errors": {
       "accessDenied": "Du hast keine Berechtigung, Mitarbeiterdatensätze anzuzeigen.",
       "createDenied": "Du hast keine Berechtigung, Mitarbeiterdatensätze zu erstellen.",
       "createFailed": "Der Mitarbeiterdatensatz konnte nicht erstellt werden. Bitte Angaben prüfen und erneut versuchen.",
+      "editDenied": "Du hast keine Berechtigung, Mitarbeiterdatensätze zu bearbeiten.",
+      "editFailed": "Der Mitarbeiterdatensatz konnte nicht aktualisiert werden. Bitte Angaben prüfen und erneut versuchen.",
       "sessionExpired": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
       "notFound": "Dieser Mitarbeiterdatensatz wurde nicht gefunden.",
       "loadFailed": "Mitarbeiterdatensätze konnten nicht geladen werden. Bitte erneut versuchen.",

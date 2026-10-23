@@ -92,6 +92,9 @@ import UserProfiles from "./pages/UserProfiles";
 import EmployeeDirectoryPage from "./pages/EmployeeDirectory/EmployeeDirectoryPage";
 import EmployeeDetailPage from "./pages/EmployeeDirectory/EmployeeDetailPage";
 import NewEmployeePage from "./pages/EmployeeDirectory/NewEmployeePage";
+import OrganizationPage from "./pages/Organization/OrganizationPage";
+import AttendancePage from "./pages/Attendance/AttendancePage";
+import LeaveManagementPage from "./pages/LeaveManagement/LeaveManagementPage";
 
 const routerBasename =
   window.location.pathname === "/eris" ||
@@ -120,7 +123,11 @@ export default function App() {
 
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/employees" element={<EmployeeDirectoryPage />} />
+            <Route path="/organization" element={<OrganizationPage />} />
+            <Route path="/attendance" element={<AttendancePage />} />
+            <Route path="/leave-management" element={<LeaveManagementPage />} />
             <Route path="/employees/new" element={<NewEmployeePage />} />
+            <Route path="/employees/:employeeId/edit" element={<NewEmployeePage />} />
             <Route path="/employees/:employeeId" element={<EmployeeDetailPage />} />
             <Route path="/invoice" element={<Invoices />} />
             <Route path="/invoices" element={<Invoices />} />

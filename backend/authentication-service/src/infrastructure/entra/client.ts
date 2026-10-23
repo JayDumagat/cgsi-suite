@@ -1,11 +1,44 @@
-import { ConfidentialClientApplication, CryptoProvider } from "@azure/msal-node";
+import { createRequire } from "node:module";
 import { config } from "../../config/environment.js";
 import type { AuthTransaction } from "../../modules/authentication/application/contracts.js";
+
+interface MsalNodeModule {
+  ConfidentialClientApplication: new (configuration: {
+    auth: {
+      clientId: string;
+      authority: string;
+      clientSecret: string;
+    };
+  }) => {
+    getAuthCodeUrl(request: {
+      scopes: string[];
+      redirectUri: string;
+      responseMode: "query";
+      state: string;
+      nonce: string;
+      codeChallenge: string;
+      codeChallengeMethod: "S256";
+    }): Promise<string>;
+    acquireTokenByCode(request: {
+      code: string;
+      scopes: string[];
+      redirectUri: string;
+      codeVerifier: string;
+      nonce: string;
+    }): Promise<{ idTokenClaims?: unknown }>;
+  };
+  CryptoProvider: new () => {
+    generatePkceCodes(): Promise<{ challenge: string; verifier: string }>;
+  };
+}
+
+const require = createRequire(import.meta.url);
+const { ConfidentialClientApplication, CryptoProvider } = require("@azure/msal-node") as MsalNodeModule;
 
 const scopes = ["openid", "profile", "email"];
 
 export class EntraClient {
-  readonly #application: ConfidentialClientApplication | null;
+  readonly #application: InstanceType<typeof ConfidentialClientApplication> | null;
   readonly #cryptoProvider = new CryptoProvider();
   readonly #authority: string;
 

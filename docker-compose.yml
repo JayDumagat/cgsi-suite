@@ -305,6 +305,7 @@ services:
       PGUSER: cgsi_identity
       PGPASSWORD: ${IDENTITY_DB_PASSWORD:-local-identity-db-change-me}
       AUTHORIZATION_SERVICE_URL: http://authorization-service:8083
+      AUTHORIZATION_SERVICE_TOKEN: ${AUTHORIZATION_SERVICE_TOKEN:-local-authz-check-token-change-me}
       IDENTITY_PROVISIONING_TOKEN: ${IDENTITY_PROVISIONING_TOKEN:-local-identity-provisioning-token-change-me}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_NAME: identity-service
