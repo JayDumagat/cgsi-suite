@@ -7,7 +7,8 @@
     "viewMore": "Mehr anzeigen",
     "delete": "Löschen",
     "filter": "Filter",
-    "seeAll": "Alle anzeigen"
+    "seeAll": "Alle anzeigen",
+    "search": "Suchen"
   },
   "sidebar": {
     "groups": {
@@ -124,7 +125,11 @@
       "supportReply": "Ticket-Antwort",
       "email": "E-Mail",
       "inbox": "Posteingang",
-      "inboxDetails": "Details"
+      "inboxDetails": "Details",
+      "recruitment": "Personalbeschaffung",
+      "payroll": "Gehaltsabrechnung",
+      "performanceManagement": "Leistungsmanagement",
+      "reportsAnalytics": "Berichte & Analysen"
     },
     "widget": {
       "title": "#1 Tailwind CSS Dashboard",
@@ -881,6 +886,38 @@
       }
     }
   },
+  "hrDashboard": {
+    "title": "HR-Dashboard",
+    "description": "Überblick über Mitarbeitende, heutige Anwesenheit und bevorstehenden Urlaub.",
+    "loading": "Dashboard wird geladen...",
+    "stats": {
+      "title": "Mitarbeiterübersicht",
+      "totalEmployees": "Mitarbeitende",
+      "presentToday": "Heute anwesend",
+      "lateArrivals": "Verspätungen",
+      "pendingLeave": "Offene Urlaubsanträge"
+    },
+    "attendance": {
+      "title": "Heutige Anwesenheit",
+      "description": "Täglicher Anwesenheitsstatus der Belegschaft.",
+      "present": "Anwesend",
+      "late": "Verspätet",
+      "absent": "Abwesend",
+      "onLeave": "Im Urlaub",
+      "notRecorded": "Nicht erfasst",
+      "empty": "Für heute liegen keine Anwesenheitsdaten vor."
+    },
+    "upcomingLeave": {
+      "title": "Bevorstehender genehmigter Urlaub",
+      "description": "Genehmigte Anträge mit zukünftigen Daten.",
+      "days": "Tage",
+      "empty": "Kein bevorstehender genehmigter Urlaub.",
+      "restricted": "Die Urlaubsübersicht ist für Mitarbeitendeneditoren verfügbar."
+    },
+    "errors": {
+      "loadFailed": "Dashboard-Daten konnten nicht geladen werden. Bitte erneut versuchen."
+    }
+  },
   "leaveManagementPage": {
     "title": "Urlaubsverwaltung",
     "description": "Urlaubsanträge prüfen, genehmigen und verwalten.",
@@ -1258,6 +1295,155 @@
       "notFound": "Dieser Mitarbeiterdatensatz wurde nicht gefunden.",
       "loadFailed": "Mitarbeiterdatensätze konnten nicht geladen werden. Bitte erneut versuchen.",
       "invalidManager": "Die vorgesetzte Person benötigt einen aktiven Mitarbeiterdatensatz in ERIS. Dieses Feld leer lassen, wenn keine Person zugeordnet ist."
+    }
+  },
+  "recruitmentPage": {
+    "title": "Personalbeschaffung",
+    "description": "Verfolgen Sie offene Stellen, Kandidaten, Vorstellungsgespräche und Angebote.",
+    "overview": "Übersicht zur Personalbeschaffung",
+    "stats": {
+      "openings": "Offene Stellen",
+      "candidates": "Kandidaten",
+      "interviews": "Vorstellungsgespräche",
+      "offers": "Angebote"
+    },
+    "pipeline": {
+      "title": "Bewerbungsprozess",
+      "description": "Verfolgen Sie jeden Schritt von der Stellenausschreibung bis zum unterschriebenen Angebot.",
+      "notConnected": "Daten zur Personalbeschaffung sind noch nicht angebunden."
+    },
+    "areas": {
+      "openings": "Offene Stellen",
+      "candidates": "Kandidatenprozess",
+      "interviews": "Vorstellungsgespräche",
+      "offers": "Angebote"
+    },
+    "empty": {
+      "title": "Die Personalbeschaffung ist noch nicht eingerichtet",
+      "description": "Stellen- und Kandidatendaten werden noch nicht in ERIS gespeichert. Daher zeigt diese Seite keine Zahlen oder Beispieldatensätze."
+    }
+  },
+  "performancePage": {
+    "title": "Leistungsmanagement",
+    "description": "Planen Sie Beurteilungszyklen, sammeln Sie Feedback und verfolgen Sie die Entwicklung.",
+    "overview": "Leistungsübersicht",
+    "stats": {
+      "cycles": "Aktive Zyklen",
+      "dueReviews": "Fällige Beurteilungen",
+      "completed": "Abgeschlossene Beurteilungen",
+      "participants": "Teilnehmende"
+    },
+    "process": {
+      "title": "Beurteilungsprozess",
+      "description": "Ein klarer Zyklus unterstützt Vorbereitung, Gespräche und Nachverfolgung."
+    },
+    "steps": {
+      "planning": {
+        "title": "Ziele festlegen",
+        "description": "Ziele und Erwartungen für die Rolle vereinbaren."
+      },
+      "feedback": {
+        "title": "Feedback sammeln",
+        "description": "Während des Zyklus Notizen und Beispiele sammeln."
+      },
+      "review": {
+        "title": "Beurteilung führen",
+        "description": "Ergebnisse und Entwicklungsbereiche besprechen."
+      },
+      "followUp": {
+        "title": "Nachverfolgen",
+        "description": "Maßnahmen festhalten und Fortschritt prüfen."
+      }
+    },
+    "reviews": {
+      "title": "Beurteilungsaktivität",
+      "description": "Zyklusfortschritt und Verlauf der Mitarbeiterbeurteilungen ansehen."
+    },
+    "empty": {
+      "title": "Noch keine Beurteilungen",
+      "description": "Leistungszyklen und Beurteilungen werden noch nicht in ERIS gespeichert."
+    }
+  },
+  "payrollPage": {
+    "title": "Gehaltsabrechnung",
+    "description": "Prüfen Sie die in ERIS gespeicherten Vergütungsprofile der Mitarbeitenden.",
+    "overview": "Übersicht der Gehaltsprofile",
+    "manageEmployees": "Mitarbeitende verwalten",
+    "stats": {
+      "employeesOnPage": "Mitarbeitende auf dieser Seite",
+      "profilesConfigured": "Eingerichtete Gehaltsprofile"
+    },
+    "profiles": {
+      "title": "Vergütungsprofile",
+      "description": "Gehalt, Zahlungsrhythmus und Gehaltsstufe aus den Mitarbeiterakten."
+    },
+    "searchPlaceholder": "Mitarbeitende suchen",
+    "table": {
+      "employee": "Mitarbeiter",
+      "department": "Abteilung",
+      "baseSalary": "Grundgehalt",
+      "frequency": "Zahlungsrhythmus",
+      "grade": "Gehaltsstufe"
+    },
+    "notProvided": "Nicht angegeben",
+    "frequencies": {
+      "weekly": "Wöchentlich",
+      "biweekly": "Alle zwei Wochen",
+      "semimonthly": "Zweimal im Monat",
+      "monthly": "Monatlich"
+    },
+    "errors": {
+      "accessDenied": "Sie haben keine Berechtigung, Vergütungsprofile einzusehen.",
+      "loadFailed": "Vergütungsprofile konnten nicht geladen werden. Bitte erneut versuchen."
+    },
+    "empty": "Keine Mitarbeitenden für diese Suche gefunden.",
+    "loading": "Vergütungsprofile werden geladen…",
+    "pagination": "{{from}}–{{to}} von {{total}} Mitarbeitenden",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "scopeNote": "Diese Seite zeigt Vergütungsprofile. Abrechnungsläufe, Gehaltsabrechnungen und Zahlungsabwicklung sind in ERIS noch nicht eingerichtet."
+  },
+  "reportsAnalyticsPage": {
+    "title": "Berichte & Analysen",
+    "description": "Analysieren Sie Personal-, Anwesenheits-, Abteilungs- und Urlaubsantragstrends.",
+    "overview": "Personalbericht",
+    "attendanceDate": "Anwesenheitsdatum",
+    "loading": "Berichtsdaten werden geladen…",
+    "empty": "Keine Datensätze vorhanden.",
+    "unassigned": "Keine Abteilung",
+    "stats": {
+      "employees": "Mitarbeitende",
+      "present": "Anwesend",
+      "late": "Verspätet",
+      "pendingLeave": "Offene Urlaubsanträge"
+    },
+    "attendance": {
+      "title": "Anwesenheitsübersicht",
+      "description": "Tägliche Anwesenheitsdaten für das ausgewählte Datum.",
+      "present": "Anwesend",
+      "late": "Verspätet",
+      "absent": "Abwesend",
+      "onLeave": "Im Urlaub",
+      "notRecorded": "Nicht erfasst"
+    },
+    "departments": {
+      "title": "Mitarbeitende nach Abteilung",
+      "description": "Größte Abteilungen nach aktueller Mitarbeiterzahl."
+    },
+    "employment": {
+      "title": "Beschäftigungsart",
+      "description": "Verteilung nach erfasster Beschäftigungsart."
+    },
+    "leave": {
+      "title": "Urlaubsanträge",
+      "description": "Anträge nach Genehmigungsstatus.",
+      "restricted": "Sie haben keine Berechtigung, Urlaubsanträge auszuwerten.",
+      "empty": "Keine Daten zu Urlaubsanträgen vorhanden.",
+      "statuses": {
+        "pending": "Ausstehend",
+        "approved": "Genehmigt",
+        "rejected": "Abgelehnt"
+      }
     }
   }
 }

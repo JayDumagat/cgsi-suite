@@ -7,7 +7,8 @@
     "viewMore": "View More",
     "delete": "Delete",
     "filter": "Filter",
-    "seeAll": "See all"
+    "seeAll": "See all",
+    "search": "Search"
   },
   "sidebar": {
     "groups": {
@@ -124,7 +125,11 @@
       "supportReply": "Ticket Reply",
       "email": "Email",
       "inbox": "Inbox",
-      "inboxDetails": "Details"
+      "inboxDetails": "Details",
+      "recruitment": "Recruitment",
+      "payroll": "Payroll",
+      "performanceManagement": "Performance management",
+      "reportsAnalytics": "Reports & analytics"
     },
     "widget": {
       "title": "#1 Tailwind CSS Dashboard",
@@ -881,6 +886,38 @@
       }
     }
   },
+  "hrDashboard": {
+    "title": "HR dashboard",
+    "description": "A quick view of your workforce, today's attendance, and upcoming leave.",
+    "loading": "Loading dashboard...",
+    "stats": {
+      "title": "Workforce overview",
+      "totalEmployees": "Employees",
+      "presentToday": "Present today",
+      "lateArrivals": "Late arrivals",
+      "pendingLeave": "Pending leave requests"
+    },
+    "attendance": {
+      "title": "Today's attendance",
+      "description": "Daily attendance status across the workforce.",
+      "present": "Present",
+      "late": "Late",
+      "absent": "Absent",
+      "onLeave": "On leave",
+      "notRecorded": "Not recorded",
+      "empty": "No attendance records for today."
+    },
+    "upcomingLeave": {
+      "title": "Upcoming approved leave",
+      "description": "Approved requests with dates still ahead.",
+      "days": "days",
+      "empty": "No upcoming approved leave.",
+      "restricted": "Leave summary is available to employee editors."
+    },
+    "errors": {
+      "loadFailed": "We couldn't load dashboard data. Please try again."
+    }
+  },
   "leaveManagementPage": {
     "title": "Leave management",
     "description": "Review, approve, and track employee leave requests.",
@@ -1258,6 +1295,155 @@
       "notFound": "This employee record could not be found.",
       "loadFailed": "Employee records could not be loaded. Try again.",
       "invalidManager": "The manager must have an active employee record in ERIS. Leave the manager field blank if no manager is assigned."
+    }
+  },
+  "recruitmentPage": {
+    "title": "Recruitment",
+    "description": "Track open positions, candidate progress, interviews, and offers.",
+    "overview": "Recruitment overview",
+    "stats": {
+      "openings": "Open positions",
+      "candidates": "Candidates",
+      "interviews": "Interviews",
+      "offers": "Offers"
+    },
+    "pipeline": {
+      "title": "Hiring pipeline",
+      "description": "Follow each stage from a new opening through a signed offer.",
+      "notConnected": "Recruitment records are not connected yet."
+    },
+    "areas": {
+      "openings": "Open positions",
+      "candidates": "Candidate pipeline",
+      "interviews": "Interviews",
+      "offers": "Offers"
+    },
+    "empty": {
+      "title": "Recruitment tracking is not set up yet",
+      "description": "Candidate and job records are not stored in ERIS yet, so this page does not show counts or sample records."
+    }
+  },
+  "performancePage": {
+    "title": "Performance management",
+    "description": "Plan review cycles, collect feedback, and follow employee development.",
+    "overview": "Performance overview",
+    "stats": {
+      "cycles": "Active cycles",
+      "dueReviews": "Reviews due",
+      "completed": "Completed reviews",
+      "participants": "Participants"
+    },
+    "process": {
+      "title": "Review process",
+      "description": "A consistent cycle helps employees and managers prepare, discuss, and follow through."
+    },
+    "steps": {
+      "planning": {
+        "title": "Set goals",
+        "description": "Agree on role goals and expectations."
+      },
+      "feedback": {
+        "title": "Collect feedback",
+        "description": "Gather notes and examples throughout the cycle."
+      },
+      "review": {
+        "title": "Hold the review",
+        "description": "Discuss outcomes and development areas."
+      },
+      "followUp": {
+        "title": "Follow up",
+        "description": "Record actions and revisit progress."
+      }
+    },
+    "reviews": {
+      "title": "Review activity",
+      "description": "View cycle progress and employee review history."
+    },
+    "empty": {
+      "title": "No performance reviews yet",
+      "description": "Performance cycle and review records are not stored in ERIS yet."
+    }
+  },
+  "payrollPage": {
+    "title": "Payroll",
+    "description": "Review employee compensation profiles currently recorded in ERIS.",
+    "overview": "Payroll profile overview",
+    "manageEmployees": "Manage employees",
+    "stats": {
+      "employeesOnPage": "Employees on this page",
+      "profilesConfigured": "Salary profiles configured"
+    },
+    "profiles": {
+      "title": "Employee compensation profiles",
+      "description": "Salary, pay frequency, and grade from each employee record."
+    },
+    "searchPlaceholder": "Search employees",
+    "table": {
+      "employee": "Employee",
+      "department": "Department",
+      "baseSalary": "Base salary",
+      "frequency": "Pay frequency",
+      "grade": "Pay grade"
+    },
+    "notProvided": "Not provided",
+    "frequencies": {
+      "weekly": "Weekly",
+      "biweekly": "Every two weeks",
+      "semimonthly": "Twice a month",
+      "monthly": "Monthly"
+    },
+    "errors": {
+      "accessDenied": "You do not have permission to view compensation profiles.",
+      "loadFailed": "Compensation profiles could not be loaded. Try again."
+    },
+    "empty": "No employees match this search.",
+    "loading": "Loading compensation profiles…",
+    "pagination": "Showing {{from}}–{{to}} of {{total}} employees",
+    "previous": "Previous",
+    "next": "Next",
+    "scopeNote": "This page shows employee compensation profiles. Payroll runs, payslips, and payment processing are not configured in ERIS yet."
+  },
+  "reportsAnalyticsPage": {
+    "title": "Reports & analytics",
+    "description": "Review workforce, attendance, department, and leave-request trends.",
+    "overview": "Workforce report overview",
+    "attendanceDate": "Attendance date",
+    "loading": "Loading report data…",
+    "empty": "No records to display.",
+    "unassigned": "No department",
+    "stats": {
+      "employees": "Employees",
+      "present": "Present",
+      "late": "Late arrivals",
+      "pendingLeave": "Pending leave"
+    },
+    "attendance": {
+      "title": "Attendance snapshot",
+      "description": "Daily attendance records for the selected date.",
+      "present": "Present",
+      "late": "Late arrivals",
+      "absent": "Absent",
+      "onLeave": "On leave",
+      "notRecorded": "Not recorded"
+    },
+    "departments": {
+      "title": "Employees by department",
+      "description": "Largest departments by current employee count."
+    },
+    "employment": {
+      "title": "Employment type",
+      "description": "Employee distribution by recorded employment type."
+    },
+    "leave": {
+      "title": "Leave requests",
+      "description": "Request totals by approval status.",
+      "restricted": "You do not have permission to view leave request analytics.",
+      "empty": "No leave request data is available.",
+      "statuses": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
     }
   }
 }

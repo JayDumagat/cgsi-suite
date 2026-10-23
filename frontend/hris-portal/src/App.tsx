@@ -21,7 +21,7 @@ import Chats from "./pages/Chat/Chats";
 import AIDashboard from "./pages/Dashboard/AIDashboard";
 import Analytics from "./pages/Dashboard/Analytics";
 import Crm from "./pages/Dashboard/Crm";
-import Ecommerce from "./pages/Dashboard/Ecommerce";
+import HrDashboardPage from "./pages/Dashboard/HrDashboardPage";
 import FinanceDashboard from "./pages/Dashboard/Finance";
 import Logistics from "./pages/Dashboard/Logistics";
 import Marketing from "./pages/Dashboard/Marketing";
@@ -95,6 +95,10 @@ import NewEmployeePage from "./pages/EmployeeDirectory/NewEmployeePage";
 import OrganizationPage from "./pages/Organization/OrganizationPage";
 import AttendancePage from "./pages/Attendance/AttendancePage";
 import LeaveManagementPage from "./pages/LeaveManagement/LeaveManagementPage";
+import RecruitmentPage from "./pages/HrModules/RecruitmentPage";
+import PayrollPage from "./pages/HrModules/PayrollPage";
+import PerformanceManagementPage from "./pages/HrModules/PerformanceManagementPage";
+import ReportsAnalyticsPage from "./pages/HrModules/ReportsAnalyticsPage";
 
 const routerBasename =
   window.location.pathname === "/eris" ||
@@ -110,7 +114,7 @@ export default function App() {
         <Routes>
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
-            <Route index path="/" element={<Ecommerce />} />
+            <Route index path="/" element={<HrDashboardPage />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/marketing" element={<Marketing />} />
             <Route path="/crm" element={<Crm />} />
@@ -126,6 +130,10 @@ export default function App() {
             <Route path="/organization" element={<OrganizationPage />} />
             <Route path="/attendance" element={<AttendancePage />} />
             <Route path="/leave-management" element={<LeaveManagementPage />} />
+            <Route path="/recruitment" element={<RecruitmentPage />} />
+            <Route path="/payroll" element={<PayrollPage />} />
+            <Route path="/performance" element={<PerformanceManagementPage />} />
+            <Route path="/reports-analytics" element={<ReportsAnalyticsPage />} />
             <Route path="/employees/new" element={<NewEmployeePage />} />
             <Route path="/employees/:employeeId/edit" element={<NewEmployeePage />} />
             <Route path="/employees/:employeeId" element={<EmployeeDetailPage />} />

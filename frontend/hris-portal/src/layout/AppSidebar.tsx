@@ -6,6 +6,7 @@ import {
   AiIcon,
   ClockIcon,
   BoxCubeIcon,
+  ChartAltIcon,
   CalenderIcon,
   CallIcon,
   CartIcon,
@@ -18,15 +19,16 @@ import {
   ListIcon,
   MailIcon,
   MapIcon,
+  MultiUserIcon,
   PageIcon,
   PieChartIcon,
   PlugInIcon,
   TableIcon,
   TaskIcon,
   UserCircleIcon,
+  UserMoneyIcon,
 } from "../icons";
 import { cn } from "../utils";
-import SidebarWidget from "./SidebarWidget";
 
 type NavItem = {
   name: string;
@@ -50,18 +52,7 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     key: "dashboard",
-    subItems: [
-      { name: "Ecommerce", key: "ecommerceHome", path: "/" },
-      { name: "Analytics", key: "analytics", path: "/analytics" },
-      { name: "Marketing", key: "marketing", path: "/marketing" },
-      { name: "CRM", key: "crm", path: "/crm" },
-      { name: "Stocks", key: "stocks", path: "/stocks" },
-      { name: "SaaS", key: "saas", path: "/saas" },
-      { name: "Logistics", key: "logistics", path: "/logistics" },
-      { name: "AI", key: "ai", path: "/ai", new: true },
-      { name: "Sales", key: "sales", path: "/sales", new: true },
-      { name: "Finance", key: "finance", path: "/finance", new: true },
-    ],
+    path: "/",
   },
   {
     icon: <UserCircleIcon />,
@@ -390,6 +381,18 @@ const supportItems: NavItem[] = [
   },
 ];
 
+const hrisNavItems: NavItem[] = [
+  { icon: <GridIcon />, name: "Dashboard", key: "dashboard", path: "/" },
+  { icon: <UserCircleIcon />, name: "Employees", key: "employeeDirectory", path: "/employees" },
+  { icon: <GroupIcon />, name: "Organization", key: "organization", path: "/organization" },
+  { icon: <ClockIcon />, name: "Attendance", key: "attendance", path: "/attendance" },
+  { icon: <CalenderIcon />, name: "Leave Management", key: "leaveManagement", path: "/leave-management" },
+  { icon: <MultiUserIcon />, name: "Recruitment", key: "recruitment", path: "/recruitment" },
+  { icon: <UserMoneyIcon />, name: "Payroll", key: "payroll", path: "/payroll" },
+  { icon: <TaskIcon />, name: "Performance Management", key: "performanceManagement", path: "/performance" },
+  { icon: <ChartAltIcon />, name: "Reports & Analytics", key: "reportsAnalytics", path: "/reports-analytics" },
+];
+
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered, setIsMobileOpen } =
     useSidebar();
@@ -415,7 +418,9 @@ const AppSidebar: React.FC = () => {
   // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
     (path: string) =>
-      location.pathname === path || location.pathname.startsWith(`${path}/`),
+      path === "/"
+        ? location.pathname === "/"
+        : location.pathname === path || location.pathname.startsWith(`${path}/`),
     [location.pathname],
   );
 
@@ -689,46 +694,10 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots className="size-6" />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
-            </div>
-
-            <div>
-              <h2
-                className={`mb-4 flex text-xs leading-5 text-gray-400 uppercase ${
-                  !isExpanded && !isHovered
-                    ? "xl:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  t("sidebar.groups.support")
-                ) : (
-                  <HorizontaLDots className="size-6" />
-                )}
-              </h2>
-              {renderMenuItems(supportItems, "support")}
-            </div>
-
-            <div>
-              <h2
-                className={`mb-4 flex text-xs leading-5 text-gray-400 uppercase ${
-                  !isExpanded && !isHovered
-                    ? "xl:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  t("sidebar.groups.others")
-                ) : (
-                  <HorizontaLDots className="size-6" />
-                )}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
+              {renderMenuItems(hrisNavItems, "main")}
             </div>
           </div>
         </nav>
-
-        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
       </div>
     </aside>
   );

@@ -7,7 +7,8 @@
     "viewMore": "Ver más",
     "delete": "Eliminar",
     "filter": "Filtrar",
-    "seeAll": "Ver todo"
+    "seeAll": "Ver todo",
+    "search": "Buscar"
   },
   "sidebar": {
     "groups": {
@@ -124,7 +125,11 @@
       "supportReply": "Respuesta al ticket",
       "email": "Correo",
       "inbox": "Bandeja de entrada",
-      "inboxDetails": "Detalles"
+      "inboxDetails": "Detalles",
+      "recruitment": "Contratación",
+      "payroll": "Nómina",
+      "performanceManagement": "Gestión del desempeño",
+      "reportsAnalytics": "Informes y análisis"
     },
     "widget": {
       "title": "Panel n.º 1 de Tailwind CSS",
@@ -881,6 +886,38 @@
       }
     }
   },
+  "hrDashboard": {
+    "title": "Panel de RR. HH.",
+    "description": "Resumen de la plantilla, la asistencia de hoy y las próximas ausencias.",
+    "loading": "Cargando el panel...",
+    "stats": {
+      "title": "Resumen de la plantilla",
+      "totalEmployees": "Empleados",
+      "presentToday": "Presentes hoy",
+      "lateArrivals": "Llegadas tarde",
+      "pendingLeave": "Solicitudes pendientes"
+    },
+    "attendance": {
+      "title": "Asistencia de hoy",
+      "description": "Estado diario de asistencia de toda la plantilla.",
+      "present": "Presentes",
+      "late": "Tarde",
+      "absent": "Ausentes",
+      "onLeave": "De permiso",
+      "notRecorded": "Sin registrar",
+      "empty": "No hay registros de asistencia para hoy."
+    },
+    "upcomingLeave": {
+      "title": "Próximos permisos aprobados",
+      "description": "Solicitudes aprobadas con fechas futuras.",
+      "days": "días",
+      "empty": "No hay permisos aprobados próximos.",
+      "restricted": "El resumen de permisos está disponible para quienes pueden editar empleados."
+    },
+    "errors": {
+      "loadFailed": "No se pudieron cargar los datos del panel. Inténtalo de nuevo."
+    }
+  },
   "leaveManagementPage": {
     "title": "Gestión de permisos",
     "description": "Revisa, aprueba y consulta las solicitudes de permiso de los empleados.",
@@ -1258,6 +1295,155 @@
       "notFound": "No se encontró este registro de empleado.",
       "loadFailed": "No se pudieron cargar los registros de empleados. Inténtalo de nuevo.",
       "invalidManager": "El responsable debe tener un registro de empleado activo en ERIS. Deja este campo en blanco si no hay responsable asignado."
+    }
+  },
+  "recruitmentPage": {
+    "title": "Contratación",
+    "description": "Sigue las vacantes, el progreso de candidatos, las entrevistas y las ofertas.",
+    "overview": "Resumen de contratación",
+    "stats": {
+      "openings": "Vacantes",
+      "candidates": "Candidatos",
+      "interviews": "Entrevistas",
+      "offers": "Ofertas"
+    },
+    "pipeline": {
+      "title": "Proceso de selección",
+      "description": "Sigue cada etapa desde la apertura hasta la oferta firmada.",
+      "notConnected": "Los registros de contratación aún no están conectados."
+    },
+    "areas": {
+      "openings": "Vacantes",
+      "candidates": "Proceso de candidatos",
+      "interviews": "Entrevistas",
+      "offers": "Ofertas"
+    },
+    "empty": {
+      "title": "El seguimiento de contratación aún no está configurado",
+      "description": "ERIS aún no almacena puestos ni candidatos, por lo que esta página no muestra cifras ni registros de ejemplo."
+    }
+  },
+  "performancePage": {
+    "title": "Gestión del desempeño",
+    "description": "Planifica ciclos de evaluación, recopila comentarios y sigue el desarrollo del personal.",
+    "overview": "Resumen del desempeño",
+    "stats": {
+      "cycles": "Ciclos activos",
+      "dueReviews": "Evaluaciones pendientes",
+      "completed": "Evaluaciones completadas",
+      "participants": "Participantes"
+    },
+    "process": {
+      "title": "Proceso de evaluación",
+      "description": "Un ciclo coherente ayuda a prepararse, conversar y dar seguimiento."
+    },
+    "steps": {
+      "planning": {
+        "title": "Definir objetivos",
+        "description": "Acordar objetivos y expectativas del puesto."
+      },
+      "feedback": {
+        "title": "Recopilar comentarios",
+        "description": "Reunir notas y ejemplos durante el ciclo."
+      },
+      "review": {
+        "title": "Realizar la evaluación",
+        "description": "Conversar sobre resultados y áreas de desarrollo."
+      },
+      "followUp": {
+        "title": "Dar seguimiento",
+        "description": "Registrar acciones y revisar el progreso."
+      }
+    },
+    "reviews": {
+      "title": "Actividad de evaluación",
+      "description": "Consulta el progreso del ciclo y el historial de evaluaciones."
+    },
+    "empty": {
+      "title": "Aún no hay evaluaciones",
+      "description": "ERIS aún no almacena ciclos ni evaluaciones de desempeño."
+    }
+  },
+  "payrollPage": {
+    "title": "Nómina",
+    "description": "Consulta los perfiles de compensación registrados en ERIS.",
+    "overview": "Resumen de perfiles de nómina",
+    "manageEmployees": "Gestionar empleados",
+    "stats": {
+      "employeesOnPage": "Empleados en esta página",
+      "profilesConfigured": "Perfiles salariales configurados"
+    },
+    "profiles": {
+      "title": "Perfiles de compensación",
+      "description": "Salario, frecuencia de pago y nivel registrados en cada ficha."
+    },
+    "searchPlaceholder": "Buscar empleados",
+    "table": {
+      "employee": "Empleado",
+      "department": "Departamento",
+      "baseSalary": "Salario base",
+      "frequency": "Frecuencia de pago",
+      "grade": "Nivel salarial"
+    },
+    "notProvided": "Sin información",
+    "frequencies": {
+      "weekly": "Semanal",
+      "biweekly": "Cada dos semanas",
+      "semimonthly": "Dos veces al mes",
+      "monthly": "Mensual"
+    },
+    "errors": {
+      "accessDenied": "No tienes permiso para ver los perfiles de compensación.",
+      "loadFailed": "No se pudieron cargar los perfiles de compensación. Inténtalo de nuevo."
+    },
+    "empty": "Ningún empleado coincide con esta búsqueda.",
+    "loading": "Cargando perfiles de compensación…",
+    "pagination": "Mostrando {{from}}–{{to}} de {{total}} empleados",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "scopeNote": "Esta página muestra perfiles de compensación. ERIS aún no tiene configurados los ciclos de nómina, recibos ni procesamiento de pagos."
+  },
+  "reportsAnalyticsPage": {
+    "title": "Informes y análisis",
+    "description": "Consulta tendencias de personal, asistencia, departamentos y solicitudes de ausencia.",
+    "overview": "Resumen del informe de personal",
+    "attendanceDate": "Fecha de asistencia",
+    "loading": "Cargando informes…",
+    "empty": "No hay registros para mostrar.",
+    "unassigned": "Sin departamento",
+    "stats": {
+      "employees": "Empleados",
+      "present": "Presentes",
+      "late": "Llegadas tarde",
+      "pendingLeave": "Ausencias pendientes"
+    },
+    "attendance": {
+      "title": "Resumen de asistencia",
+      "description": "Registros diarios de asistencia para la fecha seleccionada.",
+      "present": "Presentes",
+      "late": "Llegadas tarde",
+      "absent": "Ausentes",
+      "onLeave": "De permiso",
+      "notRecorded": "Sin registrar"
+    },
+    "departments": {
+      "title": "Empleados por departamento",
+      "description": "Departamentos más grandes por número actual de empleados."
+    },
+    "employment": {
+      "title": "Tipo de empleo",
+      "description": "Distribución por tipo de empleo registrado."
+    },
+    "leave": {
+      "title": "Solicitudes de ausencia",
+      "description": "Solicitudes según su estado de aprobación.",
+      "restricted": "No tienes permiso para ver el análisis de ausencias.",
+      "empty": "No hay datos de solicitudes de ausencia.",
+      "statuses": {
+        "pending": "Pendiente",
+        "approved": "Aprobada",
+        "rejected": "Rechazada"
+      }
     }
   }
 }
