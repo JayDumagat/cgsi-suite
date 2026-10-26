@@ -2,6 +2,16 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import PageMeta from "@/components/common/PageMeta";
 import { Card } from "@/components/ui/card";
 import Input from "@/components/form/input/InputField";
+import Badge from "@/components/ui/badge/Badge";
+import Button from "@/components/ui/button/Button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { TabButton } from "@/components/ui/tabs/TabWithUnderline";
 import {
   createLeaveRequest,
   decideLeaveRequest,
@@ -46,14 +56,14 @@ function formatDate(value: string, locale: string) {
     : value;
 }
 
-function requestStatusClass(status: EmployeeLeaveRequestStatus) {
+function requestStatusBadgeColor(status: EmployeeLeaveRequestStatus) {
   switch (status) {
     case "approved":
-      return "bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-400";
+      return "success" as const;
     case "rejected":
-      return "bg-error-50 text-error-700 dark:bg-error-500/15 dark:text-error-400";
+      return "error" as const;
     default:
-      return "bg-warning-50 text-warning-700 dark:bg-warning-500/15 dark:text-warning-400";
+      return "warning" as const;
   }
 }
 
@@ -284,165 +294,168 @@ export default function LeaveManagementPage() {
               {t("leaveManagementPage.description")}
             </p>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => {
               setActionErrorKey(null);
               setSuccessKey(null);
               setIsCreateOpen((open) => !open);
             }}
-            className="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white transition hover:bg-brand-600"
+            size="sm"
           >
             {isCreateOpen
               ? t("leaveManagementPage.form.close")
               : t("leaveManagementPage.createRequest")}
-          </button>
+          </Button>
         </div>
 
         {isCreateOpen && (
-          <form
-            onSubmit={(event) => void handleCreate(event)}
-            className="space-y-4 border-y border-gray-200 py-5 dark:border-gray-800"
-          >
-            <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">
-              {t("leaveManagementPage.form.title")}
-            </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              <label className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
-                <span>{t("leaveManagementPage.form.employee")}</span>
-                <select
-                  required
-                  value={draft.employeeId}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      employeeId: event.target.value,
-                    }))
-                  }
-                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 outline-none focus:border-brand-400 dark:border-gray-700 dark:text-white/90"
-                >
-                  <option value="">
-                    {t("leaveManagementPage.form.selectEmployee")}
-                  </option>
-                  {employees.map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.displayName}
-                      {employee.employeeNumber
-                        ? ` · ${employee.employeeNumber}`
-                        : ""}
+          <Card>
+            <form
+              onSubmit={(event) => void handleCreate(event)}
+              className="space-y-4"
+            >
+              <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">
+                {t("leaveManagementPage.form.title")}
+              </h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <label className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
+                  <span>{t("leaveManagementPage.form.employee")}</span>
+                  <select
+                    required
+                    value={draft.employeeId}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        employeeId: event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 outline-none focus:border-brand-400 dark:border-gray-700 dark:text-white/90"
+                  >
+                    <option value="">
+                      {t("leaveManagementPage.form.selectEmployee")}
                     </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
-                <span>{t("leaveManagementPage.form.leaveType")}</span>
-                <select
-                  value={draft.leaveType}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      leaveType: event.target.value as EmployeeLeaveType,
-                    }))
-                  }
-                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 outline-none focus:border-brand-400 dark:border-gray-700 dark:text-white/90"
+                    {employees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.displayName}
+                        {employee.employeeNumber
+                          ? ` · ${employee.employeeNumber}`
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
+                  <span>{t("leaveManagementPage.form.leaveType")}</span>
+                  <select
+                    value={draft.leaveType}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        leaveType: event.target.value as EmployeeLeaveType,
+                      }))
+                    }
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 outline-none focus:border-brand-400 dark:border-gray-700 dark:text-white/90"
+                  >
+                    {(
+                      [
+                        "annual",
+                        "sick",
+                        "emergency",
+                        "parental",
+                        "unpaid",
+                        "other",
+                      ] as const
+                    ).map((leaveType) => (
+                      <option key={leaveType} value={leaveType}>
+                        {t(`leaveManagementPage.leaveTypes.${leaveType}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
+                  <span>{t("leaveManagementPage.form.days")}</span>
+                  <Input
+                    required
+                    type="number"
+                    min={0.5}
+                    max={366}
+                    step={0.5}
+                    value={draft.requestedDays}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        requestedDays: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
+                  <span>{t("leaveManagementPage.form.startDate")}</span>
+                  <Input
+                    required
+                    type="date"
+                    value={draft.startDate}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        startDate: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
+                  <span>{t("leaveManagementPage.form.endDate")}</span>
+                  <Input
+                    required
+                    type="date"
+                    min={draft.startDate}
+                    value={draft.endDate}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        endDate: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm text-gray-600 sm:col-span-2 xl:col-span-1 dark:text-gray-300">
+                  <span>{t("leaveManagementPage.form.reason")}</span>
+                  <Input
+                    required
+                    maxLength={2000}
+                    value={draft.reason}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        reason: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+              <div className="flex flex-wrap justify-end gap-3">
+                <Button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  disabled={isCreating}
+                  variant="outline"
+                  size="sm"
                 >
-                  {(
-                    [
-                      "annual",
-                      "sick",
-                      "emergency",
-                      "parental",
-                      "unpaid",
-                      "other",
-                    ] as const
-                  ).map((leaveType) => (
-                    <option key={leaveType} value={leaveType}>
-                      {t(`leaveManagementPage.leaveTypes.${leaveType}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
-                <span>{t("leaveManagementPage.form.days")}</span>
-                <Input
-                  required
-                  type="number"
-                  min={0.5}
-                  max={366}
-                  step={0.5}
-                  value={draft.requestedDays}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      requestedDays: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
-                <span>{t("leaveManagementPage.form.startDate")}</span>
-                <Input
-                  required
-                  type="date"
-                  value={draft.startDate}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      startDate: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
-                <span>{t("leaveManagementPage.form.endDate")}</span>
-                <Input
-                  required
-                  type="date"
-                  min={draft.startDate}
-                  value={draft.endDate}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      endDate: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="space-y-1.5 text-sm text-gray-600 sm:col-span-2 xl:col-span-1 dark:text-gray-300">
-                <span>{t("leaveManagementPage.form.reason")}</span>
-                <Input
-                  required
-                  maxLength={2000}
-                  value={draft.reason}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      reason: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-            </div>
-            <div className="flex flex-wrap justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsCreateOpen(false)}
-                disabled={isCreating}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5"
-              >
-                {t("leaveManagementPage.form.cancel")}
-              </button>
-              <button
-                type="submit"
-                disabled={isCreating || employees.length === 0}
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white transition hover:bg-brand-600 disabled:opacity-60"
-              >
-                {isCreating
-                  ? t("leaveManagementPage.form.saving")
-                  : t("leaveManagementPage.form.submit")}
-              </button>
-            </div>
-          </form>
+                  {t("leaveManagementPage.form.cancel")}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isCreating || employees.length === 0}
+                  size="sm"
+                >
+                  {isCreating
+                    ? t("leaveManagementPage.form.saving")
+                    : t("leaveManagementPage.form.submit")}
+                </Button>
+              </div>
+            </form>
+          </Card>
         )}
 
         {loadErrorKey ? (
@@ -510,24 +523,23 @@ export default function LeaveManagementPage() {
                       placeholder={t("leaveManagementPage.search")}
                       className="sm:w-64"
                     />
-                    <div
-                      className="flex gap-1 overflow-x-auto"
+                    <nav
+                      className="flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-800"
                       role="tablist"
                       aria-label={t("leaveManagementPage.filterLabel")}
                     >
                       {filters.map((status) => (
-                        <button
+                        <TabButton
                           key={status}
-                          type="button"
+                          id={`leave-filter-${status}`}
                           role="tab"
-                          aria-selected={filter === status}
+                          tabIndex={filter === status ? 0 : -1}
+                          label={t(`leaveManagementPage.filters.${status}`)}
+                          isActive={filter === status}
                           onClick={() => setFilter(status)}
-                          className={`rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition ${filter === status ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300" : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"}`}
-                        >
-                          {t(`leaveManagementPage.filters.${status}`)}
-                        </button>
+                        />
                       ))}
-                    </div>
+                    </nav>
                   </div>
                 </div>
 
@@ -558,42 +570,63 @@ export default function LeaveManagementPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto border-y border-gray-200 dark:border-gray-800">
-                    <table className="w-full min-w-[1050px] text-left rtl:text-right">
-                      <thead>
-                        <tr className="border-b border-gray-200 text-xs tracking-wide text-gray-400 uppercase dark:border-gray-800">
-                          <th scope="col" className="px-3 py-3 font-medium">
+                  <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-white/5">
+                    <Table className="min-w-[1050px] text-left rtl:text-right">
+                      <TableHeader className="border-b border-gray-100 dark:border-white/5">
+                        <TableRow>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("leaveManagementPage.columns.employee")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("leaveManagementPage.columns.leaveType")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("leaveManagementPage.columns.dates")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("leaveManagementPage.columns.days")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("leaveManagementPage.columns.reason")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("leaveManagementPage.columns.status")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("leaveManagementPage.columns.actions")}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                          </TableCell>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
                         {visibleRequests.map((request) => {
                           const isSaving = savingRequestId === request.id;
                           return (
-                            <tr
+                            <TableRow
                               key={request.id}
-                              className="transition hover:bg-gray-50/70 dark:hover:bg-white/[0.02]"
+                              className="transition-colors hover:bg-gray-50 dark:hover:bg-white/3"
                             >
-                              <td className="px-3 py-3.5">
+                              <TableCell className="px-5 py-4 text-start">
                                 <Link
                                   to={`/employees/${request.employeeId}`}
                                   className="min-w-0"
@@ -607,74 +640,61 @@ export default function LeaveManagementPage() {
                                       "—"}
                                   </span>
                                 </Link>
-                              </td>
-                              <td className="px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300">
+                              </TableCell>
+                              <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
                                 {t(
                                   `leaveManagementPage.leaveTypes.${request.leaveType}`,
                                 )}
-                              </td>
-                              <td className="px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300">
+                              </TableCell>
+                              <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
                                 {formatDate(request.startDate, i18n.language)} –{" "}
                                 {formatDate(request.endDate, i18n.language)}
-                              </td>
-                              <td className="px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300">
+                              </TableCell>
+                              <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
                                 {numberFormat.format(request.requestedDays)}
-                              </td>
-                              <td className="max-w-64 px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300">
+                              </TableCell>
+                              <TableCell className="max-w-64 px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
                                 <span className="line-clamp-2">
                                   {request.reason}
                                 </span>
-                              </td>
-                              <td className="px-3 py-3.5">
-                                <span
-                                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${requestStatusClass(request.status)}`}
+                              </TableCell>
+                              <TableCell className="px-5 py-4 text-start">
+                                <Badge
+                                  size="sm"
+                                  color={requestStatusBadgeColor(
+                                    request.status,
+                                  )}
                                 >
                                   {t(
                                     `leaveManagementPage.statuses.${request.status}`,
                                   )}
-                                </span>
-                              </td>
-                              <td className="px-3 py-3.5">
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="px-5 py-4 text-start">
                                 {request.status === "pending" ? (
                                   <div className="flex items-center gap-2">
-                                    <button
+                                    <Button
                                       type="button"
                                       onClick={() =>
                                         void handleDecision(request, "approved")
                                       }
                                       disabled={isSaving}
-                                      aria-label={t(
-                                        "leaveManagementPage.actions.approve",
-                                      )}
-                                      title={t(
-                                        "leaveManagementPage.actions.approve",
-                                      )}
-                                      className="inline-flex size-9 items-center justify-center rounded-lg border border-success-200 text-success-700 transition hover:bg-success-50 disabled:opacity-50 dark:border-success-500/30 dark:text-success-400 dark:hover:bg-success-500/10"
+                                      variant="outline"
+                                      size="sm"
                                     >
-                                      <CheckLineIcon
-                                        className="size-4"
-                                        aria-hidden="true"
-                                      />
-                                    </button>
-                                    <button
+                                      {t("leaveManagementPage.actions.approve")}
+                                    </Button>
+                                    <Button
                                       type="button"
                                       onClick={() =>
                                         void handleDecision(request, "rejected")
                                       }
                                       disabled={isSaving}
-                                      aria-label={t(
-                                        "leaveManagementPage.actions.reject",
-                                      )}
-                                      title={t(
-                                        "leaveManagementPage.actions.reject",
-                                      )}
-                                      className="inline-flex size-9 items-center justify-center rounded-lg border border-error-200 text-error-700 transition hover:bg-error-50 disabled:opacity-50 dark:border-error-500/30 dark:text-error-400 dark:hover:bg-error-500/10"
+                                      variant="outline"
+                                      size="sm"
                                     >
-                                      <CloseLineIcon
-                                        className="size-4"
-                                        aria-hidden="true"
-                                      />
-                                    </button>
+                                      {t("leaveManagementPage.actions.reject")}
+                                    </Button>
                                   </div>
                                 ) : request.decidedByName ? (
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -685,12 +705,12 @@ export default function LeaveManagementPage() {
                                     —
                                   </span>
                                 )}
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           );
                         })}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </section>

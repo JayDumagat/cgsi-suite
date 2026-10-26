@@ -1,6 +1,8 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import ComponentCard from "@/components/common/ComponentCard";
 import PageMeta from "@/components/common/PageMeta";
 import { Card } from "@/components/ui/card";
+import Badge from "@/components/ui/badge/Badge";
 import {
   EmployeeDirectoryRequestError,
   getAttendanceReport,
@@ -31,18 +33,18 @@ function formatDate(value: string, locale: string) {
     : value;
 }
 
-function statusClass(status: AttendanceRecordStatus | null) {
+function statusBadgeColor(status: AttendanceRecordStatus | null) {
   switch (status) {
     case "present":
-      return "bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-400";
+      return "success" as const;
     case "late":
-      return "bg-warning-50 text-warning-700 dark:bg-warning-500/15 dark:text-warning-400";
+      return "warning" as const;
     case "absent":
-      return "bg-error-50 text-error-700 dark:bg-error-500/15 dark:text-error-400";
+      return "error" as const;
     case "on_leave":
-      return "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300";
+      return "primary" as const;
     default:
-      return "bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400";
+      return "light" as const;
   }
 }
 
@@ -257,22 +259,15 @@ export default function HrDashboardPage() {
         </section>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <Card>
+          <ComponentCard
+            title={t("hrDashboard.attendance.title")}
+            desc={t("hrDashboard.attendance.description")}
+            spacing={false}
+          >
             <section
-              aria-labelledby="dashboard-attendance-heading"
+              aria-label={t("hrDashboard.attendance.title")}
               className="space-y-5"
             >
-              <div>
-                <h2
-                  id="dashboard-attendance-heading"
-                  className="text-base font-semibold text-gray-800 dark:text-white/90"
-                >
-                  {t("hrDashboard.attendance.title")}
-                </h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {t("hrDashboard.attendance.description")}
-                </p>
-              </div>
               <div
                 className="flex h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800"
                 aria-label={t("hrDashboard.attendance.title")}
@@ -331,13 +326,14 @@ export default function HrDashboardPage() {
                           {record.clockIn || "—"}
                           {record.clockOut ? ` – ${record.clockOut}` : ""}
                         </span>
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusClass(record.status)}`}
+                        <Badge
+                          size="sm"
+                          color={statusBadgeColor(record.status)}
                         >
                           {t(
                             `attendancePage.statuses.${record.status ?? "unrecorded"}`,
                           )}
-                        </span>
+                        </Badge>
                       </div>
                     </div>
                   ))}
@@ -349,24 +345,17 @@ export default function HrDashboardPage() {
                 </p>
               )}
             </section>
-          </Card>
+          </ComponentCard>
 
-          <Card>
+          <ComponentCard
+            title={t("hrDashboard.upcomingLeave.title")}
+            desc={t("hrDashboard.upcomingLeave.description")}
+            spacing={false}
+          >
             <section
-              aria-labelledby="dashboard-leave-heading"
+              aria-label={t("hrDashboard.upcomingLeave.title")}
               className="space-y-4"
             >
-              <div>
-                <h2
-                  id="dashboard-leave-heading"
-                  className="text-base font-semibold text-gray-800 dark:text-white/90"
-                >
-                  {t("hrDashboard.upcomingLeave.title")}
-                </h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {t("hrDashboard.upcomingLeave.description")}
-                </p>
-              </div>
               {isLoading ? (
                 <p className="py-4 text-sm text-gray-500 dark:text-gray-400">
                   {t("hrDashboard.loading")}
@@ -407,7 +396,7 @@ export default function HrDashboardPage() {
                 </div>
               )}
             </section>
-          </Card>
+          </ComponentCard>
         </div>
       </div>
     </>

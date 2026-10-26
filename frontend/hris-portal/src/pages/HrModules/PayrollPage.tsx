@@ -1,7 +1,15 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import ComponentCard from "@/components/common/ComponentCard";
 import PageMeta from "@/components/common/PageMeta";
 import Input from "@/components/form/input/InputField";
-import { Card } from "@/components/ui/card";
+import Button from "@/components/ui/button/Button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   EmployeeDirectoryRequestError,
   getEmployeeHrDetails,
@@ -157,17 +165,13 @@ export default function PayrollPage() {
           />
         </section>
 
-        <Card>
+        <ComponentCard
+          title={t("payrollPage.profiles.title")}
+          desc={t("payrollPage.profiles.description")}
+          spacing={false}
+        >
           <section className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">
-                  {t("payrollPage.profiles.title")}
-                </h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {t("payrollPage.profiles.description")}
-                </p>
-              </div>
               <form
                 onSubmit={submitSearch}
                 className="flex w-full gap-2 sm:max-w-md"
@@ -178,12 +182,9 @@ export default function PayrollPage() {
                   placeholder={t("payrollPage.searchPlaceholder")}
                   aria-label={t("payrollPage.searchPlaceholder")}
                 />
-                <button
-                  type="submit"
-                  className="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white transition hover:bg-brand-600"
-                >
+                <Button size="sm" className="shrink-0">
                   {t("common.search")}
-                </button>
+                </Button>
               </form>
             </div>
 
@@ -197,30 +198,33 @@ export default function PayrollPage() {
             ) : (
               <>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-                    <thead>
-                      <tr className="text-start text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400">
-                        <th scope="col" className="px-3 py-3 text-start">
+                  <Table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                    <TableHeader className="border-y border-gray-100 bg-gray-50 text-start text-theme-xs font-medium tracking-wide text-gray-500 uppercase dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+                      <TableRow>
+                        <TableCell isHeader className="px-3 py-3 text-start">
                           {t("payrollPage.table.employee")}
-                        </th>
-                        <th scope="col" className="px-3 py-3 text-start">
+                        </TableCell>
+                        <TableCell isHeader className="px-3 py-3 text-start">
                           {t("payrollPage.table.department")}
-                        </th>
-                        <th scope="col" className="px-3 py-3 text-start">
+                        </TableCell>
+                        <TableCell isHeader className="px-3 py-3 text-start">
                           {t("payrollPage.table.baseSalary")}
-                        </th>
-                        <th scope="col" className="px-3 py-3 text-start">
+                        </TableCell>
+                        <TableCell isHeader className="px-3 py-3 text-start">
                           {t("payrollPage.table.frequency")}
-                        </th>
-                        <th scope="col" className="px-3 py-3 text-start">
+                        </TableCell>
+                        <TableCell isHeader className="px-3 py-3 text-start">
                           {t("payrollPage.table.grade")}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        </TableCell>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                       {rows.map(({ employee, payroll }) => (
-                        <tr key={employee.id} className="text-sm">
-                          <td className="px-3 py-4 whitespace-nowrap">
+                        <TableRow
+                          key={employee.id}
+                          className="text-theme-sm hover:bg-gray-50 dark:hover:bg-white/5"
+                        >
+                          <TableCell className="px-3 py-4 whitespace-nowrap">
                             <Link
                               to={`/employees/${employee.id}`}
                               className="font-medium text-gray-800 hover:text-brand-600 dark:text-white/90 dark:hover:text-brand-300"
@@ -230,52 +234,52 @@ export default function PayrollPage() {
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                               {employee.employeeNumber || employee.workEmail}
                             </p>
-                          </td>
-                          <td className="px-3 py-4 whitespace-nowrap text-gray-600 dark:text-gray-300">
+                          </TableCell>
+                          <TableCell className="px-3 py-4 whitespace-nowrap text-gray-600 dark:text-gray-300">
                             {employee.department ||
                               t("payrollPage.notProvided")}
-                          </td>
-                          <td className="px-3 py-4 font-medium whitespace-nowrap text-gray-800 dark:text-gray-200">
+                          </TableCell>
+                          <TableCell className="px-3 py-4 font-medium whitespace-nowrap text-gray-800 dark:text-gray-200">
                             {formatSalary(
                               payroll.baseSalary,
                               payroll.currency,
                               i18n.language,
                             ) || t("payrollPage.notProvided")}
-                          </td>
-                          <td className="px-3 py-4 whitespace-nowrap text-gray-600 dark:text-gray-300">
+                          </TableCell>
+                          <TableCell className="px-3 py-4 whitespace-nowrap text-gray-600 dark:text-gray-300">
                             {payroll.payFrequency
                               ? t(
                                   `payrollPage.frequencies.${payroll.payFrequency}`,
                                 )
                               : t("payrollPage.notProvided")}
-                          </td>
-                          <td className="px-3 py-4 whitespace-nowrap text-gray-600 dark:text-gray-300">
+                          </TableCell>
+                          <TableCell className="px-3 py-4 whitespace-nowrap text-gray-600 dark:text-gray-300">
                             {payroll.payGrade || t("payrollPage.notProvided")}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
                       {!isLoading && rows.length === 0 && (
-                        <tr>
-                          <td
+                        <TableRow>
+                          <TableCell
                             colSpan={5}
                             className="px-3 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
                           >
                             {t("payrollPage.empty")}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       )}
                       {isLoading && (
-                        <tr>
-                          <td
+                        <TableRow>
+                          <TableCell
                             colSpan={5}
                             className="px-3 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
                           >
                             {t("payrollPage.loading")}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       )}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
                 <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -286,26 +290,26 @@ export default function PayrollPage() {
                     })}
                   </p>
                   <div className="flex gap-2">
-                    <button
-                      type="button"
+                    <Button
                       onClick={() =>
                         setPage((current) => Math.max(1, current - 1))
                       }
                       disabled={page <= 1 || isLoading}
-                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
+                      variant="outline"
+                      size="sm"
                     >
                       {t("payrollPage.previous")}
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
                       onClick={() =>
                         setPage((current) => Math.min(pageCount, current + 1))
                       }
                       disabled={page >= pageCount || isLoading}
-                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
+                      variant="outline"
+                      size="sm"
                     >
                       {t("payrollPage.next")}
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 <p className="flex items-start gap-2 border-t border-gray-100 pt-4 text-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">
@@ -318,7 +322,7 @@ export default function PayrollPage() {
               </>
             )}
           </section>
-        </Card>
+        </ComponentCard>
       </div>
     </>
   );

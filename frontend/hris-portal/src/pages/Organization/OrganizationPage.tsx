@@ -1,6 +1,7 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import PageMeta from "@/components/common/PageMeta";
 import { Card } from "@/components/ui/card";
+import ProgressBar from "@/components/ui/progressbar/ProgressBar";
 import {
   EmployeeDirectoryRequestError,
   listEmployees,
@@ -291,12 +292,11 @@ export default function OrganizationPage() {
                               {numberFormat.format(department.employees.length)}
                             </span>
                           </div>
-                          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                            <div
-                              className="h-full rounded-full bg-brand-500"
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
+                          <ProgressBar
+                            progress={percentage}
+                            size="sm"
+                            className="mt-4"
+                          />
                           <div className="mt-4 flex items-center justify-between gap-4 text-xs">
                             <span className="text-gray-500 dark:text-gray-400">
                               {t("organizationPage.activeInDepartment")}
@@ -360,12 +360,7 @@ export default function OrganizationPage() {
                                 {numberFormat.format(item.count)}
                               </span>
                             </div>
-                            <div className="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                              <div
-                                className="h-full rounded-full bg-brand-500"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
+                            <ProgressBar progress={percentage} size="sm" />
                           </div>
                         );
                       })}
@@ -394,12 +389,7 @@ export default function OrganizationPage() {
                                 {numberFormat.format(item.count)}
                               </span>
                             </div>
-                            <div className="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                              <div
-                                className="h-full rounded-full bg-brand-500"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
+                            <ProgressBar progress={percentage} size="sm" />
                           </div>
                         );
                       })}

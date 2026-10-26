@@ -5,19 +5,29 @@ interface TabButtonProps {
   label: string;
   isActive: boolean;
   onClick: () => void;
+  role?: "tab";
+  tabIndex?: number;
 }
 
 export const TabButton: React.FC<TabButtonProps> = ({
+  id,
   label,
   isActive,
   onClick,
+  role,
+  tabIndex,
 }) => {
   return (
     <button
+      id={id}
+      type="button"
+      role={role}
+      aria-selected={role === "tab" ? isActive : undefined}
+      tabIndex={tabIndex}
       className={`inline-flex items-center border-b-2 px-2.5 py-2 text-sm font-medium transition-colors duration-200 ease-in-out ${
         isActive
-          ? "text-brand-500 dark:text-brand-400 border-brand-500 dark:border-brand-400"
-          : "bg-transparent text-gray-500 border-transparent hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          ? "border-brand-500 text-brand-500 dark:border-brand-400 dark:text-brand-400"
+          : "border-transparent bg-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
       }`}
       onClick={onClick}
     >
@@ -61,9 +71,9 @@ const TabWithUnderline: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
-    <div className="p-6 border border-gray-200 rounded-xl dark:border-gray-800">
+    <div className="rounded-xl border border-gray-200 p-6 dark:border-gray-800">
       <div className="border-b border-gray-200 dark:border-gray-800">
-        <nav className="-mb-px flex space-x-2 overflow-x-auto custom-scrollbar">
+        <nav className="-mb-px flex custom-scrollbar space-x-2 overflow-x-auto">
           {tabs.map((tab) => (
             <TabButton
               key={tab.id}

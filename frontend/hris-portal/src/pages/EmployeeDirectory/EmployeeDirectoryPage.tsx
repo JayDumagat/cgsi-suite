@@ -1,5 +1,7 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import PageMeta from "@/components/common/PageMeta";
+import Badge from "@/components/ui/badge/Badge";
+import { Card } from "@/components/ui/card";
 import DataTableOne, {
   type DataTableOneColumn,
 } from "@/components/tables/DataTables/TableOne/DataTableOne";
@@ -34,17 +36,17 @@ function formatHireDate(value: string | null, locale: string) {
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }
 
-function statusClass(status: EmployeeDirectoryItem["employmentStatus"]) {
+function statusBadgeColor(status: EmployeeDirectoryItem["employmentStatus"]) {
   if (status === "active") {
-    return "bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-400";
+    return "success" as const;
   }
   if (status === "on_leave") {
-    return "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300";
+    return "primary" as const;
   }
   if (status === "disabled") {
-    return "bg-warning-50 text-warning-700 dark:bg-warning-500/15 dark:text-warning-400";
+    return "warning" as const;
   }
-  return "bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-gray-300";
+  return "light" as const;
 }
 
 function requestErrorKey(error: unknown) {
@@ -61,37 +63,47 @@ function requestErrorKey(error: unknown) {
 export default function EmployeeDirectoryPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [directory, setDirectory] = useState<EmployeeDirectoryResponse | null>(null);
+  const [directory, setDirectory] = useState<EmployeeDirectoryResponse | null>(
+    null,
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [sortKey, setSortKey] = useState<EmployeeSortKey>("displayName");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<string>>(() => new Set());
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const employees = directory?.items ?? [];
 
-  const setEmployeeSelected = useCallback((employeeId: string, selected: boolean) => {
-    setSelectedEmployeeIds((current) => {
-      const next = new Set(current);
-      if (selected) next.add(employeeId);
-      else next.delete(employeeId);
-      return next;
-    });
-  }, []);
+  const setEmployeeSelected = useCallback(
+    (employeeId: string, selected: boolean) => {
+      setSelectedEmployeeIds((current) => {
+        const next = new Set(current);
+        if (selected) next.add(employeeId);
+        else next.delete(employeeId);
+        return next;
+      });
+    },
+    [],
+  );
 
-  const setCurrentPageSelected = useCallback((selected: boolean) => {
-    setSelectedEmployeeIds((current) => {
-      const next = new Set(current);
-      for (const employee of employees) {
-        if (selected) next.add(employee.id);
-        else next.delete(employee.id);
-      }
-      return next;
-    });
-  }, [employees]);
+  const setCurrentPageSelected = useCallback(
+    (selected: boolean) => {
+      setSelectedEmployeeIds((current) => {
+        const next = new Set(current);
+        for (const employee of employees) {
+          if (selected) next.add(employee.id);
+          else next.delete(employee.id);
+        }
+        return next;
+      });
+    },
+    [employees],
+  );
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -145,11 +157,17 @@ export default function EmployeeDirectoryPage() {
               ariaLabel={t("employeeDirectory.table.selectAllOnPage")}
               checked={
                 employees.length > 0 &&
-                employees.every((employee) => selectedEmployeeIds.has(employee.id))
+                employees.every((employee) =>
+                  selectedEmployeeIds.has(employee.id),
+                )
               }
               indeterminate={
-                employees.some((employee) => selectedEmployeeIds.has(employee.id)) &&
-                employees.some((employee) => !selectedEmployeeIds.has(employee.id))
+                employees.some((employee) =>
+                  selectedEmployeeIds.has(employee.id),
+                ) &&
+                employees.some(
+                  (employee) => !selectedEmployeeIds.has(employee.id),
+                )
               }
               onChange={setCurrentPageSelected}
               className="size-4 shadow-theme-xs focus:ring-2 focus:ring-brand-500/20"
@@ -164,9 +182,13 @@ export default function EmployeeDirectoryPage() {
           >
             <Checkbox
               id={`employee-select-${employee.id}`}
-              ariaLabel={t("employeeDirectory.table.selectEmployee", { name: employee.displayName })}
+              ariaLabel={t("employeeDirectory.table.selectEmployee", {
+                name: employee.displayName,
+              })}
               checked={selectedEmployeeIds.has(employee.id)}
-              onChange={(selected) => setEmployeeSelected(employee.id, selected)}
+              onChange={(selected) =>
+                setEmployeeSelected(employee.id, selected)
+              }
               className="size-4 shadow-theme-xs focus:ring-2 focus:ring-brand-500/20"
             />
           </div>
@@ -212,7 +234,8 @@ export default function EmployeeDirectoryPage() {
         key: "employmentType",
         label: t("employeeDirectory.fields.employmentType"),
         sortKey: "employmentType",
-        render: (employee) => t(`employeeDirectory.employmentTypes.${employee.employmentType}`),
+        render: (employee) =>
+          t(`employeeDirectory.employmentTypes.${employee.employmentType}`),
       },
       {
         key: "hireDate",
@@ -225,20 +248,27 @@ export default function EmployeeDirectoryPage() {
         label: t("employeeDirectory.fields.status"),
         sortKey: "employmentStatus",
         render: (employee) => (
-          <span
-            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusClass(employee.employmentStatus)}`}
-          >
+          <Badge size="sm" color={statusBadgeColor(employee.employmentStatus)}>
             {t(`employeeDirectory.statuses.${employee.employmentStatus}`)}
-          </span>
+          </Badge>
         ),
       },
     ],
-    [employees, i18n.language, selectedEmployeeIds, setCurrentPageSelected, setEmployeeSelected, t],
+    [
+      employees,
+      i18n.language,
+      selectedEmployeeIds,
+      setCurrentPageSelected,
+      setEmployeeSelected,
+      t,
+    ],
   );
 
   const summary = directory?.summary;
   const numberFormat = new Intl.NumberFormat(i18n.language);
-  const tenureFormat = new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 });
+  const tenureFormat = new Intl.NumberFormat(i18n.language, {
+    maximumFractionDigits: 1,
+  });
   const totalItems = directory?.total ?? 0;
   const start = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalItems);
@@ -297,20 +327,24 @@ export default function EmployeeDirectoryPage() {
             },
             {
               label: t("employeeDirectory.summary.averageTenure"),
-              value: summary.averageTenureYears === null
-                ? "—"
-                : `${tenureFormat.format(summary.averageTenureYears)} ${t("employeeDirectory.summary.years")}`,
+              value:
+                summary.averageTenureYears === null
+                  ? "—"
+                  : `${tenureFormat.format(summary.averageTenureYears)} ${t("employeeDirectory.summary.years")}`,
             },
           ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3"
-            >
-              <p className="text-sm text-gray-500 dark:text-gray-400">{item.label}</p>
-              <p className="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-                {typeof item.value === "number" ? numberFormat.format(item.value) : item.value}
-              </p>
-            </div>
+            <Card key={item.label}>
+              <article>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {item.label}
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+                  {typeof item.value === "number"
+                    ? numberFormat.format(item.value)
+                    : item.value}
+                </p>
+              </article>
+            </Card>
           ))}
         </div>
       )}

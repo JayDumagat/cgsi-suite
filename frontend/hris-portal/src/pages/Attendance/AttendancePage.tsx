@@ -2,6 +2,15 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import PageMeta from "@/components/common/PageMeta";
 import { Card } from "@/components/ui/card";
 import Input from "@/components/form/input/InputField";
+import Badge from "@/components/ui/badge/Badge";
+import Button from "@/components/ui/button/Button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   EmployeeDirectoryRequestError,
   getAttendanceReport,
@@ -31,18 +40,18 @@ function todayAsInput() {
   return `${year}-${month}-${day}`;
 }
 
-function attendanceStatusClass(status: AttendanceRecordStatus | null) {
+function attendanceStatusBadgeColor(status: AttendanceRecordStatus | null) {
   switch (status) {
     case "present":
-      return "bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-400";
+      return "success" as const;
     case "late":
-      return "bg-warning-50 text-warning-700 dark:bg-warning-500/15 dark:text-warning-400";
+      return "warning" as const;
     case "absent":
-      return "bg-error-50 text-error-700 dark:bg-error-500/15 dark:text-error-400";
+      return "error" as const;
     case "on_leave":
-      return "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300";
+      return "primary" as const;
     default:
-      return "bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400";
+      return "light" as const;
   }
 }
 
@@ -324,34 +333,55 @@ export default function AttendancePage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto border-y border-gray-200 dark:border-gray-800">
-                    <table className="w-full min-w-[900px] text-left rtl:text-right">
-                      <thead>
-                        <tr className="border-b border-gray-200 text-xs tracking-wide text-gray-400 uppercase dark:border-gray-800">
-                          <th scope="col" className="px-3 py-3 font-medium">
+                  <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-white/5">
+                    <Table className="min-w-[900px] text-left rtl:text-right">
+                      <TableHeader className="border-b border-gray-100 dark:border-white/5">
+                        <TableRow>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("attendancePage.employee")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("attendancePage.department")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("attendancePage.status")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("attendancePage.clockIn")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("attendancePage.clockOut")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("attendancePage.hours")}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-medium">
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+                          >
                             {t("attendancePage.actions")}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                          </TableCell>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
                         {visibleRecords.map((record) => {
                           const isEditing =
                             editingEmployeeId === record.employeeId &&
@@ -360,11 +390,11 @@ export default function AttendancePage() {
                             savingEmployeeId === record.employeeId;
                           return (
                             <Fragment key={record.employeeId}>
-                              <tr
+                              <TableRow
                                 key={record.employeeId}
-                                className="transition hover:bg-gray-50/70 dark:hover:bg-white/[0.02]"
+                                className="transition-colors hover:bg-gray-50 dark:hover:bg-white/3"
                               >
-                                <td className="px-3 py-3.5">
+                                <TableCell className="px-5 py-4 text-start">
                                   <Link
                                     to={`/employees/${record.employeeId}`}
                                     className="min-w-0"
@@ -377,33 +407,36 @@ export default function AttendancePage() {
                                         record.workEmail}
                                     </span>
                                   </Link>
-                                </td>
-                                <td className="px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300">
+                                </TableCell>
+                                <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
                                   {record.department ||
                                     t("attendancePage.unassigned")}
-                                </td>
-                                <td className="px-3 py-3.5">
-                                  <span
-                                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${attendanceStatusClass(record.status)}`}
+                                </TableCell>
+                                <TableCell className="px-5 py-4 text-start">
+                                  <Badge
+                                    size="sm"
+                                    color={attendanceStatusBadgeColor(
+                                      record.status,
+                                    )}
                                   >
                                     {t(
                                       `attendancePage.statuses.${record.status ?? "unrecorded"}`,
                                     )}
-                                  </span>
-                                </td>
-                                <td className="px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300">
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
                                   {record.clockIn || "—"}
-                                </td>
-                                <td className="px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300">
+                                </TableCell>
+                                <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
                                   {record.clockOut || "—"}
-                                </td>
-                                <td className="px-3 py-3.5 text-sm text-gray-600 dark:text-gray-300">
+                                </TableCell>
+                                <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
                                   {record.hoursWorked === null
                                     ? "—"
                                     : `${numberFormat.format(record.hoursWorked)} h`}
-                                </td>
-                                <td className="px-3 py-3.5">
-                                  <button
+                                </TableCell>
+                                <TableCell className="px-5 py-4 text-start">
+                                  <Button
                                     type="button"
                                     onClick={() =>
                                       isEditing
@@ -411,19 +444,21 @@ export default function AttendancePage() {
                                         : beginEditing(record)
                                     }
                                     disabled={isSaving}
-                                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5"
+                                    variant="outline"
+                                    size="sm"
+                                    className="!px-3 !py-2"
                                   >
                                     {isEditing
                                       ? t("attendancePage.cancel")
                                       : record.id
                                         ? t("attendancePage.edit")
                                         : t("attendancePage.record")}
-                                  </button>
-                                </td>
-                              </tr>
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
                               {isEditing && draft && (
-                                <tr key={`${record.employeeId}-editor`}>
-                                  <td colSpan={7} className="px-3 py-4">
+                                <TableRow key={`${record.employeeId}-editor`}>
+                                  <TableCell colSpan={7} className="px-5 py-4">
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
                                       <label className="space-y-1.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                                         <span>
@@ -534,35 +569,36 @@ export default function AttendancePage() {
                                       </label>
                                     </div>
                                     <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
-                                      <button
+                                      <Button
                                         type="button"
                                         onClick={cancelEditing}
                                         disabled={isSaving}
-                                        className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5"
+                                        variant="outline"
+                                        size="sm"
                                       >
                                         {t("attendancePage.cancel")}
-                                      </button>
-                                      <button
+                                      </Button>
+                                      <Button
                                         type="button"
                                         onClick={() =>
                                           void saveAttendance(record)
                                         }
                                         disabled={isSaving}
-                                        className="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
+                                        size="sm"
                                       >
                                         {isSaving
                                           ? t("attendancePage.saving")
                                           : t("attendancePage.save")}
-                                      </button>
+                                      </Button>
                                     </div>
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               )}
                             </Fragment>
                           );
                         })}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </section>

@@ -1,5 +1,7 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import PageMeta from "@/components/common/PageMeta";
+import Input from "@/components/form/input/InputField";
+import ProgressBar from "@/components/ui/progressbar/ProgressBar";
 import {
   EmployeeDirectoryRequestError,
   getAttendanceReport,
@@ -68,17 +70,13 @@ function BarList({
               {item.value}
             </span>
           </div>
-          <div
-            className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800"
-            aria-hidden="true"
-          >
-            <div
-              className="h-full rounded-full bg-brand-500"
-              style={{
-                width: `${Math.max(item.value > 0 ? 4 : 0, (item.value / max) * 100)}%`,
-              }}
-            />
-          </div>
+          <ProgressBar
+            progress={Math.max(
+              item.value > 0 ? 4 : 0,
+              (item.value / max) * 100,
+            )}
+            size="sm"
+          />
         </div>
       ))}
     </div>
@@ -269,11 +267,11 @@ export default function ReportsAnalyticsPage() {
           </div>
           <label className="flex flex-col gap-1.5 text-sm text-gray-600 dark:text-gray-300">
             <span>{t("reportsAnalyticsPage.attendanceDate")}</span>
-            <input
+            <Input
               type="date"
               value={date}
               onChange={(event) => setDate(event.target.value)}
-              className="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-gray-800 outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+              className="min-w-44"
             />
           </label>
         </header>
