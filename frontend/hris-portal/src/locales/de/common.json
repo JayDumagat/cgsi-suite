@@ -995,9 +995,43 @@
   },
   "attendancePage": {
     "title": "Anwesenheit",
-    "description": "Tägliche Anwesenheit und Arbeitsstunden anzeigen und erfassen.",
-    "date": "Anwesenheitsdatum",
+    "description": "Anwesenheit der Mitarbeitenden in einer Wochen- oder Monatsansicht prüfen.",
+    "date": "Datum auswählen",
+    "weekView": "Wöchentliche Anwesenheit",
+    "previousWeek": "Vorherige Woche",
+    "nextWeek": "Nächste Woche",
+    "previousMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "today": "Heute",
+    "rangeLabel": "Zeitraum",
+    "rangeOptions": {
+      "week": "Woche",
+      "month": "Monat"
+    },
+    "month": "Monat",
+    "weekend": "Wochenende",
+    "legend": {
+      "title": "Anwesenheitsübersicht"
+    },
     "search": "Mitarbeitende suchen",
+    "rate": {
+      "title": "Anwesenheitsquote",
+      "description": "Anwesenheitsübersicht für heute",
+      "percentagePointChange": "{{change}} Prozentpunkte",
+      "increasedVsLastWeek": "Höher als in der Vorwoche",
+      "decreasedVsLastWeek": "Niedriger als in der Vorwoche",
+      "unchangedVsLastWeek": "Unverändert gegenüber der Vorwoche",
+      "noComparison": "Kein Vergleich zur Vorwoche verfügbar",
+      "noWorkdays": "Keine erwarteten Arbeitstage in diesem Zeitraum",
+      "onTime": "Pünktlich",
+      "late": "Verspätet",
+      "notAttended": "Noch nicht anwesend",
+      "table": {
+        "status": "Status",
+        "metric": "Mitarbeitende",
+        "total": "Gesamt"
+      }
+    },
     "summary": {
       "title": "Anwesenheitsübersicht",
       "present": "Anwesend",
@@ -1005,11 +1039,11 @@
       "absent": "Abwesend",
       "onLeave": "Im Urlaub"
     },
-    "recordsTitle": "Tägliche Anwesenheit",
-    "recordsCount": "Mitarbeiterdatensätze: {{count}}",
+    "recordsTitle": "Anwesenheitsdatensätze",
+    "recordsCount": "Mitarbeitende: {{count}}",
     "viewEmployees": "Mitarbeiterverzeichnis",
-    "loading": "Anwesenheitsdaten werden geladen...",
-    "noEmployees": "Für dieses Datum wurden keine aktiven Mitarbeitenden gefunden.",
+    "loading": "Anwesenheit wird geladen...",
+    "noEmployees": "In diesem Zeitraum wurden keine aktiven Mitarbeitenden gefunden.",
     "noMatches": "Keine Mitarbeitenden entsprechen der Suche.",
     "employee": "Mitarbeiter",
     "department": "Abteilung",
@@ -1027,12 +1061,20 @@
     "saving": "Wird gespeichert...",
     "save": "Anwesenheit speichern",
     "saved": "Anwesenheitsdatensatz gespeichert.",
+    "cellAriaLabel": "{{employee}} am {{date}}: {{status}}.",
+    "recordCellAriaLabel": "Anwesenheit für {{employee}} am {{date}}.",
     "statuses": {
       "present": "Anwesend",
       "late": "Verspätet",
       "absent": "Abwesend",
       "on_leave": "Im Urlaub",
-      "unrecorded": "Nicht erfasst"
+      "sick_leave": "Krankheitsurlaub",
+      "half_day_sick_leave": "Halber Krankheitstag",
+      "vacation_leave": "Urlaub",
+      "half_day_vacation_leave": "Halber Urlaubstag",
+      "official_business": "Dienstlich unterwegs",
+      "nuptial": "Hochzeitsurlaub",
+      "bereavement": "Trauerurlaub"
     },
     "errors": {
       "loadFailed": "Anwesenheit konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
@@ -1041,7 +1083,7 @@
   },
   "organizationPage": {
     "title": "Organisation",
-    "description": "Entdecken Sie Abteilungen und die Verteilung der Mitarbeitenden im Verzeichnis.",
+    "description": "Übersicht über Organisationsstruktur und Belegschaft.",
     "viewEmployeeDirectory": "Mitarbeiterverzeichnis",
     "overview": "Organisationsübersicht",
     "totalEmployees": "Mitarbeitende gesamt",
@@ -1059,6 +1101,95 @@
     "employmentStatusDistribution": "Beschäftigungsstatus",
     "loading": "Organisation wird geladen...",
     "noDepartments": "Noch keine Abteilungsdaten verfügbar.",
+    "tabs": {
+      "label": "Organisationsbereiche",
+      "overview": "Übersicht",
+      "branches": "Niederlassungen",
+      "departments": "Abteilungen",
+      "positions": "Stellen",
+      "orgChart": "Organigramm"
+    },
+    "tabDescriptions": {
+      "overview": "Organisationsstruktur und Belegschaft auf einen Blick.",
+      "branches": "Standorte, Adressen und Niederlassungsleitungen verwalten.",
+      "departments": "Teams organisieren und Abteilungsleitungen zuweisen.",
+      "positions": "Stellenbezeichnungen, Beschreibungen und Ebenen festlegen.",
+      "orgChart": "Niederlassungen, Abteilungen, Stellen und Berichtslinien erkunden."
+    },
+    "orgChartControls": {
+      "searchPlaceholder": "Name, Stelle, Abteilung oder E-Mail suchen",
+      "addEmployee": "Mitarbeiter hinzufügen",
+      "branchManager": "Niederlassungsleitung",
+      "departmentHead": "Abteilungsleitung",
+      "controls": "Steuerung des Organigramms",
+      "centerView": "Ansicht zentrieren",
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern",
+      "expandReports": "{count} direkte Mitarbeitende anzeigen",
+      "collapseReports": "{count} direkte Mitarbeitende ausblenden",
+      "emptyChartDescription": "Fügen Sie Mitarbeitende und Vorgesetzte hinzu, um das Organigramm aufzubauen.",
+      "noSearchResults": "Keine Mitarbeitenden für diese Suche gefunden.",
+      "searchHint": "Suchen Sie nach Name, Stelle, Abteilung oder E-Mail."
+    },
+    "management": {
+      "title": "Organisationsstruktur",
+      "description": "Verwalten Sie eine Organisation mit Niederlassungen, Abteilungen und Stellen.",
+      "createOrganization": "Organisation erstellen",
+      "createDepartment": "Abteilung erstellen",
+      "createBranch": "Niederlassung erstellen",
+      "createPosition": "Stelle hinzufügen",
+      "organizationName": "Organisationsname",
+      "departmentName": "Abteilungsname",
+      "branchName": "Name der Niederlassung",
+      "positionName": "Stellenbezeichnung",
+      "branches": "Niederlassungen",
+      "positions": "Stellen",
+      "departmentsAndPositions": "Abteilungen und Stellen",
+      "branchLocations": "Niederlassungen",
+      "code": "Code",
+      "address": "Büroadresse",
+      "addressPlaceholder": "Adresse der Niederlassung eingeben",
+      "addressNotProvided": "Keine Adresse angegeben",
+      "branchManager": "Niederlassungsleitung",
+      "selectBranchManager": "Niederlassungsleitung auswählen",
+      "noBranchManager": "Keine Niederlassungsleitung zugewiesen",
+      "departmentHead": "Abteilungsleitung",
+      "selectDepartmentHead": "Abteilungsleitung auswählen",
+      "noDepartmentHead": "Keine Abteilungsleitung zugewiesen",
+      "employee": "Mitarbeiter",
+      "jobLevel": "Stellenebene",
+      "jobLevelPlaceholder": "Zum Beispiel L2 oder Senior",
+      "positionDescription": "Stellenbeschreibung",
+      "positionDescriptionPlaceholder": "Aufgaben und Verantwortlichkeiten beschreiben",
+      "createDepartmentFirst": "Erstellen Sie zuerst eine Abteilung, um Stellen hinzuzufügen.",
+      "noPositionDescription": "Keine Beschreibung angegeben",
+      "reportingRelationships": "Berichtslinien der Mitarbeitenden",
+      "reportingDescription": "Berichtslinien basieren auf der jeweiligen Vorgesetztenzuweisung.",
+      "noEmployeesForChart": "Keine aktiven Berichtslinien verfügbar.",
+      "organization": "Organisation",
+      "department": "Abteilung",
+      "selectOrganization": "Organisation auswählen",
+      "selectDepartment": "Abteilung auswählen",
+      "saveOrganization": "Organisation speichern",
+      "saveDepartment": "Abteilung speichern",
+      "saveBranch": "Niederlassung speichern",
+      "savePosition": "Stelle speichern",
+      "cancel": "Abbrechen",
+      "noOrganizations": "Noch keine Organisationen vorhanden. Erstellen Sie eine, um die Struktur zu beginnen.",
+      "noDepartments": "Für diese Organisation wurden noch keine Abteilungen angelegt.",
+      "noBranches": "Für diese Organisation wurden noch keine Niederlassungen angelegt.",
+      "noPositions": "Für diese Abteilung wurden noch keine Stellen angelegt.",
+      "noPermission": "Sie haben keine Berechtigung, die Organisationsstruktur zu verwalten.",
+      "organizationCreated": "Organisation erstellt.",
+      "departmentCreated": "Abteilung erstellt.",
+      "branchCreated": "Niederlassung erstellt.",
+      "positionCreated": "Stelle erstellt.",
+      "errors": {
+        "duplicateName": "Ein Eintrag mit diesem Namen existiert in diesem Teil der Organisation bereits.",
+        "invalidAssignee": "Wählen Sie einen aktiven Mitarbeiter für diese Zuweisung aus.",
+        "saveFailed": "Die Organisationsdaten konnten nicht gespeichert werden. Bitte versuchen Sie es erneut."
+      }
+    },
     "errors": {
       "loadFailed": "Die Organisation konnte nicht geladen werden. Bitte versuchen Sie es erneut."
     }
@@ -1299,7 +1430,7 @@
   },
   "recruitmentPage": {
     "title": "Personalbeschaffung",
-    "description": "Verfolgen Sie offene Stellen, Kandidaten, Vorstellungsgespräche und Angebote.",
+    "description": "Verwalten Sie offene Stellen und begleiten Sie Kandidaten von der Bewerbung bis zur Einstellung.",
     "overview": "Übersicht zur Personalbeschaffung",
     "stats": {
       "openings": "Offene Stellen",
@@ -1309,18 +1440,26 @@
     },
     "pipeline": {
       "title": "Bewerbungsprozess",
-      "description": "Verfolgen Sie jeden Schritt von der Stellenausschreibung bis zum unterschriebenen Angebot.",
-      "notConnected": "Daten zur Personalbeschaffung sind noch nicht angebunden."
+      "description": "Begleiten Sie Kandidaten von der ersten Bewerbung bis zur Einstellung.",
+      "notConnected": "Daten zur Personalbeschaffung sind noch nicht angebunden.",
+      "stages": {
+        "applied": "Eingegangen",
+        "screening": "Vorauswahl",
+        "interview": "Vorstellungsgespräch",
+        "offer": "Angebot",
+        "hired": "Eingestellt"
+      }
     },
-    "areas": {
-      "openings": "Offene Stellen",
-      "candidates": "Kandidatenprozess",
-      "interviews": "Vorstellungsgespräche",
-      "offers": "Angebote"
+    "positions": {
+      "description": "Freigegebene Stellen, für die derzeit Bewerbungen angenommen werden.",
+      "emptyTitle": "Noch keine offenen Stellen",
+      "emptyDescription": "Offene Stellen werden angezeigt, sobald Rekrutierungsdaten angebunden sind."
     },
-    "empty": {
-      "title": "Die Personalbeschaffung ist noch nicht eingerichtet",
-      "description": "Stellen- und Kandidatendaten werden noch nicht in ERIS gespeichert. Daher zeigt diese Seite keine Zahlen oder Beispieldatensätze."
+    "interviewSchedule": {
+      "title": "Anstehende Vorstellungsgespräche",
+      "description": "Behalten Sie bevorstehende Gespräche mit Kandidaten im Blick.",
+      "emptyTitle": "Keine Vorstellungsgespräche geplant",
+      "emptyDescription": "Geplante Gespräche werden angezeigt, sobald Rekrutierungsdaten angebunden sind."
     }
   },
   "performancePage": {

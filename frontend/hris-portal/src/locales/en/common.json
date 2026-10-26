@@ -995,9 +995,43 @@
   },
   "attendancePage": {
     "title": "Attendance",
-    "description": "Review and record daily employee attendance and worked hours.",
-    "date": "Attendance date",
+    "description": "Review employee attendance in a weekly or monthly calendar.",
+    "date": "Choose a date",
+    "weekView": "Weekly attendance",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "rangeLabel": "Range",
+    "rangeOptions": {
+      "week": "Week",
+      "month": "Month"
+    },
+    "month": "Month",
+    "weekend": "Weekend",
+    "legend": {
+      "title": "Attendance key"
+    },
     "search": "Search employees",
+    "rate": {
+      "title": "Attendance rate",
+      "description": "Today's attendance overview",
+      "percentagePointChange": "{{change}} pp",
+      "increasedVsLastWeek": "Increased vs last week",
+      "decreasedVsLastWeek": "Decreased vs last week",
+      "unchangedVsLastWeek": "Unchanged vs last week",
+      "noComparison": "No previous-week comparison",
+      "noWorkdays": "No expected workdays in this period",
+      "onTime": "On time",
+      "late": "Late",
+      "notAttended": "Not attended yet",
+      "table": {
+        "status": "Status",
+        "metric": "Employees",
+        "total": "Total"
+      }
+    },
     "summary": {
       "title": "Attendance summary",
       "present": "Present",
@@ -1005,11 +1039,11 @@
       "absent": "Absent",
       "onLeave": "On leave"
     },
-    "recordsTitle": "Daily attendance",
-    "recordsCount": "Employee records: {{count}}",
+    "recordsTitle": "Attendance records",
+    "recordsCount": "Employees: {{count}}",
     "viewEmployees": "Employee directory",
-    "loading": "Loading attendance records...",
-    "noEmployees": "No active employees found for this date.",
+    "loading": "Loading attendance...",
+    "noEmployees": "No active employees found for this range.",
     "noMatches": "No employees match your search.",
     "employee": "Employee",
     "department": "Department",
@@ -1027,12 +1061,20 @@
     "saving": "Saving...",
     "save": "Save attendance",
     "saved": "Attendance record saved.",
+    "cellAriaLabel": "{{employee}} on {{date}}: {{status}}.",
+    "recordCellAriaLabel": "Attendance for {{employee}} on {{date}}.",
     "statuses": {
       "present": "Present",
       "late": "Late",
       "absent": "Absent",
       "on_leave": "On leave",
-      "unrecorded": "Not recorded"
+      "sick_leave": "Sick leave",
+      "half_day_sick_leave": "Half-day sick leave",
+      "vacation_leave": "Vacation leave",
+      "half_day_vacation_leave": "Half-day vacation leave",
+      "official_business": "Official business",
+      "nuptial": "Nuptial leave",
+      "bereavement": "Bereavement leave"
     },
     "errors": {
       "loadFailed": "We couldn't load attendance. Please try again.",
@@ -1041,7 +1083,7 @@
   },
   "organizationPage": {
     "title": "Organization",
-    "description": "Explore departments and employee distribution using the employee directory.",
+    "description": "View the organization hierarchy and workforce overview.",
     "viewEmployeeDirectory": "Employee directory",
     "overview": "Organization overview",
     "totalEmployees": "Total employees",
@@ -1059,6 +1101,95 @@
     "employmentStatusDistribution": "Employment status",
     "loading": "Loading organization...",
     "noDepartments": "No department data is available yet.",
+    "tabs": {
+      "label": "Organization sections",
+      "overview": "Overview",
+      "branches": "Branches",
+      "departments": "Departments",
+      "positions": "Positions",
+      "orgChart": "Org chart"
+    },
+    "tabDescriptions": {
+      "overview": "See your organization structure and workforce at a glance.",
+      "branches": "Manage office locations, addresses, and branch managers.",
+      "departments": "Organize teams and assign department heads.",
+      "positions": "Define job titles, descriptions, and job levels.",
+      "orgChart": "Explore branches, departments, positions, and employee reporting relationships."
+    },
+    "orgChartControls": {
+      "searchPlaceholder": "Search name, title, department, or email",
+      "addEmployee": "Add employee",
+      "branchManager": "Branch manager",
+      "departmentHead": "Department head",
+      "controls": "Organization chart controls",
+      "centerView": "Center view",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "expandReports": "Show {count} direct reports",
+      "collapseReports": "Hide {count} direct reports",
+      "emptyChartDescription": "Add employees and reporting managers to build out the chart.",
+      "noSearchResults": "No employees match your search.",
+      "searchHint": "Try a name, job title, department, or email."
+    },
+    "management": {
+      "title": "Organization structure",
+      "description": "Maintain one organization with multiple branches, departments, and job positions.",
+      "createOrganization": "Create organization",
+      "createDepartment": "Create department",
+      "createBranch": "Create branch",
+      "createPosition": "Add job position",
+      "organizationName": "Organization name",
+      "departmentName": "Department name",
+      "branchName": "Branch name",
+      "positionName": "Job position name",
+      "branches": "branches",
+      "positions": "job positions",
+      "departmentsAndPositions": "Departments and job positions",
+      "branchLocations": "Branches",
+      "code": "Code",
+      "address": "Office address",
+      "addressPlaceholder": "Enter the branch office address",
+      "addressNotProvided": "No address provided",
+      "branchManager": "Branch manager",
+      "selectBranchManager": "Select a branch manager",
+      "noBranchManager": "No branch manager assigned",
+      "departmentHead": "Department head",
+      "selectDepartmentHead": "Select a department head",
+      "noDepartmentHead": "No department head assigned",
+      "employee": "Employee",
+      "jobLevel": "Job level",
+      "jobLevelPlaceholder": "For example, L2 or Senior",
+      "positionDescription": "Position description",
+      "positionDescriptionPlaceholder": "Describe the role and its responsibilities",
+      "createDepartmentFirst": "Create a department before adding job positions.",
+      "noPositionDescription": "No description provided",
+      "reportingRelationships": "Employee reporting relationships",
+      "reportingDescription": "Reporting lines are based on each employee's manager assignment.",
+      "noEmployeesForChart": "No active employee reporting relationships are available.",
+      "organization": "Organization",
+      "department": "Department",
+      "selectOrganization": "Select an organization",
+      "selectDepartment": "Select a department",
+      "saveOrganization": "Save organization",
+      "saveDepartment": "Save department",
+      "saveBranch": "Save branch",
+      "savePosition": "Save job position",
+      "cancel": "Cancel",
+      "noOrganizations": "No organizations yet. Create one to start your organization structure.",
+      "noDepartments": "No departments have been added to this organization yet.",
+      "noBranches": "No branches have been added to this organization yet.",
+      "noPositions": "No job positions have been added to this department yet.",
+      "noPermission": "You don't have permission to manage the organization structure.",
+      "organizationCreated": "Organization created.",
+      "departmentCreated": "Department created.",
+      "branchCreated": "Branch created.",
+      "positionCreated": "Job position created.",
+      "errors": {
+        "duplicateName": "An item with that name already exists in this part of the organization.",
+        "invalidAssignee": "Select an active employee for this assignment.",
+        "saveFailed": "We couldn't save the organization details. Please try again."
+      }
+    },
     "errors": {
       "loadFailed": "We couldn't load the organization. Please try again."
     }
@@ -1299,7 +1430,7 @@
   },
   "recruitmentPage": {
     "title": "Recruitment",
-    "description": "Track open positions, candidate progress, interviews, and offers.",
+    "description": "Manage openings and follow candidates from application through hire.",
     "overview": "Recruitment overview",
     "stats": {
       "openings": "Open positions",
@@ -1309,18 +1440,26 @@
     },
     "pipeline": {
       "title": "Hiring pipeline",
-      "description": "Follow each stage from a new opening through a signed offer.",
-      "notConnected": "Recruitment records are not connected yet."
+      "description": "Follow candidates from their first application through hiring.",
+      "notConnected": "Recruitment records are not connected yet.",
+      "stages": {
+        "applied": "Applied",
+        "screening": "Screening",
+        "interview": "Interview",
+        "offer": "Offer",
+        "hired": "Hired"
+      }
     },
-    "areas": {
-      "openings": "Open positions",
-      "candidates": "Candidate pipeline",
-      "interviews": "Interviews",
-      "offers": "Offers"
+    "positions": {
+      "description": "Approved roles that are currently accepting applications.",
+      "emptyTitle": "No open positions yet",
+      "emptyDescription": "Open positions will appear here when recruitment data is connected."
     },
-    "empty": {
-      "title": "Recruitment tracking is not set up yet",
-      "description": "Candidate and job records are not stored in ERIS yet, so this page does not show counts or sample records."
+    "interviewSchedule": {
+      "title": "Upcoming interviews",
+      "description": "Keep upcoming conversations with candidates in view.",
+      "emptyTitle": "No interviews scheduled",
+      "emptyDescription": "Scheduled interviews will appear here when recruitment data is connected."
     }
   },
   "performancePage": {

@@ -72,7 +72,18 @@ export interface EmployeeHrDetails {
   medical: EmployeeMedicalDetails;
 }
 
-export type AttendanceRecordStatus = "present" | "late" | "absent" | "on_leave";
+export type AttendanceRecordStatus =
+  | "present"
+  | "late"
+  | "absent"
+  | "on_leave"
+  | "sick_leave"
+  | "half_day_sick_leave"
+  | "vacation_leave"
+  | "half_day_vacation_leave"
+  | "official_business"
+  | "nuptial"
+  | "bereavement";
 
 export interface AttendanceRecordInput {
   status: AttendanceRecordStatus;
@@ -197,6 +208,7 @@ export interface EmployeeDirectoryItem {
   workEmail: string;
   department: string | null;
   jobTitle: string | null;
+  managerEmployeeId: string | null;
   employmentType: EmploymentType;
   hireDate: string | null;
   employmentStatus: EmploymentStatus;

@@ -58,6 +58,11 @@ export function createAuthenticationApp(): Express {
   );
   app.use("/api/auth", createAuthenticationRoutes(controller));
   app.get("/internal/eris/employees", erisDirectory.listEmployees);
+  app.get("/internal/eris/organizations", erisDirectory.getOrganizationStructure);
+  app.post("/internal/eris/organizations", erisDirectory.createOrganization);
+  app.post("/internal/eris/organizations/:organizationId/departments", erisDirectory.createDepartment);
+  app.post("/internal/eris/organizations/:organizationId/branches", erisDirectory.createBranch);
+  app.post("/internal/eris/organizations/:organizationId/departments/:departmentId/positions", erisDirectory.createPosition);
   app.get("/internal/eris/attendance", erisDirectory.getAttendanceReport);
   app.put("/internal/eris/attendance/:employeeId/:attendanceDate", erisDirectory.updateAttendanceRecord);
   app.get("/internal/eris/leave-requests", erisDirectory.getLeaveManagementReport);

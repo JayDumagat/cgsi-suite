@@ -12,6 +12,15 @@ import type {
   ProvisionedEmployee,
 } from "../../modules/directory/domain/employee.js";
 import { EmployeeRecordError } from "../../modules/directory/domain/employee.js";
+import {
+  OrganizationManagementError,
+  type BranchInput,
+  type DepartmentInput,
+  type OrganizationInput,
+  type PositionInput,
+  type OrganizationRecord,
+  type OrganizationStructure,
+} from "../../modules/directory/domain/organization.js";
 import { mayAuthenticate } from "../../modules/directory/domain/employee.js";
 
 const directorySortExpressions = {
@@ -28,6 +37,367 @@ const directorySortExpressions = {
 export class DirectoryRepository extends EmployeeMasterRepository {
   constructor(pool: Pool) {
     super(pool);
+  }
+
+  async getOrganizationStructure(
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationStructure> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+      if (!(await hasEmployeePermission(client, requestedByEmployeeId, "hris.employee.read"))) {
+        throw new EmployeeRecordError("forbidden");
+      }
+      const organizations = await client.query<{
+        id: string;
+        unit_code: string | null;
+        display_name: string;
+      }>(
+        [
+          "SELECT id::text AS id, unit_code, display_name",
+          "  FROM directory.org_units",
+          " WHERE source = 'eris' AND parent_id IS NULL",
+          " ORDER BY lower(display_name), id",
+        ].join("\n"),
+      );
+      const organizationIds = organizations.rows.map((organization) => organization.id);
+      const departments = organizationIds.length
+        ? await client.query<{
+            id: string;
+            parent_id: string;
+            unit_type: string | null;
+            unit_code: string | null;
+            display_name: string;
+            address: string | null;
+            branch_manager_employee_id: string | null;
+            department_head_employee_id: string | null;
+          }>(
+            [
+              "SELECT id::text AS id, parent_id::text AS parent_id, unit_type, unit_code, display_name,",
+              "       address, branch_manager_employee_id::text, department_head_employee_id::text",
+              "  FROM directory.org_units",
+              " WHERE source = 'eris' AND parent_id = ANY($1::uuid[])",
+              " ORDER BY lower(display_name), id",
+            ].join("\n"),
+            [organizationIds],
+          )
+        : { rows: [] };
+      const departmentIds = departments.rows
+        .filter((unit) => unit.unit_type === "department")
+        .map((department) => department.id);
+      const positions = departmentIds.length
+        ? await client.query<{
+            id: string;
+            parent_id: string;
+            unit_code: string | null;
+            display_name: string;
+            description: string | null;
+            job_level: string | null;
+          }>(
+            [
+              "SELECT id::text AS id, parent_id::text AS parent_id, unit_code, display_name, description, job_level",
+              "  FROM directory.org_units",
+              " WHERE source = 'eris' AND unit_type = 'position' AND parent_id = ANY($1::uuid[])",
+              " ORDER BY lower(display_name), id",
+            ].join("\n"),
+            [departmentIds],
+          )
+        : { rows: [] };
+
+      await client.query("COMMIT");
+      return {
+        organizations: organizations.rows.map((organization) => ({
+          id: organization.id,
+          name: organization.display_name,
+          code: organization.unit_code,
+          departments: departments.rows
+            .filter((department) => department.parent_id === organization.id && department.unit_type === "department")
+            .map((department) => ({
+              id: department.id,
+              name: department.display_name,
+              code: department.unit_code,
+              headEmployeeId: department.department_head_employee_id,
+              positions: positions.rows
+                .filter((position) => position.parent_id === department.id)
+                .map((position) => ({
+                  id: position.id,
+                  name: position.display_name,
+                  code: position.unit_code,
+                  description: position.description,
+                  jobLevel: position.job_level,
+                })),
+            })),
+          branches: departments.rows
+            .filter((branch) => branch.parent_id === organization.id && branch.unit_type === "branch")
+            .map((branch) => ({
+              id: branch.id,
+              name: branch.display_name,
+              code: branch.unit_code,
+              address: branch.address,
+              managerEmployeeId: branch.branch_manager_employee_id,
+            })),
+        })),
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async createOrganization(
+    input: OrganizationInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const inserted = await client.query<{
+        id: string;
+        unit_code: string | null;
+        display_name: string;
+      }>(
+        [
+          "INSERT INTO directory.org_units (unit_code, display_name, source, unit_type)",
+          "VALUES ($1, $2, 'eris', 'organization')",
+          "RETURNING id::text AS id, unit_code, display_name",
+        ].join("\n"),
+        [input.code, input.name],
+      );
+      const organization = inserted.rows[0]!;
+      await auditOrganizationChange(
+        client,
+        requestedByEmployeeId,
+        "eris.organization.create",
+        "organization",
+        organization.id,
+        { name: organization.display_name, code: organization.unit_code },
+      );
+      await client.query("COMMIT");
+      return {
+        id: organization.id,
+        name: organization.display_name,
+        code: organization.unit_code,
+        departments: [],
+        branches: [],
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      if (isUniqueViolation(error)) {
+        throw new OrganizationManagementError("duplicate_name");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async createDepartment(
+    organizationId: string,
+    input: DepartmentInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const organization = await client.query<{ id: string }>(
+        [
+          "SELECT id::text AS id FROM directory.org_units",
+          " WHERE id = $1 AND source = 'eris' AND parent_id IS NULL",
+        ].join("\n"),
+        [organizationId],
+      );
+      if (!organization.rows[0]) {
+        throw new OrganizationManagementError("not_found");
+      }
+      await requireAssignableEmployee(client, input.headEmployeeId);
+
+      const inserted = await client.query<{
+        id: string;
+        unit_code: string | null;
+        display_name: string;
+        department_head_employee_id: string | null;
+      }>(
+        [
+          "INSERT INTO directory.org_units (parent_id, unit_code, display_name, source, unit_type, department_head_employee_id)",
+          "VALUES ($1, $2, $3, 'eris', 'department', $4)",
+          "RETURNING id::text AS id, unit_code, display_name, department_head_employee_id::text",
+        ].join("\n"),
+        [organizationId, input.code, input.name, input.headEmployeeId],
+      );
+      const department = inserted.rows[0]!;
+      await auditOrganizationChange(
+        client,
+        requestedByEmployeeId,
+        "eris.department.create",
+        "department",
+        department.id,
+        {
+          name: department.display_name,
+          code: department.unit_code,
+          organizationId,
+          headEmployeeId: input.headEmployeeId,
+        },
+      );
+      await client.query("COMMIT");
+      return {
+        id: department.id,
+        name: department.display_name,
+        code: department.unit_code,
+        headEmployeeId: department.department_head_employee_id,
+        positions: [],
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      if (isUniqueViolation(error)) {
+        throw new OrganizationManagementError("duplicate_name");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async createBranch(
+    organizationId: string,
+    input: BranchInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["branches"][number]> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const organization = await client.query<{ id: string }>(
+        [
+          "SELECT id::text AS id FROM directory.org_units",
+          " WHERE id = $1 AND source = 'eris' AND parent_id IS NULL",
+        ].join("\n"),
+        [organizationId],
+      );
+      if (!organization.rows[0]) {
+        throw new OrganizationManagementError("not_found");
+      }
+      await requireAssignableEmployee(client, input.managerEmployeeId);
+
+      const inserted = await client.query<{
+        id: string;
+        unit_code: string | null;
+        display_name: string;
+        address: string | null;
+        branch_manager_employee_id: string | null;
+      }>(
+        [
+          "INSERT INTO directory.org_units (parent_id, unit_code, display_name, source, unit_type, address, branch_manager_employee_id)",
+          "VALUES ($1, $2, $3, 'eris', 'branch', $4, $5)",
+          "RETURNING id::text AS id, unit_code, display_name, address, branch_manager_employee_id::text",
+        ].join("\n"),
+        [organizationId, input.code, input.name, input.address, input.managerEmployeeId],
+      );
+      const branch = inserted.rows[0]!;
+      await auditOrganizationChange(
+        client,
+        requestedByEmployeeId,
+        "eris.branch.create",
+        "branch",
+        branch.id,
+        {
+          name: branch.display_name,
+          code: branch.unit_code,
+          organizationId,
+          address: branch.address,
+          managerEmployeeId: branch.branch_manager_employee_id,
+        },
+      );
+      await client.query("COMMIT");
+      return {
+        id: branch.id,
+        name: branch.display_name,
+        code: branch.unit_code,
+        address: branch.address,
+        managerEmployeeId: branch.branch_manager_employee_id,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      if (isUniqueViolation(error)) {
+        throw new OrganizationManagementError("duplicate_name");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async createPosition(
+    organizationId: string,
+    departmentId: string,
+    input: PositionInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]["positions"][number]> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const department = await client.query<{ id: string }>(
+        [
+          "SELECT department.id::text AS id",
+          "  FROM directory.org_units AS department",
+          "  JOIN directory.org_units AS organization ON organization.id = department.parent_id",
+          " WHERE department.id = $1 AND department.parent_id = $2",
+          "   AND department.source = 'eris' AND department.unit_type = 'department'",
+          "   AND organization.source = 'eris' AND organization.parent_id IS NULL",
+        ].join("\n"),
+        [departmentId, organizationId],
+      );
+      if (!department.rows[0]) {
+        throw new OrganizationManagementError("department_not_found");
+      }
+
+      const inserted = await client.query<{
+        id: string;
+        unit_code: string | null;
+        display_name: string;
+        description: string | null;
+        job_level: string | null;
+      }>(
+        [
+          "INSERT INTO directory.org_units (parent_id, unit_code, display_name, source, unit_type, description, job_level)",
+          "VALUES ($1, $2, $3, 'eris', 'position', $4, $5)",
+          "RETURNING id::text AS id, unit_code, display_name, description, job_level",
+        ].join("\n"),
+        [departmentId, input.code, input.name, input.description, input.jobLevel],
+      );
+      const position = inserted.rows[0]!;
+      await auditOrganizationChange(
+        client,
+        requestedByEmployeeId,
+        "eris.position.create",
+        "position",
+        position.id,
+        {
+          name: position.display_name,
+          code: position.unit_code,
+          description: position.description,
+          jobLevel: position.job_level,
+          organizationId,
+          departmentId,
+        },
+      );
+      await client.query("COMMIT");
+      return {
+        id: position.id,
+        name: position.display_name,
+        code: position.unit_code,
+        description: position.description,
+        jobLevel: position.job_level,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      if (isUniqueViolation(error)) {
+        throw new OrganizationManagementError("duplicate_name");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async listEmployees(
@@ -100,6 +470,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
             employment_type: EmploymentType;
             hire_date: string | null;
             employment_status: EmploymentStatus;
+            manager_employee_id: string | null;
           }>(
             `SELECT employee.id::text AS id,
                     employee.employee_number,
@@ -107,6 +478,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
                     employee.work_email,
                     employee.department,
                     employee.job_title,
+                    employee.manager_employee_id::text AS manager_employee_id,
                     employee.employment_type,
                     employee.hire_date::text AS hire_date,
                     employee.employment_status
@@ -148,6 +520,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
               workEmail: employee.work_email,
               department: employee.department,
               jobTitle: employee.job_title,
+              managerEmployeeId: employee.manager_employee_id,
               employmentType: employee.employment_type,
               hireDate: employee.hire_date,
               employmentStatus: employee.employment_status,
@@ -382,6 +755,47 @@ export class DirectoryRepository extends EmployeeMasterRepository {
     };
     });
   }
+}
+
+async function auditOrganizationChange(
+  client: PoolClient,
+  actorEmployeeId: string,
+  action: string,
+  targetType: "organization" | "department" | "branch" | "position",
+  targetId: string,
+  details: Record<string, string | null>,
+): Promise<void> {
+  await client.query(
+    [
+      "INSERT INTO audit.events",
+      "  (actor_type, actor_employee_id, action, outcome, target_type, target_id, source, details)",
+      "VALUES ('employee', $1, $2, 'success', $3, $4, 'eris', $5::jsonb)",
+    ].join("\n"),
+    [actorEmployeeId, action, targetType, targetId, JSON.stringify(details)],
+  );
+}
+
+async function requireAssignableEmployee(
+  client: PoolClient,
+  employeeId: string | null,
+): Promise<void> {
+  if (!employeeId) return;
+  const employee = await client.query<{ id: string }>(
+    "SELECT id::text AS id FROM huma.employees WHERE id = $1 AND employment_status IN ('active', 'on_leave')",
+    [employeeId],
+  );
+  if (!employee.rows[0]) {
+    throw new OrganizationManagementError("invalid_assignee");
+  }
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "23505"
+  );
 }
 
 async function ensureBaselineEmployeeGroup(

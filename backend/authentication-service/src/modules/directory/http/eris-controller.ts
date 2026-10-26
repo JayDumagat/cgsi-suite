@@ -8,6 +8,7 @@ import {
   EmployeeRecordError,
   EmployeeLeaveRequestError,
 } from "../domain/employee.js";
+import { OrganizationManagementError } from "../domain/organization.js";
 
 const directoryQuerySchema = z.object({
   q: z.string().trim().max(100).default(""),
@@ -56,17 +57,32 @@ const nullableDateSchema = z.string().nullable().refine((value) => value === nul
 const nullableText = (maximum: number) =>
   z.string().trim().max(maximum).nullable().transform((value) => value || null);
 const attendanceRecordSchema = z.object({
-  status: z.enum(["present", "late", "absent", "on_leave"]),
+  status: z.enum([
+    "present",
+    "late",
+    "absent",
+    "on_leave",
+    "sick_leave",
+    "half_day_sick_leave",
+    "vacation_leave",
+    "half_day_vacation_leave",
+    "official_business",
+    "nuptial",
+    "bereavement",
+  ]),
   clockIn: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable(),
   clockOut: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable(),
   breakMinutes: z.number().int().min(0).max(1440),
   notes: nullableText(1000),
 }).superRefine((record, context) => {
-  if ((record.status === "absent" || record.status === "on_leave") && (record.clockIn || record.clockOut)) {
+  if (
+    !["present", "late", "half_day_sick_leave", "half_day_vacation_leave", "official_business"].includes(record.status) &&
+    (record.clockIn || record.clockOut)
+  ) {
     context.addIssue({
       code: "custom",
       path: ["clockIn"],
-      message: "Clock times cannot be set for absent or on-leave records.",
+      message: "Clock times are only available for working attendance records.",
     });
   }
 });
@@ -85,6 +101,21 @@ const leaveRequestSchema = z.object({
 const leaveDecisionSchema = z.object({
   status: z.enum(["approved", "rejected"]),
   decisionNote: nullableText(1000),
+});
+const organizationInputSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  code: z.string().trim().max(50).nullable().optional().transform((value) => value || null),
+});
+const departmentInputSchema = organizationInputSchema.extend({
+  headEmployeeId: z.string().uuid().nullable().optional().transform((value) => value ?? null),
+});
+const branchInputSchema = organizationInputSchema.extend({
+  address: nullableText(500).optional().transform((value) => value ?? null),
+  managerEmployeeId: z.string().uuid().nullable().optional().transform((value) => value ?? null),
+});
+const positionInputSchema = organizationInputSchema.extend({
+  description: nullableText(2000).optional().transform((value) => value ?? null),
+  jobLevel: nullableText(80).optional().transform((value) => value ?? null),
 });
 const nullableEmail = z.string().trim().toLowerCase().email().max(320).or(z.literal(""))
   .nullable().optional().transform((value) => value || null);
@@ -243,6 +274,121 @@ export class ErisDirectoryController {
       });
     } catch (error) {
       writeDirectoryError(response, error, "eris_employee_directory_read_failed");
+    }
+  };
+
+  getOrganizationStructure = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    try {
+      const structure = await this.directory.getOrganizationStructure(user.employeeId!);
+      const canManageOrganization = await this.canEditEmployeeInformation(user.oid);
+      response.status(200).json({
+        ...structure,
+        permissions: { canManageOrganization },
+      });
+    } catch (error) {
+      writeDirectoryError(response, error, "eris_organization_structure_read_failed");
+    }
+  };
+
+  createOrganization = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const parsed = organizationInputSchema.safeParse(request.body);
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_organization" });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const organization = await this.directory.createOrganization(
+        parsed.data,
+        user.employeeId!,
+      );
+      response.status(201).json(organization);
+    } catch (error) {
+      writeOrganizationError(response, error, "eris_organization_create_failed");
+    }
+  };
+
+  createDepartment = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const organizationId = z.string().uuid().safeParse(request.params.organizationId);
+    const parsed = departmentInputSchema.safeParse(request.body);
+    if (!organizationId.success || !parsed.success) {
+      response.status(400).json({ error: "invalid_department" });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const department = await this.directory.createDepartment(
+        organizationId.data,
+        parsed.data,
+        user.employeeId!,
+      );
+      response.status(201).json(department);
+    } catch (error) {
+      writeOrganizationError(response, error, "eris_department_create_failed");
+    }
+  };
+
+  createBranch = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const organizationId = z.string().uuid().safeParse(request.params.organizationId);
+    const parsed = branchInputSchema.safeParse(request.body);
+    if (!organizationId.success || !parsed.success) {
+      response.status(400).json({ error: "invalid_branch" });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const branch = await this.directory.createBranch(
+        organizationId.data,
+        parsed.data,
+        user.employeeId!,
+      );
+      response.status(201).json(branch);
+    } catch (error) {
+      writeOrganizationError(response, error, "eris_branch_create_failed");
+    }
+  };
+
+  createPosition = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const organizationId = z.string().uuid().safeParse(request.params.organizationId);
+    const departmentId = z.string().uuid().safeParse(request.params.departmentId);
+    const parsed = positionInputSchema.safeParse(request.body);
+    if (!organizationId.success || !departmentId.success || !parsed.success) {
+      response.status(400).json({ error: "invalid_position" });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const position = await this.directory.createPosition(
+        organizationId.data,
+        departmentId.data,
+        parsed.data,
+        user.employeeId!,
+      );
+      response.status(201).json(position);
+    } catch (error) {
+      writeOrganizationError(response, error, "eris_position_create_failed");
     }
   };
 
@@ -531,6 +677,26 @@ function writeLeaveManagementError(response: Response, error: unknown, event: st
     return;
   }
   writeDirectoryError(response, error, event);
+}
+
+function writeOrganizationError(response: Response, error: unknown, event: string): void {
+  if (error instanceof OrganizationManagementError) {
+    const notFound = error.code === "not_found" || error.code === "department_not_found";
+    response.status(notFound ? 404 : error.code === "invalid_assignee" ? 400 : 409).json({
+      error: error.code === "invalid_assignee"
+        ? "employee_not_assignable"
+        : error.code === "not_found"
+          ? "organization_not_found"
+          : error.code === "department_not_found"
+            ? "department_not_found"
+            : "organization_name_already_exists",
+    });
+    return;
+  }
+  telemetryLog("ERROR", event, {
+    error_type: error instanceof Error ? error.name : "unknown",
+  });
+  response.status(503).json({ error: "organization_management_unavailable" });
 }
 
 function constantTimeMatch(expected: string, actual: string): boolean {

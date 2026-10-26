@@ -1165,3 +1165,22 @@ pre[class*="language-"].line-numbers {
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
+
+@layer components {
+  .org-chart-flow {
+    --org-chart-dot-color: #cbd5e1;
+    --org-chart-edge-color: #cbd5e1;
+    background-color: #f8fafc;
+  }
+
+  .dark .org-chart-flow {
+    --org-chart-dot-color: rgba(148, 163, 184, 0.35);
+    --org-chart-edge-color: #475569;
+    background-color: #111827;
+  }
+
+  .org-chart-flow .react-flow__edge-path {
+    stroke: var(--org-chart-edge-color);
+    stroke-width: 1.5;
+  }
+}

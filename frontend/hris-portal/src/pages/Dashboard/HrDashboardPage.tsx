@@ -3,6 +3,7 @@ import ComponentCard from "@/components/common/ComponentCard";
 import PageMeta from "@/components/common/PageMeta";
 import { Card } from "@/components/ui/card";
 import Badge from "@/components/ui/badge/Badge";
+import AttendanceRateCard from "@/components/attendance/AttendanceRateCard";
 import {
   EmployeeDirectoryRequestError,
   getAttendanceReport,
@@ -24,6 +25,12 @@ import { useTranslation } from "react-i18next";
 function todayAsInput() {
   const today = new Date();
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
+
+function moveDate(value: string, days: number) {
+  const date = new Date(`${value}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function formatDate(value: string, locale: string) {
@@ -63,12 +70,18 @@ export default function HrDashboardPage() {
   const [attendance, setAttendance] = useState<AttendanceDailyReport | null>(
     null,
   );
+  const [previousAttendance, setPreviousAttendance] =
+    useState<AttendanceDailyReport | null>(null);
   const [leaveReport, setLeaveReport] =
     useState<EmployeeLeaveManagementReport | null>(null);
   const [hasLeaveAccess, setHasLeaveAccess] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [attendanceErrorKey, setAttendanceErrorKey] = useState<string | null>(
+    null,
+  );
   const today = useMemo(() => todayAsInput(), []);
+  const previousWeekday = useMemo(() => moveDate(today, -7), [today]);
   const dateLabel = useMemo(() => {
     const parsed = new Date(`${today}T00:00:00`);
     return Number.isFinite(parsed.getTime())
@@ -84,8 +97,6 @@ export default function HrDashboardPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    setIsLoading(true);
-    setErrorKey(null);
     void Promise.allSettled([
       listEmployees(
         {
@@ -98,35 +109,50 @@ export default function HrDashboardPage() {
         controller.signal,
       ),
       getAttendanceReport(today, "", controller.signal),
+      getAttendanceReport(previousWeekday, "", controller.signal),
       getLeaveManagementReport(controller.signal),
     ])
-      .then(([employeesResult, attendanceResult, leaveResult]) => {
-        if (controller.signal.aborted) return;
-        if (employeesResult.status === "fulfilled") {
-          setEmployeeCount(employeesResult.value.summary.totalEmployees);
-        } else {
-          setErrorKey(dashboardErrorKey(employeesResult.reason));
-        }
-        if (attendanceResult.status === "fulfilled") {
-          setAttendance(attendanceResult.value);
-        } else {
-          setErrorKey(
-            (current) => current ?? dashboardErrorKey(attendanceResult.reason),
+      .then(
+        ([
+          employeesResult,
+          attendanceResult,
+          previousAttendanceResult,
+          leaveResult,
+        ]) => {
+          if (controller.signal.aborted) return;
+          if (employeesResult.status === "fulfilled") {
+            setEmployeeCount(employeesResult.value.summary.totalEmployees);
+          } else {
+            setErrorKey(dashboardErrorKey(employeesResult.reason));
+          }
+          if (attendanceResult.status === "fulfilled") {
+            setAttendance(attendanceResult.value);
+          } else {
+            setAttendanceErrorKey(dashboardErrorKey(attendanceResult.reason));
+            setErrorKey(
+              (current) =>
+                current ?? dashboardErrorKey(attendanceResult.reason),
+            );
+          }
+          setPreviousAttendance(
+            previousAttendanceResult.status === "fulfilled"
+              ? previousAttendanceResult.value
+              : null,
           );
-        }
-        if (leaveResult.status === "fulfilled") {
-          setLeaveReport(leaveResult.value);
-          setHasLeaveAccess(true);
-        } else {
-          setLeaveReport(null);
-          setHasLeaveAccess(false);
-        }
-      })
+          if (leaveResult.status === "fulfilled") {
+            setLeaveReport(leaveResult.value);
+            setHasLeaveAccess(true);
+          } else {
+            setLeaveReport(null);
+            setHasLeaveAccess(false);
+          }
+        },
+      )
       .finally(() => {
         if (!controller.signal.aborted) setIsLoading(false);
       });
     return () => controller.abort();
-  }, [today]);
+  }, [previousWeekday, today]);
 
   const summary = attendance?.summary;
   const metrics = [
@@ -258,7 +284,15 @@ export default function HrDashboardPage() {
           ))}
         </section>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <AttendanceRateCard
+            currentReport={attendance}
+            previousReport={previousAttendance}
+            leaveRequests={leaveReport?.items ?? []}
+            isLoading={isLoading}
+            loadErrorKey={attendanceErrorKey}
+          />
+
           <ComponentCard
             title={t("hrDashboard.attendance.title")}
             desc={t("hrDashboard.attendance.description")}

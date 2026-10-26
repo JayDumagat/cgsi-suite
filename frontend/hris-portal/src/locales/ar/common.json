@@ -995,9 +995,43 @@
   },
   "attendancePage": {
     "title": "الحضور",
-    "description": "راجع وسجل الحضور اليومي للموظفين وساعات العمل.",
-    "date": "تاريخ الحضور",
+    "description": "راجع حضور الموظفين في تقويم أسبوعي أو شهري.",
+    "date": "اختر تاريخًا",
+    "weekView": "الحضور الأسبوعي",
+    "previousWeek": "الأسبوع السابق",
+    "nextWeek": "الأسبوع التالي",
+    "previousMonth": "الشهر السابق",
+    "nextMonth": "الشهر التالي",
+    "today": "اليوم",
+    "rangeLabel": "النطاق",
+    "rangeOptions": {
+      "week": "أسبوع",
+      "month": "شهر"
+    },
+    "month": "الشهر",
+    "weekend": "عطلة نهاية الأسبوع",
+    "legend": {
+      "title": "دليل الحضور"
+    },
     "search": "ابحث عن موظفين",
+    "rate": {
+      "title": "معدل الحضور",
+      "description": "ملخص حضور اليوم",
+      "percentagePointChange": "{{change}} نقطة مئوية",
+      "increasedVsLastWeek": "ارتفاع مقارنة بالأسبوع الماضي",
+      "decreasedVsLastWeek": "انخفاض مقارنة بالأسبوع الماضي",
+      "unchangedVsLastWeek": "دون تغيير مقارنة بالأسبوع الماضي",
+      "noComparison": "لا تتوفر بيانات للمقارنة مع الأسبوع الماضي",
+      "noWorkdays": "لا توجد أيام عمل متوقعة في هذه الفترة",
+      "onTime": "في الوقت المحدد",
+      "late": "متأخر",
+      "notAttended": "لم يحضر بعد",
+      "table": {
+        "status": "الحالة",
+        "metric": "الموظفون",
+        "total": "الإجمالي"
+      }
+    },
     "summary": {
       "title": "ملخص الحضور",
       "present": "حاضرون",
@@ -1005,11 +1039,11 @@
       "absent": "غائبون",
       "onLeave": "في إجازة"
     },
-    "recordsTitle": "الحضور اليومي",
-    "recordsCount": "سجلات الموظفين: {{count}}",
+    "recordsTitle": "سجلات الحضور",
+    "recordsCount": "الموظفون: {{count}}",
     "viewEmployees": "دليل الموظفين",
-    "loading": "جارٍ تحميل سجلات الحضور...",
-    "noEmployees": "لم يتم العثور على موظفين نشطين في هذا التاريخ.",
+    "loading": "جارٍ تحميل الحضور...",
+    "noEmployees": "لم يتم العثور على موظفين نشطين في هذا النطاق.",
     "noMatches": "لا يوجد موظفون يطابقون البحث.",
     "employee": "الموظف",
     "department": "القسم",
@@ -1027,12 +1061,20 @@
     "saving": "جارٍ الحفظ...",
     "save": "حفظ الحضور",
     "saved": "تم حفظ سجل الحضور.",
+    "cellAriaLabel": "{{employee}} في {{date}}: {{status}}.",
+    "recordCellAriaLabel": "حضور {{employee}} في {{date}}.",
     "statuses": {
       "present": "حاضر",
       "late": "متأخر",
       "absent": "غائب",
       "on_leave": "في إجازة",
-      "unrecorded": "غير مسجل"
+      "sick_leave": "إجازة مرضية",
+      "half_day_sick_leave": "نصف يوم إجازة مرضية",
+      "vacation_leave": "إجازة سنوية",
+      "half_day_vacation_leave": "نصف يوم إجازة سنوية",
+      "official_business": "مهمة رسمية",
+      "nuptial": "إجازة زواج",
+      "bereavement": "إجازة وفاة"
     },
     "errors": {
       "loadFailed": "تعذر تحميل الحضور. يرجى المحاولة مرة أخرى.",
@@ -1041,7 +1083,7 @@
   },
   "organizationPage": {
     "title": "الهيكل التنظيمي",
-    "description": "استكشف الأقسام وتوزيع الموظفين بالاستناد إلى دليل الموظفين.",
+    "description": "استعرض الهيكل التنظيمي ونظرة عامة على الموظفين.",
     "viewEmployeeDirectory": "دليل الموظفين",
     "overview": "نظرة عامة على المؤسسة",
     "totalEmployees": "إجمالي الموظفين",
@@ -1059,6 +1101,95 @@
     "employmentStatusDistribution": "حالة التوظيف",
     "loading": "جارٍ تحميل الهيكل التنظيمي...",
     "noDepartments": "لا تتوفر بيانات للأقسام بعد.",
+    "tabs": {
+      "label": "أقسام المؤسسة",
+      "overview": "نظرة عامة",
+      "branches": "الفروع",
+      "departments": "الأقسام",
+      "positions": "المسميات الوظيفية",
+      "orgChart": "الهيكل التنظيمي"
+    },
+    "tabDescriptions": {
+      "overview": "استعرض الهيكل التنظيمي والموظفين في لمحة واحدة.",
+      "branches": "أدر مواقع المكاتب والعناوين ومديري الفروع.",
+      "departments": "نظّم الفرق وحدد رؤساء الأقسام.",
+      "positions": "حدد المسميات الوظيفية والأوصاف والمستويات.",
+      "orgChart": "استعرض الفروع والأقسام والمسميات الوظيفية وعلاقات الإشراف."
+    },
+    "orgChartControls": {
+      "searchPlaceholder": "ابحث بالاسم أو المسمى أو القسم أو البريد الإلكتروني",
+      "addEmployee": "إضافة موظف",
+      "branchManager": "مدير الفرع",
+      "departmentHead": "رئيس القسم",
+      "controls": "عناصر التحكم في المخطط التنظيمي",
+      "centerView": "توسيط العرض",
+      "zoomIn": "تكبير",
+      "zoomOut": "تصغير",
+      "expandReports": "عرض {count} من التقارير المباشرة",
+      "collapseReports": "إخفاء {count} من التقارير المباشرة",
+      "emptyChartDescription": "أضف الموظفين والمديرين لعرض الهيكل التنظيمي.",
+      "noSearchResults": "لا يوجد موظفون يطابقون البحث.",
+      "searchHint": "ابحث بالاسم أو المسمى الوظيفي أو القسم أو البريد الإلكتروني."
+    },
+    "management": {
+      "title": "الهيكل التنظيمي",
+      "description": "أدر مؤسسة واحدة تضم فروعًا وأقسامًا ومسميات وظيفية متعددة.",
+      "createOrganization": "إنشاء مؤسسة",
+      "createDepartment": "إنشاء قسم",
+      "createBranch": "إنشاء فرع",
+      "createPosition": "إضافة مسمى وظيفي",
+      "organizationName": "اسم المؤسسة",
+      "departmentName": "اسم القسم",
+      "branchName": "اسم الفرع",
+      "positionName": "المسمى الوظيفي",
+      "branches": "الفروع",
+      "positions": "المسميات الوظيفية",
+      "departmentsAndPositions": "الأقسام والمسميات الوظيفية",
+      "branchLocations": "الفروع",
+      "code": "الرمز",
+      "address": "عنوان المكتب",
+      "addressPlaceholder": "أدخل عنوان مكتب الفرع",
+      "addressNotProvided": "لم يتم إدخال عنوان",
+      "branchManager": "مدير الفرع",
+      "selectBranchManager": "اختر مدير الفرع",
+      "noBranchManager": "لم يتم تعيين مدير للفرع",
+      "departmentHead": "رئيس القسم",
+      "selectDepartmentHead": "اختر رئيس القسم",
+      "noDepartmentHead": "لم يتم تعيين رئيس للقسم",
+      "employee": "موظف",
+      "jobLevel": "المستوى الوظيفي",
+      "jobLevelPlaceholder": "مثال: L2 أو خبير",
+      "positionDescription": "وصف الوظيفة",
+      "positionDescriptionPlaceholder": "صف الدور والمسؤوليات",
+      "createDepartmentFirst": "أنشئ قسمًا قبل إضافة المسميات الوظيفية.",
+      "noPositionDescription": "لم يتم إدخال وصف",
+      "reportingRelationships": "علاقات الإشراف بين الموظفين",
+      "reportingDescription": "تعتمد خطوط الإشراف على المدير المحدد لكل موظف.",
+      "noEmployeesForChart": "لا توجد علاقات إشراف للموظفين النشطين.",
+      "organization": "المؤسسة",
+      "department": "القسم",
+      "selectOrganization": "اختر مؤسسة",
+      "selectDepartment": "اختر قسمًا",
+      "saveOrganization": "حفظ المؤسسة",
+      "saveDepartment": "حفظ القسم",
+      "saveBranch": "حفظ الفرع",
+      "savePosition": "حفظ المسمى الوظيفي",
+      "cancel": "إلغاء",
+      "noOrganizations": "لا توجد مؤسسات بعد. أنشئ مؤسسة لبدء الهيكل التنظيمي.",
+      "noDepartments": "لم تتم إضافة أقسام إلى هذه المؤسسة بعد.",
+      "noBranches": "لم تتم إضافة فروع إلى هذه المؤسسة بعد.",
+      "noPositions": "لم تتم إضافة مسميات وظيفية إلى هذا القسم بعد.",
+      "noPermission": "ليس لديك إذن لإدارة الهيكل التنظيمي.",
+      "organizationCreated": "تم إنشاء المؤسسة.",
+      "departmentCreated": "تم إنشاء القسم.",
+      "branchCreated": "تم إنشاء الفرع.",
+      "positionCreated": "تم إنشاء المسمى الوظيفي.",
+      "errors": {
+        "duplicateName": "يوجد عنصر بهذا الاسم في هذا الجزء من الهيكل التنظيمي بالفعل.",
+        "invalidAssignee": "اختر موظفًا نشطًا لهذا التعيين.",
+        "saveFailed": "تعذر حفظ تفاصيل المؤسسة. يرجى المحاولة مرة أخرى."
+      }
+    },
     "errors": {
       "loadFailed": "تعذر تحميل الهيكل التنظيمي. يرجى المحاولة مرة أخرى."
     }
@@ -1299,7 +1430,7 @@
   },
   "recruitmentPage": {
     "title": "التوظيف",
-    "description": "تابع الوظائف الشاغرة وتقدم المرشحين والمقابلات والعروض.",
+    "description": "أدر الوظائف الشاغرة وتابع المرشحين من التقديم حتى التوظيف.",
     "overview": "نظرة عامة على التوظيف",
     "stats": {
       "openings": "الوظائف الشاغرة",
@@ -1309,18 +1440,26 @@
     },
     "pipeline": {
       "title": "مسار التوظيف",
-      "description": "تابع كل مرحلة من فتح الوظيفة حتى توقيع العرض.",
-      "notConnected": "سجلات التوظيف غير متصلة بعد."
+      "description": "تابع المرشحين من أول طلب تقديم حتى التوظيف.",
+      "notConnected": "سجلات التوظيف غير متصلة بعد.",
+      "stages": {
+        "applied": "تم التقديم",
+        "screening": "الفرز الأولي",
+        "interview": "المقابلة",
+        "offer": "العرض الوظيفي",
+        "hired": "تم التوظيف"
+      }
     },
-    "areas": {
-      "openings": "الوظائف الشاغرة",
-      "candidates": "مسار المرشحين",
-      "interviews": "المقابلات",
-      "offers": "العروض"
+    "positions": {
+      "description": "الوظائف المعتمدة التي تستقبل الطلبات حاليًا.",
+      "emptyTitle": "لا توجد وظائف شاغرة حتى الآن",
+      "emptyDescription": "ستظهر الوظائف الشاغرة هنا عند ربط بيانات التوظيف."
     },
-    "empty": {
-      "title": "لم يتم إعداد تتبع التوظيف بعد",
-      "description": "لا تُحفظ سجلات الوظائف والمرشحين في ERIS بعد، لذلك لا تعرض هذه الصفحة أعدادًا أو سجلات تجريبية."
+    "interviewSchedule": {
+      "title": "المقابلات القادمة",
+      "description": "تابع المحادثات القادمة مع المرشحين.",
+      "emptyTitle": "لا توجد مقابلات مجدولة",
+      "emptyDescription": "ستظهر المقابلات المجدولة هنا عند ربط بيانات التوظيف."
     }
   },
   "performancePage": {

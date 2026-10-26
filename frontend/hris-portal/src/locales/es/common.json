@@ -995,9 +995,43 @@
   },
   "attendancePage": {
     "title": "Asistencia",
-    "description": "Consulta y registra la asistencia diaria y las horas trabajadas.",
-    "date": "Fecha de asistencia",
+    "description": "Consulta la asistencia de los empleados en un calendario semanal o mensual.",
+    "date": "Elegir una fecha",
+    "weekView": "Asistencia semanal",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Semana siguiente",
+    "previousMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
+    "today": "Hoy",
+    "rangeLabel": "Periodo",
+    "rangeOptions": {
+      "week": "Semana",
+      "month": "Mes"
+    },
+    "month": "Mes",
+    "weekend": "Fin de semana",
+    "legend": {
+      "title": "Clave de asistencia"
+    },
     "search": "Buscar empleados",
+    "rate": {
+      "title": "Tasa de asistencia",
+      "description": "Resumen de asistencia de hoy",
+      "percentagePointChange": "{{change}} puntos porcentuales",
+      "increasedVsLastWeek": "Aumentó frente a la semana pasada",
+      "decreasedVsLastWeek": "Disminuyó frente a la semana pasada",
+      "unchangedVsLastWeek": "Sin cambios frente a la semana pasada",
+      "noComparison": "No hay datos para comparar con la semana pasada",
+      "noWorkdays": "No hay jornadas laborales previstas en este periodo",
+      "onTime": "A tiempo",
+      "late": "Tarde",
+      "notAttended": "Aún no asistió",
+      "table": {
+        "status": "Estado",
+        "metric": "Empleados",
+        "total": "Total"
+      }
+    },
     "summary": {
       "title": "Resumen de asistencia",
       "present": "Presentes",
@@ -1005,11 +1039,11 @@
       "absent": "Ausentes",
       "onLeave": "De permiso"
     },
-    "recordsTitle": "Asistencia diaria",
-    "recordsCount": "Registros de empleados: {{count}}",
+    "recordsTitle": "Registros de asistencia",
+    "recordsCount": "Empleados: {{count}}",
     "viewEmployees": "Directorio de empleados",
-    "loading": "Cargando registros de asistencia...",
-    "noEmployees": "No hay empleados activos para esta fecha.",
+    "loading": "Cargando asistencia...",
+    "noEmployees": "No hay empleados activos en este periodo.",
     "noMatches": "Ningún empleado coincide con la búsqueda.",
     "employee": "Empleado",
     "department": "Departamento",
@@ -1027,12 +1061,20 @@
     "saving": "Guardando...",
     "save": "Guardar asistencia",
     "saved": "Registro de asistencia guardado.",
+    "cellAriaLabel": "{{employee}} el {{date}}: {{status}}.",
+    "recordCellAriaLabel": "Asistencia de {{employee}} el {{date}}.",
     "statuses": {
       "present": "Presente",
       "late": "Tarde",
       "absent": "Ausente",
       "on_leave": "De permiso",
-      "unrecorded": "Sin registrar"
+      "sick_leave": "Permiso por enfermedad",
+      "half_day_sick_leave": "Medio día por enfermedad",
+      "vacation_leave": "Vacaciones",
+      "half_day_vacation_leave": "Medio día de vacaciones",
+      "official_business": "Asunto oficial",
+      "nuptial": "Permiso por matrimonio",
+      "bereavement": "Permiso por duelo"
     },
     "errors": {
       "loadFailed": "No se pudo cargar la asistencia. Inténtalo de nuevo.",
@@ -1041,7 +1083,7 @@
   },
   "organizationPage": {
     "title": "Organización",
-    "description": "Explora los departamentos y la distribución de empleados del directorio.",
+    "description": "Consulta la estructura organizativa y la plantilla.",
     "viewEmployeeDirectory": "Directorio de empleados",
     "overview": "Resumen de la organización",
     "totalEmployees": "Total de empleados",
@@ -1059,6 +1101,95 @@
     "employmentStatusDistribution": "Estado laboral",
     "loading": "Cargando organización...",
     "noDepartments": "Aún no hay datos de departamentos.",
+    "tabs": {
+      "label": "Secciones de la organización",
+      "overview": "Resumen",
+      "branches": "Sucursales",
+      "departments": "Departamentos",
+      "positions": "Puestos",
+      "orgChart": "Organigrama"
+    },
+    "tabDescriptions": {
+      "overview": "Consulta la estructura organizativa y la plantilla de un vistazo.",
+      "branches": "Administra oficinas, direcciones y responsables de sucursal.",
+      "departments": "Organiza equipos y asigna responsables de departamento.",
+      "positions": "Define títulos, descripciones y niveles de puesto.",
+      "orgChart": "Explora sucursales, departamentos, puestos y relaciones de reporte."
+    },
+    "orgChartControls": {
+      "searchPlaceholder": "Buscar nombre, puesto, departamento o correo",
+      "addEmployee": "Añadir empleado",
+      "branchManager": "Responsable de sucursal",
+      "departmentHead": "Responsable del departamento",
+      "controls": "Controles del organigrama",
+      "centerView": "Centrar vista",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "expandReports": "Mostrar {count} reportes directos",
+      "collapseReports": "Ocultar {count} reportes directos",
+      "emptyChartDescription": "Añade empleados y responsables para completar el organigrama.",
+      "noSearchResults": "No hay empleados que coincidan con la búsqueda.",
+      "searchHint": "Prueba con un nombre, puesto, departamento o correo."
+    },
+    "management": {
+      "title": "Estructura organizativa",
+      "description": "Administra una organización con varias sucursales, departamentos y puestos.",
+      "createOrganization": "Crear organización",
+      "createDepartment": "Crear departamento",
+      "createBranch": "Crear sucursal",
+      "createPosition": "Añadir puesto",
+      "organizationName": "Nombre de la organización",
+      "departmentName": "Nombre del departamento",
+      "branchName": "Nombre de la sucursal",
+      "positionName": "Nombre del puesto",
+      "branches": "sucursales",
+      "positions": "puestos",
+      "departmentsAndPositions": "Departamentos y puestos",
+      "branchLocations": "Sucursales",
+      "code": "Código",
+      "address": "Dirección de la oficina",
+      "addressPlaceholder": "Introduce la dirección de la sucursal",
+      "addressNotProvided": "No se indicó una dirección",
+      "branchManager": "Responsable de sucursal",
+      "selectBranchManager": "Selecciona un responsable de sucursal",
+      "noBranchManager": "Sin responsable de sucursal asignado",
+      "departmentHead": "Responsable del departamento",
+      "selectDepartmentHead": "Selecciona un responsable del departamento",
+      "noDepartmentHead": "Sin responsable de departamento asignado",
+      "employee": "Empleado",
+      "jobLevel": "Nivel del puesto",
+      "jobLevelPlaceholder": "Por ejemplo, L2 o Senior",
+      "positionDescription": "Descripción del puesto",
+      "positionDescriptionPlaceholder": "Describe el puesto y sus responsabilidades",
+      "createDepartmentFirst": "Crea un departamento antes de añadir puestos.",
+      "noPositionDescription": "No se indicó una descripción",
+      "reportingRelationships": "Relaciones de reporte de empleados",
+      "reportingDescription": "Las relaciones se basan en el responsable asignado a cada empleado.",
+      "noEmployeesForChart": "No hay relaciones de reporte de empleados activos.",
+      "organization": "Organización",
+      "department": "Departamento",
+      "selectOrganization": "Selecciona una organización",
+      "selectDepartment": "Selecciona un departamento",
+      "saveOrganization": "Guardar organización",
+      "saveDepartment": "Guardar departamento",
+      "saveBranch": "Guardar sucursal",
+      "savePosition": "Guardar puesto",
+      "cancel": "Cancelar",
+      "noOrganizations": "Aún no hay organizaciones. Crea una para iniciar la estructura organizativa.",
+      "noDepartments": "Aún no se han añadido departamentos a esta organización.",
+      "noBranches": "Aún no se han añadido sucursales a esta organización.",
+      "noPositions": "Aún no se han añadido puestos a este departamento.",
+      "noPermission": "No tienes permiso para administrar la estructura organizativa.",
+      "organizationCreated": "Organización creada.",
+      "departmentCreated": "Departamento creado.",
+      "branchCreated": "Sucursal creada.",
+      "positionCreated": "Puesto creado.",
+      "errors": {
+        "duplicateName": "Ya existe un elemento con ese nombre en esta parte de la organización.",
+        "invalidAssignee": "Selecciona un empleado activo para esta asignación.",
+        "saveFailed": "No se pudieron guardar los datos. Inténtalo de nuevo."
+      }
+    },
     "errors": {
       "loadFailed": "No se pudo cargar la organización. Inténtalo de nuevo."
     }
@@ -1299,7 +1430,7 @@
   },
   "recruitmentPage": {
     "title": "Contratación",
-    "description": "Sigue las vacantes, el progreso de candidatos, las entrevistas y las ofertas.",
+    "description": "Gestiona vacantes y acompaña a los candidatos desde su solicitud hasta la contratación.",
     "overview": "Resumen de contratación",
     "stats": {
       "openings": "Vacantes",
@@ -1309,18 +1440,26 @@
     },
     "pipeline": {
       "title": "Proceso de selección",
-      "description": "Sigue cada etapa desde la apertura hasta la oferta firmada.",
-      "notConnected": "Los registros de contratación aún no están conectados."
+      "description": "Acompaña a los candidatos desde su primera solicitud hasta la contratación.",
+      "notConnected": "Los registros de contratación aún no están conectados.",
+      "stages": {
+        "applied": "Solicitud recibida",
+        "screening": "Preselección",
+        "interview": "Entrevista",
+        "offer": "Oferta",
+        "hired": "Contratado"
+      }
     },
-    "areas": {
-      "openings": "Vacantes",
-      "candidates": "Proceso de candidatos",
-      "interviews": "Entrevistas",
-      "offers": "Ofertas"
+    "positions": {
+      "description": "Puestos aprobados que actualmente aceptan candidaturas.",
+      "emptyTitle": "Aún no hay vacantes abiertas",
+      "emptyDescription": "Las vacantes aparecerán aquí cuando se conecten los datos de contratación."
     },
-    "empty": {
-      "title": "El seguimiento de contratación aún no está configurado",
-      "description": "ERIS aún no almacena puestos ni candidatos, por lo que esta página no muestra cifras ni registros de ejemplo."
+    "interviewSchedule": {
+      "title": "Próximas entrevistas",
+      "description": "Consulta las próximas conversaciones con candidatos.",
+      "emptyTitle": "No hay entrevistas programadas",
+      "emptyDescription": "Las entrevistas programadas aparecerán aquí cuando se conecten los datos de contratación."
     }
   },
   "performancePage": {

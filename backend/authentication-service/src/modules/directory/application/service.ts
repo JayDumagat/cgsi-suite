@@ -15,6 +15,14 @@ import type {
   EntraEmployeeProfile,
   ProvisionedEmployee,
 } from "../domain/employee.js";
+import type {
+  BranchInput,
+  DepartmentInput,
+  OrganizationInput,
+  PositionInput,
+  OrganizationRecord,
+  OrganizationStructure,
+} from "../domain/organization.js";
 
 export interface EmployeeDirectory {
   provisionEntraEmployee(profile: EntraEmployeeProfile): Promise<ProvisionedEmployee>;
@@ -40,6 +48,24 @@ export interface EmployeeDirectory {
   ): Promise<EmployeeLeaveRequest>;
   createEmployeeRecord(input: EmployeeMasterInput, requestedByEmployeeId: string): Promise<EmployeeMasterRecord>;
   updateEmployeeRecord(employeeId: string, input: EmployeeMasterInput, requestedByEmployeeId: string): Promise<EmployeeMasterRecord>;
+  getOrganizationStructure(requestedByEmployeeId: string): Promise<OrganizationStructure>;
+  createOrganization(input: OrganizationInput, requestedByEmployeeId: string): Promise<OrganizationRecord>;
+  createDepartment(
+    organizationId: string,
+    input: DepartmentInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]>;
+  createBranch(
+    organizationId: string,
+    input: BranchInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["branches"][number]>;
+  createPosition(
+    organizationId: string,
+    departmentId: string,
+    input: PositionInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]["positions"][number]>;
 }
 
 export class EmployeeDirectoryService {
@@ -112,5 +138,46 @@ export class EmployeeDirectoryService {
 
   updateEmployeeRecord(employeeId: string, input: EmployeeMasterInput, requestedByEmployeeId: string): Promise<EmployeeMasterRecord> {
     return this.directory.updateEmployeeRecord(employeeId, input, requestedByEmployeeId);
+  }
+
+  getOrganizationStructure(requestedByEmployeeId: string): Promise<OrganizationStructure> {
+    return this.directory.getOrganizationStructure(requestedByEmployeeId);
+  }
+
+  createOrganization(
+    input: OrganizationInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord> {
+    return this.directory.createOrganization(input, requestedByEmployeeId);
+  }
+
+  createDepartment(
+    organizationId: string,
+    input: DepartmentInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]> {
+    return this.directory.createDepartment(organizationId, input, requestedByEmployeeId);
+  }
+
+  createBranch(
+    organizationId: string,
+    input: BranchInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["branches"][number]> {
+    return this.directory.createBranch(organizationId, input, requestedByEmployeeId);
+  }
+
+  createPosition(
+    organizationId: string,
+    departmentId: string,
+    input: PositionInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]["positions"][number]> {
+    return this.directory.createPosition(
+      organizationId,
+      departmentId,
+      input,
+      requestedByEmployeeId,
+    );
   }
 }

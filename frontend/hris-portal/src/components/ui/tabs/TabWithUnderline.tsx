@@ -7,6 +7,8 @@ interface TabButtonProps {
   onClick: () => void;
   role?: "tab";
   tabIndex?: number;
+  ariaControls?: string;
+  className?: string;
 }
 
 export const TabButton: React.FC<TabButtonProps> = ({
@@ -16,6 +18,8 @@ export const TabButton: React.FC<TabButtonProps> = ({
   onClick,
   role,
   tabIndex,
+  ariaControls,
+  className = "",
 }) => {
   return (
     <button
@@ -23,12 +27,13 @@ export const TabButton: React.FC<TabButtonProps> = ({
       type="button"
       role={role}
       aria-selected={role === "tab" ? isActive : undefined}
+      aria-controls={ariaControls}
       tabIndex={tabIndex}
       className={`inline-flex items-center border-b-2 px-2.5 py-2 text-sm font-medium transition-colors duration-200 ease-in-out ${
         isActive
           ? "border-brand-500 text-brand-500 dark:border-brand-400 dark:text-brand-400"
           : "border-transparent bg-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-      }`}
+      } ${className}`}
       onClick={onClick}
     >
       {label}

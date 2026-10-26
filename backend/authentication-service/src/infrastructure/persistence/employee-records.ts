@@ -207,7 +207,17 @@ export class EmployeeMasterRepository {
           presentCount: items.filter((item) => item.status === "present").length,
           lateCount: items.filter((item) => item.status === "late").length,
           absentCount: items.filter((item) => item.status === "absent").length,
-          onLeaveCount: items.filter((item) => item.status === "on_leave").length,
+          onLeaveCount: items.filter((item) =>
+            [
+              "on_leave",
+              "sick_leave",
+              "half_day_sick_leave",
+              "vacation_leave",
+              "half_day_vacation_leave",
+              "nuptial",
+              "bereavement",
+            ].includes(item.status ?? ""),
+          ).length,
         },
         items,
       };

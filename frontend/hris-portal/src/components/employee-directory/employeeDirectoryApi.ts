@@ -1,10 +1,7 @@
-export type EmploymentStatus = "active" | "on_leave" | "disabled" | "offboarded";
+export type EmploymentStatus =
+  "active" | "on_leave" | "disabled" | "offboarded";
 export type EmploymentType =
-  | "full_time"
-  | "part_time"
-  | "contractor"
-  | "temporary"
-  | "intern";
+  "full_time" | "part_time" | "contractor" | "temporary" | "intern";
 export type BloodType =
   | "a_positive"
   | "a_negative"
@@ -40,8 +37,20 @@ export interface EmployeeActivityEntry {
   changedFields: string[];
 }
 
-export type EmployeePayFrequency = "weekly" | "biweekly" | "semimonthly" | "monthly";
-export type AttendanceRecordStatus = "present" | "late" | "absent" | "on_leave";
+export type EmployeePayFrequency =
+  "weekly" | "biweekly" | "semimonthly" | "monthly";
+export type AttendanceRecordStatus =
+  | "present"
+  | "late"
+  | "absent"
+  | "on_leave"
+  | "sick_leave"
+  | "half_day_sick_leave"
+  | "vacation_leave"
+  | "half_day_vacation_leave"
+  | "official_business"
+  | "nuptial"
+  | "bereavement";
 
 export interface AttendanceRecordInput {
   status: AttendanceRecordStatus;
@@ -51,7 +60,10 @@ export interface AttendanceRecordInput {
   notes: string | null;
 }
 
-export interface EmployeeAttendanceRecord extends Omit<AttendanceRecordInput, "status"> {
+export interface EmployeeAttendanceRecord extends Omit<
+  AttendanceRecordInput,
+  "status"
+> {
   id: string | null;
   employeeId: string;
   displayName: string;
@@ -102,7 +114,8 @@ export interface EmployeeHrDetails {
   };
 }
 
-export type EmployeeLeaveType = "annual" | "sick" | "emergency" | "parental" | "unpaid" | "other";
+export type EmployeeLeaveType =
+  "annual" | "sick" | "emergency" | "parental" | "unpaid" | "other";
 export type EmployeeLeaveRequestStatus = "pending" | "approved" | "rejected";
 
 export interface EmployeeLeaveRequestInput {
@@ -136,7 +149,10 @@ export interface EmployeeLeaveManagementReport {
   items: EmployeeLeaveRequest[];
 }
 
-export type EmployeeEducationHistoryInput = Omit<EmployeeEducationHistoryEntry, "id">;
+export type EmployeeEducationHistoryInput = Omit<
+  EmployeeEducationHistoryEntry,
+  "id"
+>;
 export type EmployeeSortKey =
   | "employeeNumber"
   | "displayName"
@@ -154,6 +170,7 @@ export interface EmployeeDirectoryItem {
   workEmail: string;
   department: string | null;
   jobTitle: string | null;
+  managerEmployeeId: string | null;
   employmentType: EmploymentType;
   hireDate: string | null;
   employmentStatus: EmploymentStatus;
@@ -173,6 +190,45 @@ export interface EmployeeDirectoryResponse {
   permissions: {
     canManageEmployees: boolean;
     canCreateEmployees: boolean;
+  };
+}
+
+export interface OrganizationDepartment {
+  id: string;
+  name: string;
+  code: string | null;
+  headEmployeeId: string | null;
+  positions: OrganizationPosition[];
+}
+
+export interface OrganizationPosition {
+  id: string;
+  name: string;
+  code: string | null;
+  description: string | null;
+  jobLevel: string | null;
+}
+
+export interface OrganizationBranch {
+  id: string;
+  name: string;
+  code: string | null;
+  address: string | null;
+  managerEmployeeId: string | null;
+}
+
+export interface OrganizationRecord {
+  id: string;
+  name: string;
+  code: string | null;
+  departments: OrganizationDepartment[];
+  branches: OrganizationBranch[];
+}
+
+export interface OrganizationStructureResponse {
+  organizations: OrganizationRecord[];
+  permissions: {
+    canManageOrganization: boolean;
   };
 }
 
@@ -285,13 +341,79 @@ export async function listEmployees(
   );
 }
 
+export async function getOrganizationStructure(
+  signal?: AbortSignal,
+): Promise<OrganizationStructureResponse> {
+  return requestJson<OrganizationStructureResponse>(
+    "/api/eris/organizations",
+    signal,
+  );
+}
+
+export async function createOrganization(input: {
+  name: string;
+  code: string | null;
+}): Promise<OrganizationRecord> {
+  return requestJson<OrganizationRecord>("/api/eris/organizations", undefined, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function createDepartment(
+  organizationId: string,
+  input: { name: string; code: string | null; headEmployeeId: string | null },
+): Promise<OrganizationDepartment> {
+  return requestJson<OrganizationDepartment>(
+    `/api/eris/organizations/${encodeURIComponent(organizationId)}/departments`,
+    undefined,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function createBranch(
+  organizationId: string,
+  input: {
+    name: string;
+    code: string | null;
+    address: string | null;
+    managerEmployeeId: string | null;
+  },
+): Promise<OrganizationBranch> {
+  return requestJson<OrganizationBranch>(
+    `/api/eris/organizations/${encodeURIComponent(organizationId)}/branches`,
+    undefined,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function createPosition(
+  organizationId: string,
+  departmentId: string,
+  input: {
+    name: string;
+    code: string | null;
+    description: string | null;
+    jobLevel: string | null;
+  },
+): Promise<OrganizationPosition> {
+  return requestJson<OrganizationPosition>(
+    `/api/eris/organizations/${encodeURIComponent(organizationId)}/departments/${encodeURIComponent(departmentId)}/positions`,
+    undefined,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
 export async function getAttendanceReport(
   date: string,
   query: string,
   signal?: AbortSignal,
 ): Promise<AttendanceDailyReport> {
   const search = new URLSearchParams({ date, q: query });
-  return requestJson<AttendanceDailyReport>(`/api/eris/attendance?${search.toString()}`, signal);
+  return requestJson<AttendanceDailyReport>(
+    `/api/eris/attendance?${search.toString()}`,
+    signal,
+  );
 }
 
 export async function updateAttendanceRecord(
@@ -309,15 +431,26 @@ export async function updateAttendanceRecord(
   );
 }
 
-export async function getLeaveManagementReport(signal?: AbortSignal): Promise<EmployeeLeaveManagementReport> {
-  return requestJson<EmployeeLeaveManagementReport>("/api/eris/leave-requests", signal);
+export async function getLeaveManagementReport(
+  signal?: AbortSignal,
+): Promise<EmployeeLeaveManagementReport> {
+  return requestJson<EmployeeLeaveManagementReport>(
+    "/api/eris/leave-requests",
+    signal,
+  );
 }
 
-export async function createLeaveRequest(input: EmployeeLeaveRequestInput): Promise<EmployeeLeaveRequest> {
-  return requestJson<EmployeeLeaveRequest>("/api/eris/leave-requests", undefined, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+export async function createLeaveRequest(
+  input: EmployeeLeaveRequestInput,
+): Promise<EmployeeLeaveRequest> {
+  return requestJson<EmployeeLeaveRequest>(
+    "/api/eris/leave-requests",
+    undefined,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
 }
 
 export async function decideLeaveRequest(

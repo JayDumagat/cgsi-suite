@@ -1,15 +1,11 @@
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-interface ButtonProps {
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "size"> {
   children: ReactNode; // Button text or content
-  type?: "button" | "submit" | "reset";
   size?: "sm" | "md"; // Button size
   variant?: "primary" | "outline"; // Button variant
   startIcon?: ReactNode; // Icon before the text
   endIcon?: ReactNode; // Icon after the text
-  onClick?: () => void; // Click handler
-  disabled?: boolean; // Disabled state
-  className?: string; // Disabled state
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -22,6 +18,7 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   className = "",
   disabled = false,
+  ...buttonProps
 }) => {
   // Size Classes
   const sizeClasses = {
@@ -47,6 +44,7 @@ const Button: React.FC<ButtonProps> = ({
       }`}
       onClick={onClick}
       disabled={disabled}
+      {...buttonProps}
     >
       {startIcon && <span className="flex items-center">{startIcon}</span>}
       {children}
