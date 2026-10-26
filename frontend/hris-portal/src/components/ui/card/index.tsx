@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 // Props interfaces for Card, CardTitle, and CardDescription
 interface CardProps {
   children?: ReactNode; // Optional additional content
+  className?: string;
 }
 
 interface CardTitleProps {
@@ -14,9 +15,11 @@ interface CardDescriptionProps {
 }
 
 // Card Component
-const Card: React.FC<CardProps> = ({ children }) => {
+const Card: React.FC<CardProps> = ({ children, className = "" }) => {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/3">
+    <div
+      className={`rounded-xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-white/3 ${className}`}
+    >
       {children}
     </div>
   );
