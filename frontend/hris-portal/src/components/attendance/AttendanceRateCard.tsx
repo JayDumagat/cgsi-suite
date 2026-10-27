@@ -1,22 +1,20 @@
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-} from "@/icons";
+import { ArrowDownIcon, ArrowUpIcon } from "@/icons";
+import { getAttendanceDisplayStatus } from "@/components/attendance/attendanceStatus";
 import type {
   AttendanceDailyReport,
-  AttendanceRecordStatus,
-  EmployeeAttendanceRecord,
   EmployeeLeaveRequest,
 } from "@/components/employee-directory/employeeDirectoryApi";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 interface AttendanceRateCardProps {
-  currentReport: AttendanceDailyReport | null;
-  previousReport: AttendanceDailyReport | null;
+  currentReports: AttendanceDailyReport[];
+  previousReports: AttendanceDailyReport[];
   leaveRequests: EmployeeLeaveRequest[];
+  period: "day" | "week" | "month";
   isLoading: boolean;
   loadErrorKey: string | null;
+  description?: string;
 }
 
 interface AttendanceRateSummary {
@@ -27,46 +25,18 @@ interface AttendanceRateSummary {
   rate: number | null;
 }
 
-function leaveStatusFor(
-  employeeId: string,
-  date: string,
-  leaveRequests: EmployeeLeaveRequest[],
-): AttendanceRecordStatus | null {
-  const request = leaveRequests.find(
-    (item) =>
-      item.employeeId === employeeId &&
-      item.status === "approved" &&
-      item.startDate <= date &&
-      item.endDate >= date,
-  );
-  if (!request) return null;
-
-  const isHalfDay =
-    request.startDate === request.endDate && request.requestedDays === 0.5;
-  if (request.leaveType === "sick") {
-    return isHalfDay ? "half_day_sick_leave" : "sick_leave";
-  }
-  if (request.leaveType === "annual") {
-    return isHalfDay ? "half_day_vacation_leave" : "vacation_leave";
-  }
-  return "on_leave";
-}
-
-function displayStatus(
-  record: EmployeeAttendanceRecord,
-  date: string,
-  leaveRequests: EmployeeLeaveRequest[],
-) {
-  if (!record.status || record.status === "on_leave") {
-    const approvedLeave = leaveStatusFor(record.employeeId, date, leaveRequests);
-    if (approvedLeave) return approvedLeave;
-  }
-  return record.status;
+function getTodayDateKey() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function summarizeAttendance(
-  report: AttendanceDailyReport | null,
+  reports: AttendanceDailyReport[],
   leaveRequests: EmployeeLeaveRequest[],
+  asOfDate: string,
 ): AttendanceRateSummary {
   const summary: AttendanceRateSummary = {
     expectedEmployees: 0,
@@ -76,31 +46,33 @@ function summarizeAttendance(
     rate: null,
   };
 
-  if (!report) return summary;
-  const date = new Date(`${report.date}T00:00:00`);
-  if (date.getDay() === 0 || date.getDay() === 6) return summary;
+  for (const report of reports) {
+    if (report.date > asOfDate) continue;
+    const date = new Date(`${report.date}T00:00:00`);
+    if (date.getDay() === 0 || date.getDay() === 6) continue;
 
-  for (const record of report.items) {
-    const status = displayStatus(record, report.date, leaveRequests);
-    if (
-      status === "on_leave" ||
-      status === "sick_leave" ||
-      status === "vacation_leave" ||
-      status === "half_day_sick_leave" ||
-      status === "half_day_vacation_leave" ||
-      status === "nuptial" ||
-      status === "bereavement"
-    ) {
-      continue;
-    }
+    for (const record of report.items) {
+      const status = getAttendanceDisplayStatus(record, report.date, leaveRequests);
+      if (
+        status === "on_leave" ||
+        status === "sick_leave" ||
+        status === "vacation_leave" ||
+        status === "half_day_sick_leave" ||
+        status === "half_day_vacation_leave" ||
+        status === "nuptial" ||
+        status === "bereavement"
+      ) {
+        continue;
+      }
 
-    summary.expectedEmployees += 1;
-    if (status === "present" || status === "official_business") {
-      summary.onTimeEmployees += 1;
-    } else if (status === "late") {
-      summary.lateEmployees += 1;
-    } else {
-      summary.notAttendedEmployees += 1;
+      summary.expectedEmployees += 1;
+      if (status === "present" || status === "official_business") {
+        summary.onTimeEmployees += 1;
+      } else if (status === "late") {
+        summary.lateEmployees += 1;
+      } else {
+        summary.notAttendedEmployees += 1;
+      }
     }
   }
 
@@ -112,20 +84,23 @@ function summarizeAttendance(
 }
 
 export default function AttendanceRateCard({
-  currentReport,
-  previousReport,
+  currentReports,
+  previousReports,
   leaveRequests,
+  period,
   isLoading,
   loadErrorKey,
+  description,
 }: AttendanceRateCardProps) {
   const { t, i18n } = useTranslation();
+  const todayDateKey = getTodayDateKey();
   const currentSummary = useMemo(
-    () => summarizeAttendance(currentReport, leaveRequests),
-    [currentReport, leaveRequests],
+    () => summarizeAttendance(currentReports, leaveRequests, todayDateKey),
+    [currentReports, leaveRequests, todayDateKey],
   );
   const previousSummary = useMemo(
-    () => summarizeAttendance(previousReport, leaveRequests),
-    [leaveRequests, previousReport],
+    () => summarizeAttendance(previousReports, leaveRequests, todayDateKey),
+    [leaveRequests, previousReports, todayDateKey],
   );
   const percentFormatter = useMemo(
     () =>
@@ -162,14 +137,17 @@ export default function AttendanceRateCard({
     },
     {
       key: "notAttended",
-      label: t("attendancePage.rate.notAttended"),
+      label: t(
+        period === "day"
+          ? "attendancePage.rate.notAttended"
+          : "attendancePage.rate.noRecord",
+      ),
       value: currentSummary.notAttendedEmployees,
       color: "bg-gray-400",
     },
   ];
   const distributionSlots = Array.from({ length: 42 }, (_, index) => {
-    const point =
-      ((index + 0.5) / 42) * currentSummary.expectedEmployees;
+    const point = ((index + 0.5) / 42) * currentSummary.expectedEmployees;
     let total = 0;
     for (const row of rows) {
       total += row.value;
@@ -191,7 +169,7 @@ export default function AttendanceRateCard({
           {t("attendancePage.rate.title")}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {t("attendancePage.rate.description")}
+          {description ?? t("attendancePage.rate.description")}
         </p>
       </div>
 
@@ -220,10 +198,10 @@ export default function AttendanceRateCard({
             <span className="text-sm text-gray-500 dark:text-gray-400">
               {t(
                 comparisonDelta > 0
-                  ? "attendancePage.rate.increasedVsLastWeek"
+                  ? "attendancePage.rate.increasedVsPreviousPeriod"
                   : comparisonDelta < 0
-                    ? "attendancePage.rate.decreasedVsLastWeek"
-                    : "attendancePage.rate.unchangedVsLastWeek",
+                    ? "attendancePage.rate.decreasedVsPreviousPeriod"
+                    : "attendancePage.rate.unchangedVsPreviousPeriod",
               )}
             </span>
           </>
@@ -258,7 +236,10 @@ export default function AttendanceRateCard({
           ))}
         </div>
         {loadErrorKey ? (
-          <p className="p-4 text-sm text-error-600 dark:text-error-400" role="alert">
+          <p
+            className="p-4 text-sm text-error-600 dark:text-error-400"
+            role="alert"
+          >
             {t(loadErrorKey)}
           </p>
         ) : (
@@ -270,7 +251,11 @@ export default function AttendanceRateCard({
                     {t("attendancePage.rate.table.status")}
                   </th>
                   <th className="pb-2 text-start text-sm font-normal text-gray-400">
-                    {t("attendancePage.rate.table.metric")}
+                    {t(
+                      period === "day"
+                        ? "attendancePage.rate.table.metric"
+                        : "attendancePage.rate.table.employeeDays",
+                    )}
                   </th>
                   <th className="pb-2 text-end text-sm font-normal text-gray-400">
                     {t("attendancePage.rate.table.total")}

@@ -50,7 +50,7 @@
       "calendar": "Calendar",
       "employeeDirectory": "Employees",
       "organization": "Organization",
-      "attendance": "Attendance",
+      "attendance": "Time & Attendance",
       "leaveManagement": "Leave management",
       "userProfile": "User Profile",
       "task": "Task",
@@ -994,9 +994,16 @@
     }
   },
   "attendancePage": {
-    "title": "Attendance",
-    "description": "Review employee attendance in a weekly or monthly calendar.",
+    "title": "Time & Attendance",
+    "description": "Review employee attendance and daily timesheets in a daily, weekly, or monthly view.",
+    "tabs": {
+      "label": "Attendance views",
+      "attendance": "Attendance",
+      "timesheet": "Timesheet"
+    },
     "date": "Choose a date",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
     "weekView": "Weekly attendance",
     "previousWeek": "Previous week",
     "nextWeek": "Next week",
@@ -1005,6 +1012,7 @@
     "today": "Today",
     "rangeLabel": "Range",
     "rangeOptions": {
+      "day": "Day",
       "week": "Week",
       "month": "Month"
     },
@@ -1017,23 +1025,50 @@
     "rate": {
       "title": "Attendance rate",
       "description": "Today's attendance overview",
+      "selectedDateDescription": "Attendance overview for {{date}}",
+      "selectedPeriodDescription": "Attendance overview for {{period}}",
       "percentagePointChange": "{{change}} pp",
       "increasedVsLastWeek": "Increased vs last week",
       "decreasedVsLastWeek": "Decreased vs last week",
       "unchangedVsLastWeek": "Unchanged vs last week",
+      "increasedVsPreviousPeriod": "Increased vs previous period",
+      "decreasedVsPreviousPeriod": "Decreased vs previous period",
+      "unchangedVsPreviousPeriod": "Unchanged vs previous period",
       "noComparison": "No previous-week comparison",
       "noWorkdays": "No expected workdays in this period",
       "onTime": "On time",
       "late": "Late",
       "notAttended": "Not attended yet",
+      "noRecord": "No attendance record",
       "table": {
         "status": "Status",
         "metric": "Employees",
+        "employeeDays": "Employee-days",
         "total": "Total"
       }
     },
+    "statistics": {
+      "title": "Attendance statistics",
+      "subtitle": "Average clock-in and clock-out times for {{period}}.",
+      "daySubtitle": "Clock-in and clock-out counts by time for {{period}}.",
+      "yearSubtitle": "Monthly average clock-in and clock-out times for {{year}}.",
+      "loadingYear": "Loading monthly attendance statistics for {{year}}...",
+      "timeAxis": "Time of day",
+      "weekdayAxis": "Day of week",
+      "monthAxis": "Month",
+      "countAxis": "Employees",
+      "averageTimeAxis": "Average clock time",
+      "averageTimeIn": "Average time in",
+      "averageTimeOut": "Average time out",
+      "timeIn": "Time in",
+      "timeOut": "Time out"
+    },
     "summary": {
       "title": "Attendance summary",
+      "totalEmployees": "Total employees",
+      "presentEmployees": "Present employees",
+      "absentEmployees": "Absent employees",
+      "onLeaveEmployees": "On leave employees",
       "present": "Present",
       "late": "Late arrivals",
       "absent": "Absent",
@@ -1045,12 +1080,17 @@
     "loading": "Loading attendance...",
     "noEmployees": "No active employees found for this range.",
     "noMatches": "No employees match your search.",
+    "notRecorded": "No attendance record",
     "employee": "Employee",
     "department": "Department",
     "unassigned": "Unassigned",
     "status": "Status",
     "clockIn": "Clock in",
     "clockOut": "Clock out",
+    "netHoursShort": "Net {{hours}}h",
+    "totalBreakMinutesShort": "Breaks {{minutes}}m",
+    "clockTimesLegend": "Clock times",
+    "clockTimeAriaLabel": "{{employee}}: {{event}} at {{time}}.",
     "hours": "Hours",
     "actions": "Actions",
     "breakMinutes": "Break (minutes)",
@@ -1065,6 +1105,7 @@
     "recordCellAriaLabel": "Attendance for {{employee}} on {{date}}.",
     "statuses": {
       "present": "Present",
+      "early": "Early",
       "late": "Late",
       "absent": "Absent",
       "on_leave": "On leave",
@@ -1079,6 +1120,61 @@
     "errors": {
       "loadFailed": "We couldn't load attendance. Please try again.",
       "saveFailed": "We couldn't save this attendance record. Please try again."
+    }
+  },
+  "timesheetPage": {
+    "title": "Timesheet",
+    "description": "Enter or edit each employee's daily shift, regular hours, overtime, break minutes, and notes.",
+    "date": "Choose a date",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "selectedDate": "Timesheet entries for {{date}}",
+    "enter": "Enter hours",
+    "edit": "Edit entry",
+    "enterFor": "Enter hours for {{employee}}",
+    "editFor": "Edit the timesheet entry for {{employee}}",
+    "editor": {
+      "title": "Timesheet entry for {{employee}}",
+      "description": "Update this employee's shift and daily totals."
+    },
+    "stats": {
+      "title": "Daily totals",
+      "regularHours": "Regular hours",
+      "overtimeHours": "Overtime hours",
+      "breakMinutes": "Break minutes",
+      "entries": "Saved entries"
+    },
+    "fields": {
+      "clockIn": "Time in",
+      "clockOut": "Time out",
+      "regularHours": "Regular hours",
+      "overtimeHours": "Overtime hours",
+      "breakMinutes": "Break minutes",
+      "notes": "Notes",
+      "action": "Action",
+      "clockInFor": "Time in for {{employee}}",
+      "clockOutFor": "Time out for {{employee}}",
+      "regularHoursFor": "Regular hours for {{employee}}",
+      "overtimeHoursFor": "Overtime hours for {{employee}}",
+      "breakMinutesFor": "Break minutes for {{employee}}",
+      "notesFor": "Notes for {{employee}}"
+    },
+    "timeline": {
+      "title": "Daily timesheet",
+      "lunch": "Lunch",
+      "employeeHours": "Timesheet timeline for {{employee}}",
+      "shiftSegment": "{{employee}}: {{status}} from {{start}} to {{end}}"
+    },
+    "loading": "Loading timesheet...",
+    "noEmployees": "No active employees found.",
+    "saving": "Saving...",
+    "save": "Save entry",
+    "messages": {
+      "saved": "Timesheet entry saved."
+    },
+    "errors": {
+      "loadFailed": "We couldn't load the timesheet. Please try again.",
+      "saveFailed": "We couldn't save this timesheet entry. Please try again."
     }
   },
   "organizationPage": {
@@ -1384,6 +1480,11 @@
       "accessDenied": "You do not have permission to view or edit these restricted details.",
       "loadFailed": "Restricted employee information could not be loaded. Try again.",
       "saveFailed": "These employee details could not be saved. Check the values and try again.",
+      "scheduleStart": "Start time",
+      "scheduleEnd": "End time",
+      "scheduleHint": "Set the employee's daily schedule. Timesheet uses it to display the schedule and assess early or late clock-ins.",
+      "scheduleIncomplete": "Enter both a start and end time, or clear both to remove the schedule.",
+      "clearSchedule": "Clear schedule",
       "payFrequencies": {
         "weekly": "Weekly",
         "biweekly": "Every two weeks",

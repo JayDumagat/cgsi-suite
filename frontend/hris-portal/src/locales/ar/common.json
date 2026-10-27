@@ -50,7 +50,7 @@
       "calendar": "التقويم",
       "employeeDirectory": "الموظفون",
       "organization": "الهيكل التنظيمي",
-      "attendance": "الحضور",
+      "attendance": "الدوام والحضور",
       "leaveManagement": "إدارة الإجازات",
       "userProfile": "الملف الشخصي",
       "task": "المهام",
@@ -994,9 +994,16 @@
     }
   },
   "attendancePage": {
-    "title": "الحضور",
-    "description": "راجع حضور الموظفين في تقويم أسبوعي أو شهري.",
+    "title": "الدوام والحضور",
+    "description": "راجع حضور الموظفين وسجلات ساعات العمل اليومية في عرض يومي أو أسبوعي أو شهري.",
+    "tabs": {
+      "label": "طرق عرض الحضور",
+      "attendance": "الحضور",
+      "timesheet": "سجل ساعات العمل"
+    },
     "date": "اختر تاريخًا",
+    "previousDay": "اليوم السابق",
+    "nextDay": "اليوم التالي",
     "weekView": "الحضور الأسبوعي",
     "previousWeek": "الأسبوع السابق",
     "nextWeek": "الأسبوع التالي",
@@ -1005,6 +1012,7 @@
     "today": "اليوم",
     "rangeLabel": "النطاق",
     "rangeOptions": {
+      "day": "يوم",
       "week": "أسبوع",
       "month": "شهر"
     },
@@ -1017,23 +1025,50 @@
     "rate": {
       "title": "معدل الحضور",
       "description": "ملخص حضور اليوم",
+      "selectedDateDescription": "ملخص الحضور ليوم {{date}}",
+      "selectedPeriodDescription": "ملخص الحضور للفترة {{period}}",
       "percentagePointChange": "{{change}} نقطة مئوية",
       "increasedVsLastWeek": "ارتفاع مقارنة بالأسبوع الماضي",
       "decreasedVsLastWeek": "انخفاض مقارنة بالأسبوع الماضي",
       "unchangedVsLastWeek": "دون تغيير مقارنة بالأسبوع الماضي",
+      "increasedVsPreviousPeriod": "ارتفاع مقارنة بالفترة السابقة",
+      "decreasedVsPreviousPeriod": "انخفاض مقارنة بالفترة السابقة",
+      "unchangedVsPreviousPeriod": "دون تغيير مقارنة بالفترة السابقة",
       "noComparison": "لا تتوفر بيانات للمقارنة مع الأسبوع الماضي",
       "noWorkdays": "لا توجد أيام عمل متوقعة في هذه الفترة",
       "onTime": "في الوقت المحدد",
       "late": "متأخر",
       "notAttended": "لم يحضر بعد",
+      "noRecord": "لا يوجد سجل حضور",
       "table": {
         "status": "الحالة",
         "metric": "الموظفون",
+        "employeeDays": "أيام عمل الموظفين",
         "total": "الإجمالي"
       }
     },
+    "statistics": {
+      "title": "إحصاءات الحضور",
+      "subtitle": "متوسط وقت الدخول والخروج للفترة {{period}}.",
+      "daySubtitle": "عدد مرات الدخول والخروج حسب الوقت للفترة {{period}}.",
+      "yearSubtitle": "متوسط أوقات الدخول والخروج الشهرية لعام {{year}}.",
+      "loadingYear": "جارٍ تحميل إحصاءات الحضور الشهرية لعام {{year}}...",
+      "timeAxis": "وقت اليوم",
+      "weekdayAxis": "يوم الأسبوع",
+      "monthAxis": "الشهر",
+      "countAxis": "الموظفون",
+      "averageTimeAxis": "متوسط وقت الساعة",
+      "averageTimeIn": "متوسط وقت الدخول",
+      "averageTimeOut": "متوسط وقت الخروج",
+      "timeIn": "وقت الدخول",
+      "timeOut": "وقت الخروج"
+    },
     "summary": {
       "title": "ملخص الحضور",
+      "totalEmployees": "إجمالي الموظفين",
+      "presentEmployees": "الموظفون الحاضرون",
+      "absentEmployees": "الموظفون الغائبون",
+      "onLeaveEmployees": "الموظفون في إجازة",
       "present": "حاضرون",
       "late": "متأخرون",
       "absent": "غائبون",
@@ -1045,12 +1080,17 @@
     "loading": "جارٍ تحميل الحضور...",
     "noEmployees": "لم يتم العثور على موظفين نشطين في هذا النطاق.",
     "noMatches": "لا يوجد موظفون يطابقون البحث.",
+    "notRecorded": "لا يوجد سجل حضور",
     "employee": "الموظف",
     "department": "القسم",
     "unassigned": "غير محدد",
     "status": "الحالة",
     "clockIn": "وقت الحضور",
     "clockOut": "وقت الانصراف",
+    "netHoursShort": "صافي {{hours}} ساعة",
+    "totalBreakMinutesShort": "الاستراحات {{minutes}} دقيقة",
+    "clockTimesLegend": "أوقات تسجيل الحضور",
+    "clockTimeAriaLabel": "{{employee}}: {{event}} في {{time}}.",
     "hours": "الساعات",
     "actions": "الإجراءات",
     "breakMinutes": "الاستراحة (دقائق)",
@@ -1065,6 +1105,7 @@
     "recordCellAriaLabel": "حضور {{employee}} في {{date}}.",
     "statuses": {
       "present": "حاضر",
+      "early": "مبكر",
       "late": "متأخر",
       "absent": "غائب",
       "on_leave": "في إجازة",
@@ -1079,6 +1120,61 @@
     "errors": {
       "loadFailed": "تعذر تحميل الحضور. يرجى المحاولة مرة أخرى.",
       "saveFailed": "تعذر حفظ سجل الحضور. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "timesheetPage": {
+    "title": "سجل ساعات العمل",
+    "description": "أدخل أو عدّل وقت الدوام اليومي والساعات العادية والإضافية ودقائق الاستراحة وملاحظات كل موظف.",
+    "date": "اختر تاريخًا",
+    "previousDay": "اليوم السابق",
+    "nextDay": "اليوم التالي",
+    "selectedDate": "سجلات ساعات العمل ليوم {{date}}",
+    "enter": "إدخال الساعات",
+    "edit": "تعديل السجل",
+    "enterFor": "إدخال ساعات {{employee}}",
+    "editFor": "تعديل سجل ساعات {{employee}}",
+    "editor": {
+      "title": "سجل ساعات {{employee}}",
+      "description": "حدّث دوام هذا الموظف وإجماليات اليوم."
+    },
+    "stats": {
+      "title": "إجماليات اليوم",
+      "regularHours": "ساعات العمل العادية",
+      "overtimeHours": "ساعات العمل الإضافية",
+      "breakMinutes": "دقائق الاستراحة",
+      "entries": "السجلات المحفوظة"
+    },
+    "fields": {
+      "clockIn": "وقت الدخول",
+      "clockOut": "وقت الخروج",
+      "regularHours": "ساعات العمل العادية",
+      "overtimeHours": "ساعات العمل الإضافية",
+      "breakMinutes": "دقائق الاستراحة",
+      "notes": "ملاحظات",
+      "action": "الإجراء",
+      "clockInFor": "وقت دخول {{employee}}",
+      "clockOutFor": "وقت خروج {{employee}}",
+      "regularHoursFor": "ساعات العمل العادية لـ {{employee}}",
+      "overtimeHoursFor": "ساعات العمل الإضافية لـ {{employee}}",
+      "breakMinutesFor": "دقائق الاستراحة لـ {{employee}}",
+      "notesFor": "ملاحظات لـ {{employee}}"
+    },
+    "timeline": {
+      "title": "سجل ساعات اليوم",
+      "lunch": "استراحة الغداء",
+      "employeeHours": "الجدول الزمني لـ {{employee}}",
+      "shiftSegment": "{{employee}}: {{status}} من {{start}} إلى {{end}}"
+    },
+    "loading": "جارٍ تحميل سجل ساعات العمل...",
+    "noEmployees": "لم يتم العثور على موظفين نشطين.",
+    "saving": "جارٍ الحفظ...",
+    "save": "حفظ السجل",
+    "messages": {
+      "saved": "تم حفظ سجل ساعات العمل."
+    },
+    "errors": {
+      "loadFailed": "تعذر تحميل سجل ساعات العمل. يرجى المحاولة مرة أخرى.",
+      "saveFailed": "تعذر حفظ سجل ساعات العمل. يرجى المحاولة مرة أخرى."
     }
   },
   "organizationPage": {
@@ -1384,6 +1480,11 @@
       "accessDenied": "ليس لديك إذن لعرض هذه التفاصيل المقيدة أو تعديلها.",
       "loadFailed": "تعذر تحميل معلومات الموظف المقيدة. حاول مرة أخرى.",
       "saveFailed": "تعذر حفظ تفاصيل الموظف هذه. تحقق من القيم وحاول مرة أخرى.",
+      "scheduleStart": "وقت البدء",
+      "scheduleEnd": "وقت الانتهاء",
+      "scheduleHint": "حدد جدول العمل اليومي للموظف. تعرضه ورقة الدوام وتستخدمه لتقييم تسجيل الحضور المبكر أو المتأخر.",
+      "scheduleIncomplete": "أدخل وقت البدء والانتهاء أو امسح كليهما لإزالة الجدول.",
+      "clearSchedule": "مسح الجدول",
       "payFrequencies": {
         "weekly": "أسبوعيًا",
         "biweekly": "كل أسبوعين",

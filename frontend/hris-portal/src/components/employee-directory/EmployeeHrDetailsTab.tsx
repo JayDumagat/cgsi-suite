@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 type EmployeeHrDetailsSection = keyof EmployeeHrDetails;
-type FieldKind = "text" | "number" | "amount" | "textarea" | "select";
+type FieldKind = "text" | "number" | "amount" | "textarea" | "select" | "schedule";
 
 interface FieldDefinition {
   key: string;
@@ -56,6 +56,50 @@ const emptyDetails: EmployeeHrDetails = {
   },
 };
 
+function parseScheduleTime(value: string, meridiem?: string) {
+  let hours = Number(value);
+  const marker = meridiem?.toLowerCase().replaceAll(".", "");
+  if (marker === "am" && hours === 12) hours = 0;
+  if (marker === "pm" && hours < 12) hours += 12;
+  return hours;
+}
+
+function parseWorkSchedule(value: string | null | undefined) {
+  if (!value) return { start: "", end: "" };
+  const match = /(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?\s*(?:-|–|—|\bto\b)\s*(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i.exec(value);
+  if (!match) return { start: "", end: "" };
+
+  const startMarker = match[3];
+  const endMarker = match[6] ?? startMarker;
+  let startHour = parseScheduleTime(match[1], startMarker);
+  let endHour = parseScheduleTime(match[4], endMarker);
+  const startMinute = Number(match[2] ?? 0);
+  const endMinute = Number(match[5] ?? 0);
+
+  // For common shorthand such as "9-6", assume the first time is morning
+  // and the later time is afternoon/evening.
+  if (!startMarker && !match[6]) {
+    if (startHour < 12 && startHour !== 0) startHour %= 12;
+    if (endHour <= startHour && endHour < 12) endHour += 12;
+  }
+
+  if (
+    startHour < 0 || startHour > 23 ||
+    endHour < 0 || endHour > 23 ||
+    startMinute > 59 || endMinute > 59
+  ) return { start: "", end: "" };
+
+  return {
+    start: `${String(startHour).padStart(2, "0")}:${String(startMinute).padStart(2, "0")}`,
+    end: `${String(endHour).padStart(2, "0")}:${String(endMinute).padStart(2, "0")}`,
+  };
+}
+
+function formatWorkSchedule(value: string | null | undefined) {
+  const { start, end } = parseWorkSchedule(value);
+  return start && end ? `${start} – ${end}` : value ?? "";
+}
+
 export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHrDetailsTabProps) {
   const { t, i18n } = useTranslation();
   const [details, setDetails] = useState<EmployeeHrDetails>(emptyDetails);
@@ -64,6 +108,9 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
   const [isSaving, setIsSaving] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [scheduleStart, setScheduleStart] = useState("");
+  const [scheduleEnd, setScheduleEnd] = useState("");
+  const [scheduleEdited, setScheduleEdited] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -88,7 +135,7 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
   const sectionTitle = t(`employeeDirectory.hrDetails.${section}Title`);
   const fieldDefinitions: Record<EmployeeHrDetailsSection, FieldDefinition[]> = {
     attendanceAndLeave: [
-      { key: "workSchedule", kind: "text", maxLength: 160 },
+      { key: "workSchedule", kind: "schedule" },
       { key: "weeklyHours", kind: "number", min: 0, max: 168, step: 0.25 },
       { key: "annualLeaveEntitlementDays", kind: "number", min: 0, max: 365, step: 0.5 },
       { key: "annualLeaveUsedDays", kind: "number", min: 0, max: 365, step: 0.5 },
@@ -124,6 +171,10 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
   const fields = fieldDefinitions[section];
 
   const beginEditing = () => {
+    const schedule = parseWorkSchedule(details.attendanceAndLeave.workSchedule);
+    setScheduleStart(schedule.start);
+    setScheduleEnd(schedule.end);
+    setScheduleEdited(false);
     setDraft({
       attendanceAndLeave: { ...details.attendanceAndLeave },
       payroll: { ...details.payroll },
@@ -135,6 +186,7 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
 
   const cancelEditing = () => {
     setDraft(null);
+    setScheduleEdited(false);
     setErrorKey(null);
     setIsEditing(false);
   };
@@ -168,10 +220,22 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
     setIsSaving(true);
     setErrorKey(null);
     try {
-      const updated = await updateEmployeeHrDetails(employeeId, draft);
+      const detailsToSave = section === "attendanceAndLeave" && scheduleEdited
+        ? {
+            ...draft,
+            attendanceAndLeave: {
+              ...draft.attendanceAndLeave,
+              workSchedule: scheduleStart && scheduleEnd
+                ? `${scheduleStart}-${scheduleEnd}`
+                : null,
+            },
+          }
+        : draft;
+      const updated = await updateEmployeeHrDetails(employeeId, detailsToSave);
       setDetails(updated);
       setIsEditing(false);
       setDraft(null);
+      setScheduleEdited(false);
     } catch (error) {
       setErrorKey(
         error instanceof EmployeeDirectoryRequestError && error.status === 403
@@ -196,6 +260,7 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
         return `${currency} ${value}`;
       }
     }
+    if (fieldKey === "workSchedule") return formatWorkSchedule(String(value));
     if (fieldKey === "weeklyHours") return t("employeeDirectory.hrDetails.units.hoursPerWeek", { value });
     if (
       fieldKey === "annualLeaveEntitlementDays" ||
@@ -221,6 +286,7 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
   const draftRecord = draft?.[section] as unknown as Record<string, string | number | null> | undefined;
   const entitledDays = details.attendanceAndLeave.annualLeaveEntitlementDays;
   const usedDays = details.attendanceAndLeave.annualLeaveUsedDays;
+  const hasIncompleteSchedule = section === "attendanceAndLeave" && scheduleEdited && Boolean(scheduleStart) !== Boolean(scheduleEnd);
 
   return (
     <section className="rounded-2xl border border-gray-200 p-6 dark:border-gray-800">
@@ -253,7 +319,7 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
               const value = draftRecord[field.key] ?? "";
               return (
                 <div key={field.key} className={field.kind === "textarea" ? "sm:col-span-2" : "min-w-0"}>
-                  <Label htmlFor={field.kind === "textarea" ? undefined : id}>{label}</Label>
+                  <Label htmlFor={field.kind === "textarea" || field.kind === "schedule" ? undefined : id}>{label}</Label>
                   {field.kind === "textarea" ? (
                     <TextArea
                       id={id}
@@ -272,6 +338,49 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
                       defaultValue={String(value)}
                       onChange={(nextValue) => setField(field, nextValue)}
                     />
+                  ) : field.kind === "schedule" ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor={`${id}-start`}>{t("employeeDirectory.hrDetails.scheduleStart")}</Label>
+                        <Input
+                          id={`${id}-start`}
+                          name={`${id}-start`}
+                          type="time"
+                          value={scheduleStart}
+                          onChange={(event) => {
+                            setScheduleStart(event.target.value);
+                            setScheduleEdited(true);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`${id}-end`}>{t("employeeDirectory.hrDetails.scheduleEnd")}</Label>
+                        <Input
+                          id={`${id}-end`}
+                          name={`${id}-end`}
+                          type="time"
+                          value={scheduleEnd}
+                          onChange={(event) => {
+                            setScheduleEnd(event.target.value);
+                            setScheduleEdited(true);
+                          }}
+                        />
+                      </div>
+                      <p className="col-span-2 text-xs text-gray-500 dark:text-gray-400">
+                        {t("employeeDirectory.hrDetails.scheduleHint")}
+                      </p>
+                      <button
+                        type="button"
+                        className="col-span-2 justify-self-start text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                        onClick={() => {
+                          setScheduleStart("");
+                          setScheduleEnd("");
+                          setScheduleEdited(true);
+                        }}
+                      >
+                        {t("employeeDirectory.hrDetails.clearSchedule")}
+                      </button>
+                    </div>
                   ) : (
                     <Input
                       id={id}
@@ -289,6 +398,11 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
               );
             })}
           </div>
+          {hasIncompleteSchedule && (
+            <p className="text-sm text-error-600 dark:text-error-400" role="alert">
+              {t("employeeDirectory.hrDetails.scheduleIncomplete")}
+            </p>
+          )}
           {errorKey && <p className="text-sm text-error-600 dark:text-error-400" role="alert">{t(errorKey)}</p>}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
@@ -302,7 +416,7 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
             <button
               type="button"
               onClick={() => void saveChanges()}
-              disabled={isSaving}
+              disabled={isSaving || hasIncompleteSchedule}
               className="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? t("employeeDirectory.edit.saving") : t("common.saveChanges")}

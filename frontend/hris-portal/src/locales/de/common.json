@@ -50,7 +50,7 @@
       "calendar": "Kalender",
       "employeeDirectory": "Mitarbeitende",
       "organization": "Organisation",
-      "attendance": "Anwesenheit",
+      "attendance": "Arbeitszeit & Anwesenheit",
       "leaveManagement": "Urlaubsverwaltung",
       "userProfile": "Benutzerprofil",
       "task": "Aufgaben",
@@ -994,9 +994,16 @@
     }
   },
   "attendancePage": {
-    "title": "Anwesenheit",
-    "description": "Anwesenheit der Mitarbeitenden in einer Wochen- oder Monatsansicht prüfen.",
+    "title": "Arbeitszeit & Anwesenheit",
+    "description": "Anwesenheit und tägliche Arbeitszeiterfassung der Mitarbeitenden in einer Tages-, Wochen- oder Monatsansicht prüfen.",
+    "tabs": {
+      "label": "Anwesenheitsansichten",
+      "attendance": "Anwesenheit",
+      "timesheet": "Stundenzettel"
+    },
     "date": "Datum auswählen",
+    "previousDay": "Vorheriger Tag",
+    "nextDay": "Nächster Tag",
     "weekView": "Wöchentliche Anwesenheit",
     "previousWeek": "Vorherige Woche",
     "nextWeek": "Nächste Woche",
@@ -1005,6 +1012,7 @@
     "today": "Heute",
     "rangeLabel": "Zeitraum",
     "rangeOptions": {
+      "day": "Tag",
       "week": "Woche",
       "month": "Monat"
     },
@@ -1017,23 +1025,50 @@
     "rate": {
       "title": "Anwesenheitsquote",
       "description": "Anwesenheitsübersicht für heute",
+      "selectedDateDescription": "Anwesenheitsübersicht für {{date}}",
+      "selectedPeriodDescription": "Anwesenheitsübersicht für {{period}}",
       "percentagePointChange": "{{change}} Prozentpunkte",
       "increasedVsLastWeek": "Höher als in der Vorwoche",
       "decreasedVsLastWeek": "Niedriger als in der Vorwoche",
       "unchangedVsLastWeek": "Unverändert gegenüber der Vorwoche",
+      "increasedVsPreviousPeriod": "Höher als im vorherigen Zeitraum",
+      "decreasedVsPreviousPeriod": "Niedriger als im vorherigen Zeitraum",
+      "unchangedVsPreviousPeriod": "Unverändert gegenüber dem vorherigen Zeitraum",
       "noComparison": "Kein Vergleich zur Vorwoche verfügbar",
       "noWorkdays": "Keine erwarteten Arbeitstage in diesem Zeitraum",
       "onTime": "Pünktlich",
       "late": "Verspätet",
       "notAttended": "Noch nicht anwesend",
+      "noRecord": "Kein Anwesenheitseintrag",
       "table": {
         "status": "Status",
         "metric": "Mitarbeitende",
+        "employeeDays": "Personentage",
         "total": "Gesamt"
       }
     },
+    "statistics": {
+      "title": "Anwesenheitsstatistik",
+      "subtitle": "Durchschnittliche Ein- und Ausstempelzeiten für {{period}}.",
+      "daySubtitle": "Anzahl der Ein- und Ausstempelungen nach Uhrzeit für {{period}}.",
+      "yearSubtitle": "Monatliche durchschnittliche Ein- und Ausstempelzeiten für {{year}}.",
+      "loadingYear": "Monatliche Anwesenheitsstatistik für {{year}} wird geladen...",
+      "timeAxis": "Uhrzeit",
+      "weekdayAxis": "Wochentag",
+      "monthAxis": "Monat",
+      "countAxis": "Mitarbeitende",
+      "averageTimeAxis": "Durchschnittliche Uhrzeit",
+      "averageTimeIn": "Durchschnittliche Einstempelzeit",
+      "averageTimeOut": "Durchschnittliche Ausstempelzeit",
+      "timeIn": "Einstempeln",
+      "timeOut": "Ausstempeln"
+    },
     "summary": {
       "title": "Anwesenheitsübersicht",
+      "totalEmployees": "Mitarbeitende gesamt",
+      "presentEmployees": "Anwesende Mitarbeitende",
+      "absentEmployees": "Abwesende Mitarbeitende",
+      "onLeaveEmployees": "Mitarbeitende im Urlaub",
       "present": "Anwesend",
       "late": "Verspätet",
       "absent": "Abwesend",
@@ -1045,12 +1080,17 @@
     "loading": "Anwesenheit wird geladen...",
     "noEmployees": "In diesem Zeitraum wurden keine aktiven Mitarbeitenden gefunden.",
     "noMatches": "Keine Mitarbeitenden entsprechen der Suche.",
+    "notRecorded": "Kein Anwesenheitseintrag",
     "employee": "Mitarbeiter",
     "department": "Abteilung",
     "unassigned": "Nicht zugeordnet",
     "status": "Status",
     "clockIn": "Arbeitsbeginn",
     "clockOut": "Arbeitsende",
+    "netHoursShort": "Netto {{hours}} Std.",
+    "totalBreakMinutesShort": "Pausen {{minutes}} Min.",
+    "clockTimesLegend": "Erfasste Uhrzeiten",
+    "clockTimeAriaLabel": "{{employee}}: {{event}} um {{time}}.",
     "hours": "Stunden",
     "actions": "Aktionen",
     "breakMinutes": "Pause (Minuten)",
@@ -1065,6 +1105,7 @@
     "recordCellAriaLabel": "Anwesenheit für {{employee}} am {{date}}.",
     "statuses": {
       "present": "Anwesend",
+      "early": "Früh",
       "late": "Verspätet",
       "absent": "Abwesend",
       "on_leave": "Im Urlaub",
@@ -1079,6 +1120,61 @@
     "errors": {
       "loadFailed": "Anwesenheit konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
       "saveFailed": "Anwesenheitsdatensatz konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
+    }
+  },
+  "timesheetPage": {
+    "title": "Stundenzettel",
+    "description": "Erfassen oder bearbeiten Sie die täglichen Arbeitszeiten, regulären Stunden, Überstunden, Pausen und Notizen der Mitarbeitenden.",
+    "date": "Datum auswählen",
+    "previousDay": "Vorheriger Tag",
+    "nextDay": "Nächster Tag",
+    "selectedDate": "Zeiterfassung für {{date}}",
+    "enter": "Stunden erfassen",
+    "edit": "Eintrag bearbeiten",
+    "enterFor": "Stunden für {{employee}} erfassen",
+    "editFor": "Zeiteintrag für {{employee}} bearbeiten",
+    "editor": {
+      "title": "Zeiteintrag für {{employee}}",
+      "description": "Arbeitszeit und Tagessummen dieser Person aktualisieren."
+    },
+    "stats": {
+      "title": "Tagessummen",
+      "regularHours": "Reguläre Stunden",
+      "overtimeHours": "Überstunden",
+      "breakMinutes": "Pausenminuten",
+      "entries": "Gespeicherte Einträge"
+    },
+    "fields": {
+      "clockIn": "Arbeitsbeginn",
+      "clockOut": "Arbeitsende",
+      "regularHours": "Reguläre Stunden",
+      "overtimeHours": "Überstunden",
+      "breakMinutes": "Pausenminuten",
+      "notes": "Notizen",
+      "action": "Aktion",
+      "clockInFor": "Arbeitsbeginn für {{employee}}",
+      "clockOutFor": "Arbeitsende für {{employee}}",
+      "regularHoursFor": "Reguläre Stunden für {{employee}}",
+      "overtimeHoursFor": "Überstunden für {{employee}}",
+      "breakMinutesFor": "Pausenminuten für {{employee}}",
+      "notesFor": "Notizen für {{employee}}"
+    },
+    "timeline": {
+      "title": "Täglicher Stundenzettel",
+      "lunch": "Mittagspause",
+      "employeeHours": "Arbeitszeit von {{employee}}",
+      "shiftSegment": "{{employee}}: {{status}} von {{start}} bis {{end}}"
+    },
+    "loading": "Stundenzettel wird geladen...",
+    "noEmployees": "Keine aktiven Mitarbeitenden gefunden.",
+    "saving": "Wird gespeichert...",
+    "save": "Eintrag speichern",
+    "messages": {
+      "saved": "Zeiteintrag gespeichert."
+    },
+    "errors": {
+      "loadFailed": "Stundenzettel konnte nicht geladen werden. Bitte erneut versuchen.",
+      "saveFailed": "Zeiteintrag konnte nicht gespeichert werden. Bitte erneut versuchen."
     }
   },
   "organizationPage": {
@@ -1384,6 +1480,11 @@
       "accessDenied": "Du darfst diese vertraulichen Angaben nicht anzeigen oder bearbeiten.",
       "loadFailed": "Vertrauliche Mitarbeiterangaben konnten nicht geladen werden. Bitte erneut versuchen.",
       "saveFailed": "Diese Mitarbeiterangaben konnten nicht gespeichert werden. Bitte Werte prüfen und erneut versuchen.",
+      "scheduleStart": "Startzeit",
+      "scheduleEnd": "Endzeit",
+      "scheduleHint": "Lege die tägliche Arbeitszeit fest. Die Zeiterfassung zeigt sie an und bewertet damit frühe oder verspätete Einstempelzeiten.",
+      "scheduleIncomplete": "Gib Start- und Endzeit an oder lösche beide, um den Zeitplan zu entfernen.",
+      "clearSchedule": "Zeitplan löschen",
       "payFrequencies": {
         "weekly": "Wöchentlich",
         "biweekly": "Alle zwei Wochen",

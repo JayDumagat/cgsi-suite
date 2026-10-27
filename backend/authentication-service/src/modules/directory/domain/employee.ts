@@ -101,6 +101,7 @@ export interface EmployeeAttendanceRecord extends Omit<AttendanceRecordInput, "s
   workEmail: string;
   department: string | null;
   jobTitle: string | null;
+  workSchedule: string | null;
   status: AttendanceRecordStatus | null;
   hoursWorked: number | null;
 }
@@ -118,6 +119,38 @@ export interface AttendanceDailyReport {
   date: string;
   summary: AttendanceDailySummary;
   items: EmployeeAttendanceRecord[];
+}
+
+export interface AttendanceMonthlyStatistics {
+  year: number;
+  months: Array<{
+    month: number;
+    averageClockIn: number | null;
+    averageClockOut: number | null;
+  }>;
+}
+
+export interface TimesheetEntryInput {
+  clockIn: string | null;
+  clockOut: string | null;
+  regularHours: number;
+  overtimeHours: number;
+  breakMinutes: number;
+  notes: string | null;
+}
+
+export interface EmployeeTimesheetEntry extends TimesheetEntryInput {
+  id: string | null;
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string | null;
+  department: string | null;
+  jobTitle: string | null;
+}
+
+export interface TimesheetDailyReport {
+  date: string;
+  items: EmployeeTimesheetEntry[];
 }
 
 export type LeaveRequestStatus = "pending" | "approved" | "rejected";

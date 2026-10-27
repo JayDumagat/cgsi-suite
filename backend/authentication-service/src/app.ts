@@ -64,7 +64,10 @@ export function createAuthenticationApp(): Express {
   app.post("/internal/eris/organizations/:organizationId/branches", erisDirectory.createBranch);
   app.post("/internal/eris/organizations/:organizationId/departments/:departmentId/positions", erisDirectory.createPosition);
   app.get("/internal/eris/attendance", erisDirectory.getAttendanceReport);
+  app.get("/internal/eris/attendance/statistics", erisDirectory.getAttendanceMonthlyStatistics);
   app.put("/internal/eris/attendance/:employeeId/:attendanceDate", erisDirectory.updateAttendanceRecord);
+  app.get("/internal/eris/timesheets", erisDirectory.getTimesheetReport);
+  app.put("/internal/eris/timesheets/:employeeId/:workDate", erisDirectory.saveTimesheetEntry);
   app.get("/internal/eris/leave-requests", erisDirectory.getLeaveManagementReport);
   app.post("/internal/eris/leave-requests", erisDirectory.createLeaveRequest);
   app.put("/internal/eris/leave-requests/:requestId/decision", erisDirectory.decideLeaveRequest);

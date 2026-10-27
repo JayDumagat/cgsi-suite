@@ -50,7 +50,7 @@
       "calendar": "Calendario",
       "employeeDirectory": "Empleados",
       "organization": "Organización",
-      "attendance": "Asistencia",
+      "attendance": "Tiempo y asistencia",
       "leaveManagement": "Gestión de permisos",
       "userProfile": "Perfil de usuario",
       "task": "Tareas",
@@ -994,9 +994,16 @@
     }
   },
   "attendancePage": {
-    "title": "Asistencia",
-    "description": "Consulta la asistencia de los empleados en un calendario semanal o mensual.",
+    "title": "Tiempo y asistencia",
+    "description": "Consulta la asistencia y los registros diarios de horas de los empleados en una vista diaria, semanal o mensual.",
+    "tabs": {
+      "label": "Vistas de asistencia",
+      "attendance": "Asistencia",
+      "timesheet": "Hoja de horas"
+    },
     "date": "Elegir una fecha",
+    "previousDay": "Día anterior",
+    "nextDay": "Día siguiente",
     "weekView": "Asistencia semanal",
     "previousWeek": "Semana anterior",
     "nextWeek": "Semana siguiente",
@@ -1005,6 +1012,7 @@
     "today": "Hoy",
     "rangeLabel": "Periodo",
     "rangeOptions": {
+      "day": "Día",
       "week": "Semana",
       "month": "Mes"
     },
@@ -1017,23 +1025,50 @@
     "rate": {
       "title": "Tasa de asistencia",
       "description": "Resumen de asistencia de hoy",
+      "selectedDateDescription": "Resumen de asistencia para {{date}}",
+      "selectedPeriodDescription": "Resumen de asistencia para {{period}}",
       "percentagePointChange": "{{change}} puntos porcentuales",
       "increasedVsLastWeek": "Aumentó frente a la semana pasada",
       "decreasedVsLastWeek": "Disminuyó frente a la semana pasada",
       "unchangedVsLastWeek": "Sin cambios frente a la semana pasada",
+      "increasedVsPreviousPeriod": "Aumentó frente al periodo anterior",
+      "decreasedVsPreviousPeriod": "Disminuyó frente al periodo anterior",
+      "unchangedVsPreviousPeriod": "Sin cambios frente al periodo anterior",
       "noComparison": "No hay datos para comparar con la semana pasada",
       "noWorkdays": "No hay jornadas laborales previstas en este periodo",
       "onTime": "A tiempo",
       "late": "Tarde",
       "notAttended": "Aún no asistió",
+      "noRecord": "Sin registro de asistencia",
       "table": {
         "status": "Estado",
         "metric": "Empleados",
+        "employeeDays": "Días-persona",
         "total": "Total"
       }
     },
+    "statistics": {
+      "title": "Estadísticas de asistencia",
+      "subtitle": "Promedio de las horas de entrada y salida para {{period}}.",
+      "daySubtitle": "Cantidad de entradas y salidas por hora para {{period}}.",
+      "yearSubtitle": "Promedio mensual de las horas de entrada y salida de {{year}}.",
+      "loadingYear": "Cargando estadísticas mensuales de asistencia de {{year}}...",
+      "timeAxis": "Hora del día",
+      "weekdayAxis": "Día de la semana",
+      "monthAxis": "Mes",
+      "countAxis": "Empleados",
+      "averageTimeAxis": "Hora promedio",
+      "averageTimeIn": "Hora promedio de entrada",
+      "averageTimeOut": "Hora promedio de salida",
+      "timeIn": "Entrada",
+      "timeOut": "Salida"
+    },
     "summary": {
       "title": "Resumen de asistencia",
+      "totalEmployees": "Total de empleados",
+      "presentEmployees": "Empleados presentes",
+      "absentEmployees": "Empleados ausentes",
+      "onLeaveEmployees": "Empleados con permiso",
       "present": "Presentes",
       "late": "Llegadas tarde",
       "absent": "Ausentes",
@@ -1045,12 +1080,17 @@
     "loading": "Cargando asistencia...",
     "noEmployees": "No hay empleados activos en este periodo.",
     "noMatches": "Ningún empleado coincide con la búsqueda.",
+    "notRecorded": "Sin registro de asistencia",
     "employee": "Empleado",
     "department": "Departamento",
     "unassigned": "Sin asignar",
     "status": "Estado",
     "clockIn": "Entrada",
     "clockOut": "Salida",
+    "netHoursShort": "{{hours}} h netas",
+    "totalBreakMinutesShort": "Descansos {{minutes}} min",
+    "clockTimesLegend": "Horas registradas",
+    "clockTimeAriaLabel": "{{employee}}: {{event}} a las {{time}}.",
     "hours": "Horas",
     "actions": "Acciones",
     "breakMinutes": "Descanso (minutos)",
@@ -1065,6 +1105,7 @@
     "recordCellAriaLabel": "Asistencia de {{employee}} el {{date}}.",
     "statuses": {
       "present": "Presente",
+      "early": "Temprano",
       "late": "Tarde",
       "absent": "Ausente",
       "on_leave": "De permiso",
@@ -1078,6 +1119,61 @@
     },
     "errors": {
       "loadFailed": "No se pudo cargar la asistencia. Inténtalo de nuevo.",
+      "saveFailed": "No se pudo guardar el registro. Inténtalo de nuevo."
+    }
+  },
+  "timesheetPage": {
+    "title": "Hoja de horas",
+    "description": "Registra o edita el horario diario, las horas regulares, las horas extra, los descansos y las notas de cada empleado.",
+    "date": "Elegir una fecha",
+    "previousDay": "Día anterior",
+    "nextDay": "Día siguiente",
+    "selectedDate": "Registros de horas para {{date}}",
+    "enter": "Registrar horas",
+    "edit": "Editar registro",
+    "enterFor": "Registrar horas de {{employee}}",
+    "editFor": "Editar el registro de horas de {{employee}}",
+    "editor": {
+      "title": "Registro de horas de {{employee}}",
+      "description": "Actualiza el horario y los totales diarios de este empleado."
+    },
+    "stats": {
+      "title": "Totales del día",
+      "regularHours": "Horas regulares",
+      "overtimeHours": "Horas extra",
+      "breakMinutes": "Minutos de descanso",
+      "entries": "Registros guardados"
+    },
+    "fields": {
+      "clockIn": "Hora de entrada",
+      "clockOut": "Hora de salida",
+      "regularHours": "Horas regulares",
+      "overtimeHours": "Horas extra",
+      "breakMinutes": "Minutos de descanso",
+      "notes": "Notas",
+      "action": "Acción",
+      "clockInFor": "Hora de entrada de {{employee}}",
+      "clockOutFor": "Hora de salida de {{employee}}",
+      "regularHoursFor": "Horas regulares de {{employee}}",
+      "overtimeHoursFor": "Horas extra de {{employee}}",
+      "breakMinutesFor": "Minutos de descanso de {{employee}}",
+      "notesFor": "Notas para {{employee}}"
+    },
+    "timeline": {
+      "title": "Registro diario de horas",
+      "lunch": "Almuerzo",
+      "employeeHours": "Horario registrado de {{employee}}",
+      "shiftSegment": "{{employee}}: {{status}} de {{start}} a {{end}}"
+    },
+    "loading": "Cargando hoja de horas...",
+    "noEmployees": "No hay empleados activos.",
+    "saving": "Guardando...",
+    "save": "Guardar registro",
+    "messages": {
+      "saved": "Registro de horas guardado."
+    },
+    "errors": {
+      "loadFailed": "No se pudo cargar la hoja de horas. Inténtalo de nuevo.",
       "saveFailed": "No se pudo guardar el registro. Inténtalo de nuevo."
     }
   },
@@ -1384,6 +1480,11 @@
       "accessDenied": "No tienes permiso para ver o editar estos datos restringidos.",
       "loadFailed": "No se pudo cargar la información restringida del empleado. Inténtalo de nuevo.",
       "saveFailed": "No se pudieron guardar estos datos. Revisa los valores e inténtalo de nuevo.",
+      "scheduleStart": "Hora de inicio",
+      "scheduleEnd": "Hora de fin",
+      "scheduleHint": "Configura el horario diario del empleado. La hoja de horas lo muestra y lo usa para evaluar las entradas tempranas o tardías.",
+      "scheduleIncomplete": "Introduce ambas horas o borra ambas para quitar el horario.",
+      "clearSchedule": "Borrar horario",
       "payFrequencies": {
         "weekly": "Semanal",
         "biweekly": "Cada dos semanas",

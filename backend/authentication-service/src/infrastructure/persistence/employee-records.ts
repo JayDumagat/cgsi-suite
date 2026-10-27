@@ -8,14 +8,18 @@ import {
   type EmployeeLeaveRequest,
   type EmployeeLeaveRequestInput,
   type AttendanceDailyReport,
+  type AttendanceMonthlyStatistics,
   type AttendanceRecordInput,
   type EmployeeActivityEntry,
   type EmployeeAttendanceRecord,
+  type EmployeeTimesheetEntry,
   type EmployeeHrDetails,
   type EmployeeEducationHistoryEntry,
   type EmployeeEducationHistoryInput,
   type EmployeeMasterInput,
   type EmployeeMasterRecord,
+  type TimesheetDailyReport,
+  type TimesheetEntryInput,
   type EmploymentStatus,
   type EmploymentType,
 } from "../../modules/directory/domain/employee.js";
@@ -87,6 +91,7 @@ interface EmployeeAttendanceRow {
   work_email: string;
   department: string | null;
   job_title: string | null;
+  work_schedule: string | null;
   status: AttendanceRecordStatus | null;
   clock_in: string | null;
   clock_out: string | null;
@@ -116,17 +121,28 @@ interface EmployeeLeaveRequestRow {
 const employeeAttendanceSelect = [
   "SELECT record.id::text AS id, employee.id::text AS employee_id, employee.display_name,",
   "       employee.employee_number, employee.work_email, employee.department, employee.job_title,",
+  "       attendance_details.work_schedule,",
   "       COALESCE(record.status, CASE WHEN employee.employment_status = 'on_leave' THEN 'on_leave' END) AS status,",
-  "       to_char(record.clock_in, 'HH24:MI') AS clock_in, to_char(record.clock_out, 'HH24:MI') AS clock_out,",
-  "       COALESCE(record.break_minutes, 0)::int AS break_minutes, record.notes,",
-  "       CASE WHEN record.clock_in IS NULL OR record.clock_out IS NULL THEN NULL",
-  "            ELSE GREATEST(0::numeric, ROUND((EXTRACT(EPOCH FROM (record.clock_out - record.clock_in +",
-  "              CASE WHEN record.clock_out < record.clock_in THEN interval '24 hours' ELSE interval '0' END))",
-  "              / 3600.0 - COALESCE(record.break_minutes, 0) / 60.0)::numeric, 2))::double precision",
+  "       to_char(merged.clock_in, 'HH24:MI') AS clock_in, to_char(merged.clock_out, 'HH24:MI') AS clock_out,",
+  "       merged.break_minutes::int AS break_minutes, merged.notes,",
+  "       CASE WHEN merged.clock_in IS NULL OR merged.clock_out IS NULL THEN NULL",
+  "            ELSE GREATEST(0::numeric, ROUND((EXTRACT(EPOCH FROM (merged.clock_out - merged.clock_in +",
+  "              CASE WHEN merged.clock_out < merged.clock_in THEN interval '24 hours' ELSE interval '0' END))",
+  "              / 3600.0 - merged.break_minutes / 60.0)::numeric, 2))::double precision",
   "       END AS hours_worked",
   "  FROM huma.employees AS employee",
   "  LEFT JOIN huma.employee_attendance_records AS record",
   "    ON record.employee_id = employee.id AND record.attendance_date = $1::date",
+  "  LEFT JOIN huma.employee_timesheet_entries AS timesheet",
+  "    ON timesheet.employee_id = employee.id AND timesheet.work_date = $1::date",
+  "  LEFT JOIN huma.employee_attendance_leave_details AS attendance_details",
+  "    ON attendance_details.employee_id = employee.id",
+  "  LEFT JOIN LATERAL (",
+  "    SELECT CASE WHEN timesheet.id IS NOT NULL THEN timesheet.clock_in ELSE record.clock_in END AS clock_in,",
+  "           CASE WHEN timesheet.id IS NOT NULL THEN timesheet.clock_out ELSE record.clock_out END AS clock_out,",
+  "           CASE WHEN timesheet.id IS NOT NULL THEN COALESCE(timesheet.break_minutes, 0) ELSE COALESCE(record.break_minutes, 0) END AS break_minutes,",
+  "           CASE WHEN timesheet.id IS NOT NULL THEN timesheet.notes ELSE record.notes END AS notes",
+  "  ) AS merged ON TRUE",
 ].join("\n");
 
 const employeeMasterSelect = [
@@ -199,15 +215,20 @@ export class EmployeeMasterRepository {
       await client.query("COMMIT");
 
       const items = result.rows.map(toEmployeeAttendanceRecord);
+      const summaryStatuses = items.map((item) =>
+        statusFromClockTimes(item.status, item.clockIn, item.workSchedule),
+      );
       return {
         date,
         summary: {
           employeeCount: items.length,
-          recordedCount: items.filter((item) => item.id !== null).length,
-          presentCount: items.filter((item) => item.status === "present").length,
-          lateCount: items.filter((item) => item.status === "late").length,
-          absentCount: items.filter((item) => item.status === "absent").length,
-          onLeaveCount: items.filter((item) =>
+          recordedCount: items.filter((item) =>
+            item.id !== null || item.clockIn !== null || item.clockOut !== null,
+          ).length,
+          presentCount: summaryStatuses.filter((status) => status === "present").length,
+          lateCount: summaryStatuses.filter((status) => status === "late").length,
+          absentCount: summaryStatuses.filter((status) => status === "absent").length,
+          onLeaveCount: summaryStatuses.filter((status) =>
             [
               "on_leave",
               "sick_leave",
@@ -216,10 +237,265 @@ export class EmployeeMasterRepository {
               "half_day_vacation_leave",
               "nuptial",
               "bereavement",
-            ].includes(item.status ?? ""),
+            ].includes(status ?? ""),
           ).length,
         },
         items,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getAttendanceMonthlyStatistics(
+    year: number,
+    requestedByEmployeeId: string,
+  ): Promise<AttendanceMonthlyStatistics> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+      await requireEmployeePermission(client, requestedByEmployeeId, "hris.employee.read");
+      const result = await client.query<{
+        month: number;
+        average_clock_in: string | null;
+        average_clock_out: string | null;
+      }>(
+        [
+          "WITH months AS (SELECT generate_series(1, 12)::int AS month),",
+          "attendance_times AS (",
+          "  SELECT record.attendance_date AS work_date, record.clock_in, record.clock_out",
+          "    FROM huma.employee_attendance_records AS record",
+          "   WHERE record.attendance_date >= make_date($1::int, 1, 1)",
+          "     AND record.attendance_date < make_date($1::int + 1, 1, 1)",
+          "     AND NOT EXISTS (SELECT 1 FROM huma.employee_timesheet_entries AS entry",
+          "                      WHERE entry.employee_id = record.employee_id AND entry.work_date = record.attendance_date)",
+          "  UNION ALL",
+          "  SELECT entry.work_date, entry.clock_in, entry.clock_out",
+          "    FROM huma.employee_timesheet_entries AS entry",
+          "   WHERE entry.work_date >= make_date($1::int, 1, 1)",
+          "     AND entry.work_date < make_date($1::int + 1, 1, 1)",
+          "),",
+          "monthly_averages AS (",
+          "  SELECT EXTRACT(MONTH FROM work_date)::int AS month,",
+          "         AVG(EXTRACT(HOUR FROM clock_in) * 60 + EXTRACT(MINUTE FROM clock_in)) AS average_clock_in,",
+          "         AVG(EXTRACT(HOUR FROM clock_out) * 60 + EXTRACT(MINUTE FROM clock_out)) AS average_clock_out",
+          "    FROM attendance_times",
+          "   GROUP BY EXTRACT(MONTH FROM work_date)",
+          ")",
+          "SELECT months.month, monthly_averages.average_clock_in::text,",
+          "       monthly_averages.average_clock_out::text",
+          "  FROM months LEFT JOIN monthly_averages USING (month)",
+          " ORDER BY months.month",
+        ].join("\n"),
+        [year],
+      );
+      await client.query(
+        [
+          "INSERT INTO audit.events",
+          "  (actor_type, actor_employee_id, action, outcome, target_type, target_id, source, details)",
+          "VALUES ('employee', $1, 'eris.attendance_statistics.read', 'success', 'attendance_year', $2, 'eris', $3::jsonb)",
+        ].join("\n"),
+        [requestedByEmployeeId, String(year), JSON.stringify({ monthCount: result.rowCount ?? 0 })],
+      );
+      await client.query("COMMIT");
+
+      return {
+        year,
+        months: result.rows.map((row) => ({
+          month: Number(row.month),
+          averageClockIn:
+            row.average_clock_in === null ? null : Number(row.average_clock_in),
+          averageClockOut:
+            row.average_clock_out === null ? null : Number(row.average_clock_out),
+        })),
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getTimesheetReport(
+    date: string,
+    requestedByEmployeeId: string,
+  ): Promise<TimesheetDailyReport> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+      await requireEmployeePermission(client, requestedByEmployeeId, "hris.employee.read");
+      const result = await client.query<{
+        id: string | null;
+        employee_id: string;
+        display_name: string;
+        employee_number: string | null;
+        department: string | null;
+        job_title: string | null;
+        clock_in: string | null;
+        clock_out: string | null;
+        regular_hours: string | number;
+        overtime_hours: string | number;
+        break_minutes: number;
+        notes: string | null;
+      }>(
+        [
+          "SELECT entry.id::text, employee.id::text AS employee_id, employee.display_name,",
+          "       employee.employee_number, employee.department, employee.job_title,",
+          "       to_char(entry.clock_in, 'HH24:MI') AS clock_in,",
+          "       to_char(entry.clock_out, 'HH24:MI') AS clock_out,",
+          "       COALESCE(entry.regular_hours, 0)::text AS regular_hours,",
+          "       COALESCE(entry.overtime_hours, 0)::text AS overtime_hours,",
+          "       COALESCE(entry.break_minutes, 0)::int AS break_minutes, entry.notes",
+          "  FROM huma.employees AS employee",
+          "  LEFT JOIN huma.employee_timesheet_entries AS entry",
+          "    ON entry.employee_id = employee.id AND entry.work_date = $1::date",
+          " WHERE employee.employment_status IN ('active', 'on_leave')",
+          "   AND (employee.hire_date IS NULL OR employee.hire_date <= $1::date)",
+          "   AND (employee.termination_date IS NULL OR employee.termination_date >= $1::date)",
+          " ORDER BY lower(employee.department) NULLS LAST, lower(employee.display_name), employee.id",
+        ].join("\n"),
+        [date],
+      );
+      await client.query(
+        [
+          "INSERT INTO audit.events",
+          "  (actor_type, actor_employee_id, action, outcome, target_type, target_id, source, details)",
+          "VALUES ('employee', $1, 'eris.timesheet.read', 'success', 'timesheet_day', $2, 'eris', $3::jsonb)",
+        ].join("\n"),
+        [requestedByEmployeeId, date, JSON.stringify({ resultCount: result.rowCount ?? 0 })],
+      );
+      await client.query("COMMIT");
+
+      return {
+        date,
+        items: result.rows.map((row) => ({
+          id: row.id,
+          employeeId: row.employee_id,
+          employeeName: row.display_name,
+          employeeNumber: row.employee_number,
+          department: row.department,
+          jobTitle: row.job_title,
+          clockIn: row.clock_in,
+          clockOut: row.clock_out,
+          regularHours: Number(row.regular_hours),
+          overtimeHours: Number(row.overtime_hours),
+          breakMinutes: row.break_minutes,
+          notes: row.notes,
+        })),
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async saveTimesheetEntry(
+    employeeId: string,
+    date: string,
+    input: TimesheetEntryInput,
+    requestedByEmployeeId: string,
+  ): Promise<EmployeeTimesheetEntry> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await requireEmployeePermission(client, requestedByEmployeeId, "hris.employee.read");
+      const employee = await client.query<{
+        id: string;
+        display_name: string;
+        employee_number: string | null;
+        department: string | null;
+        job_title: string | null;
+      }>(
+        [
+          "SELECT id::text, display_name, employee_number, department, job_title",
+          "  FROM huma.employees",
+          " WHERE id = $1 AND employment_status IN ('active', 'on_leave')",
+          "   AND (hire_date IS NULL OR hire_date <= $2::date)",
+          "   AND (termination_date IS NULL OR termination_date >= $2::date)",
+          " FOR UPDATE",
+        ].join("\n"),
+        [employeeId, date],
+      );
+      const employeeRow = employee.rows[0];
+      if (!employeeRow) throw new EmployeeRecordError("not_found");
+
+      const current = await client.query<{
+        id: string;
+        clock_in: string | null;
+        clock_out: string | null;
+        regular_hours: string | number;
+        overtime_hours: string | number;
+        break_minutes: number;
+        notes: string | null;
+      }>(
+        [
+          "SELECT id::text, to_char(clock_in, 'HH24:MI') AS clock_in,",
+          "       to_char(clock_out, 'HH24:MI') AS clock_out,",
+          "       regular_hours::text, overtime_hours::text, break_minutes, notes",
+          "  FROM huma.employee_timesheet_entries",
+          " WHERE employee_id = $1 AND work_date = $2::date",
+          " FOR UPDATE",
+        ].join("\n"),
+        [employeeId, date],
+      );
+      const previous = current.rows[0];
+      const changedFields: string[] = [];
+      if (!previous || previous.clock_in !== input.clockIn) changedFields.push("clockIn");
+      if (!previous || previous.clock_out !== input.clockOut) changedFields.push("clockOut");
+      if (!previous || Number(previous.regular_hours) !== input.regularHours) changedFields.push("regularHours");
+      if (!previous || Number(previous.overtime_hours) !== input.overtimeHours) changedFields.push("overtimeHours");
+      if (!previous || previous.break_minutes !== input.breakMinutes) changedFields.push("breakMinutes");
+      if (!previous || previous.notes !== input.notes) changedFields.push("timesheetNotes");
+
+      const saved = await client.query<{ id: string }>(
+        [
+          "INSERT INTO huma.employee_timesheet_entries",
+          "  (employee_id, work_date, clock_in, clock_out, regular_hours, overtime_hours, break_minutes, notes, created_by_employee_id, updated_by_employee_id, updated_at)",
+          "VALUES ($1, $2::date, $3::time, $4::time, $5, $6, $7, $8, $9, $9, now())",
+          "ON CONFLICT (employee_id, work_date) DO UPDATE SET",
+          "  clock_in = EXCLUDED.clock_in, clock_out = EXCLUDED.clock_out,",
+          "  regular_hours = EXCLUDED.regular_hours, overtime_hours = EXCLUDED.overtime_hours,",
+          "  break_minutes = EXCLUDED.break_minutes, notes = EXCLUDED.notes,",
+          "  updated_by_employee_id = EXCLUDED.updated_by_employee_id, updated_at = now()",
+          "RETURNING id::text",
+        ].join("\n"),
+        [
+          employeeId,
+          date,
+          input.clockIn,
+          input.clockOut,
+          input.regularHours,
+          input.overtimeHours,
+          input.breakMinutes,
+          input.notes,
+          requestedByEmployeeId,
+        ],
+      );
+      if (changedFields.length > 0) {
+        await auditEmployeeChange(
+          client,
+          requestedByEmployeeId,
+          employeeId,
+          "eris.timesheet_entry.update",
+          changedFields,
+        );
+      }
+      await client.query("COMMIT");
+
+      return {
+        id: saved.rows[0]!.id,
+        employeeId: employeeRow.id,
+        employeeName: employeeRow.display_name,
+        employeeNumber: employeeRow.employee_number,
+        department: employeeRow.department,
+        jobTitle: employeeRow.job_title,
+        ...input,
       };
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
@@ -259,6 +535,10 @@ export class EmployeeMasterRepository {
       );
       const employeeRow = employee.rows[0];
       if (!employeeRow) throw new EmployeeRecordError("not_found");
+      const schedule = await client.query<{ work_schedule: string | null }>(
+        "SELECT work_schedule FROM huma.employee_attendance_leave_details WHERE employee_id = $1",
+        [employeeId],
+      );
 
       const current = await client.query<{
         id: string;
@@ -311,6 +591,7 @@ export class EmployeeMasterRepository {
         workEmail: employeeRow.work_email,
         department: employeeRow.department,
         jobTitle: employeeRow.job_title,
+        workSchedule: schedule.rows[0]?.work_schedule ?? null,
         status: input.status,
         clockIn: input.clockIn,
         clockOut: input.clockOut,
@@ -1104,6 +1385,7 @@ function toEmployeeAttendanceRecord(row: EmployeeAttendanceRow): EmployeeAttenda
     workEmail: row.work_email,
     department: row.department,
     jobTitle: row.job_title,
+    workSchedule: row.work_schedule,
     status: row.status,
     clockIn: row.clock_in,
     clockOut: row.clock_out,
@@ -1147,6 +1429,48 @@ function calculateAttendanceHours(
   let end = endHours * 60 + endMinutes;
   if (end < start) end += 24 * 60;
   return Math.max(0, Math.round(((end - start - breakMinutes) / 60) * 100) / 100);
+}
+
+function statusFromClockTimes(
+  status: AttendanceRecordStatus | null,
+  clockIn: string | null,
+  workSchedule: string | null,
+): AttendanceRecordStatus | null {
+  if (
+    status === "sick_leave" ||
+    status === "half_day_sick_leave" ||
+    status === "vacation_leave" ||
+    status === "half_day_vacation_leave" ||
+    status === "nuptial" ||
+    status === "bereavement" ||
+    status === "official_business"
+  ) return status;
+
+  if (clockIn) {
+    const actualMatch = /^(\d{2}):(\d{2})$/.exec(clockIn);
+    const scheduleMatch = workSchedule
+      ? /(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i.exec(workSchedule)
+      : null;
+    if (actualMatch) {
+      const actualMinutes = Number(actualMatch[1]) * 60 + Number(actualMatch[2]);
+      let scheduledMinutes: number | null = null;
+      if (scheduleMatch) {
+        let scheduledHours = Number(scheduleMatch[1]);
+        const scheduleMinutes = Number(scheduleMatch[2] ?? 0);
+        const meridiem = scheduleMatch[3]?.toLowerCase().replaceAll(".", "");
+        if (meridiem === "am" && scheduledHours === 12) scheduledHours = 0;
+        if (meridiem === "pm" && scheduledHours < 12) scheduledHours += 12;
+        if (scheduledHours <= 23 && scheduleMinutes <= 59) {
+          scheduledMinutes = scheduledHours * 60 + scheduleMinutes;
+        }
+      }
+      return scheduledMinutes !== null && actualMinutes > scheduledMinutes
+        ? "late"
+        : "present";
+    }
+  }
+
+  return status;
 }
 
 async function loadEducationHistory(

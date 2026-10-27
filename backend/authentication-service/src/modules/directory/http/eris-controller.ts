@@ -31,6 +31,12 @@ const attendanceQuerySchema = z.object({
   date: z.string().refine(isCalendarDate),
   q: z.string().trim().max(100).default(""),
 });
+const attendanceStatisticsQuerySchema = z.object({
+  year: z.coerce.number().int().min(1900).max(9998),
+});
+const timesheetQuerySchema = z.object({
+  date: z.string().refine(isCalendarDate),
+});
 
 const employmentStatusSchema = z.enum(["active", "on_leave", "disabled", "offboarded"]);
 const employmentTypeSchema = z.enum(["full_time", "part_time", "contractor", "temporary", "intern"]);
@@ -85,6 +91,19 @@ const attendanceRecordSchema = z.object({
       message: "Clock times are only available for working attendance records.",
     });
   }
+});
+const timesheetHoursSchema = z
+  .number()
+  .min(0)
+  .max(24)
+  .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-8);
+const timesheetEntrySchema = z.object({
+  clockIn: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable(),
+  clockOut: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable(),
+  regularHours: timesheetHoursSchema,
+  overtimeHours: timesheetHoursSchema,
+  breakMinutes: z.number().int().min(0).max(1440),
+  notes: nullableText(1000),
 });
 const leaveRequestSchema = z.object({
   employeeId: z.string().uuid(),
@@ -412,6 +431,47 @@ export class ErisDirectoryController {
     }
   };
 
+  getAttendanceMonthlyStatistics = async (
+    request: Request,
+    response: Response,
+  ): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const parsed = attendanceStatisticsQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_attendance_statistics_query" });
+      return;
+    }
+    try {
+      const statistics = await this.directory.getAttendanceMonthlyStatistics(
+        parsed.data.year,
+        user.employeeId!,
+      );
+      response.status(200).json(statistics);
+    } catch (error) {
+      writeDirectoryError(response, error, "eris_attendance_statistics_read_failed");
+    }
+  };
+
+  getTimesheetReport = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const parsed = timesheetQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_timesheet_query" });
+      return;
+    }
+    try {
+      const report = await this.directory.getTimesheetReport(
+        parsed.data.date,
+        user.employeeId!,
+      );
+      response.status(200).json(report);
+    } catch (error) {
+      writeDirectoryError(response, error, "eris_timesheet_read_failed");
+    }
+  };
+
   updateAttendanceRecord = async (request: Request, response: Response): Promise<void> => {
     const user = this.authenticate(request, response);
     if (!user) return;
@@ -440,6 +500,37 @@ export class ErisDirectoryController {
       response.status(200).json(record);
     } catch (error) {
       writeDirectoryError(response, error, "eris_attendance_update_failed");
+    }
+  };
+
+  saveTimesheetEntry = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const employeeId = z.string().uuid().safeParse(request.params.employeeId);
+    const date = z.string().refine(isCalendarDate).safeParse(request.params.workDate);
+    const parsed = timesheetEntrySchema.safeParse(request.body);
+    if (!employeeId.success || !date.success) {
+      response.status(400).json({ error: "invalid_timesheet_target" });
+      return;
+    }
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_timesheet_entry", fields: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const entry = await this.directory.saveTimesheetEntry(
+        employeeId.data,
+        date.data,
+        parsed.data,
+        user.employeeId!,
+      );
+      response.status(200).json(entry);
+    } catch (error) {
+      writeDirectoryError(response, error, "eris_timesheet_save_failed");
     }
   };
 

@@ -6,7 +6,9 @@ import type {
   EmployeeLeaveRequest,
   EmployeeLeaveRequestInput,
   AttendanceDailyReport,
+  AttendanceMonthlyStatistics,
   AttendanceRecordInput,
+  EmployeeTimesheetEntry,
   EmployeeHrDetails,
   EmployeeMasterInput,
   EmployeeMasterRecord,
@@ -14,6 +16,8 @@ import type {
   EmployeeDirectoryQuery,
   EntraEmployeeProfile,
   ProvisionedEmployee,
+  TimesheetDailyReport,
+  TimesheetEntryInput,
 } from "../domain/employee.js";
 import type {
   BranchInput,
@@ -33,6 +37,14 @@ export interface EmployeeDirectory {
   getEmployeeHrDetails(employeeId: string, requestedByEmployeeId: string): Promise<EmployeeHrDetails>;
   updateEmployeeHrDetails(employeeId: string, details: EmployeeHrDetails, requestedByEmployeeId: string): Promise<EmployeeHrDetails>;
   getAttendanceReport(date: string, search: string, requestedByEmployeeId: string): Promise<AttendanceDailyReport>;
+  getAttendanceMonthlyStatistics(year: number, requestedByEmployeeId: string): Promise<AttendanceMonthlyStatistics>;
+  getTimesheetReport(date: string, requestedByEmployeeId: string): Promise<TimesheetDailyReport>;
+  saveTimesheetEntry(
+    employeeId: string,
+    date: string,
+    input: TimesheetEntryInput,
+    requestedByEmployeeId: string,
+  ): Promise<EmployeeTimesheetEntry>;
   updateAttendanceRecord(
     employeeId: string,
     date: string,
@@ -105,6 +117,26 @@ export class EmployeeDirectoryService {
 
   getAttendanceReport(date: string, search: string, requestedByEmployeeId: string): Promise<AttendanceDailyReport> {
     return this.directory.getAttendanceReport(date, search, requestedByEmployeeId);
+  }
+
+  getAttendanceMonthlyStatistics(
+    year: number,
+    requestedByEmployeeId: string,
+  ): Promise<AttendanceMonthlyStatistics> {
+    return this.directory.getAttendanceMonthlyStatistics(year, requestedByEmployeeId);
+  }
+
+  getTimesheetReport(date: string, requestedByEmployeeId: string): Promise<TimesheetDailyReport> {
+    return this.directory.getTimesheetReport(date, requestedByEmployeeId);
+  }
+
+  saveTimesheetEntry(
+    employeeId: string,
+    date: string,
+    input: TimesheetEntryInput,
+    requestedByEmployeeId: string,
+  ): Promise<EmployeeTimesheetEntry> {
+    return this.directory.saveTimesheetEntry(employeeId, date, input, requestedByEmployeeId);
   }
 
   updateAttendanceRecord(

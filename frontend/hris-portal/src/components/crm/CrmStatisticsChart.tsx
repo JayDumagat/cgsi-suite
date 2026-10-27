@@ -1,14 +1,65 @@
 import ChartTab from "@/components/common/ChartTab";
-import type { ApexOptions } from "apexcharts";
+import type { ApexAxisChartSeries, ApexOptions } from "apexcharts";
 import Chart from "react-apexcharts";
 import { useTranslation } from "react-i18next";
 
-export default function CrmStatisticsChart() {
+interface StatisticsMetric {
+  value: string;
+  label: string;
+  trend?: {
+    value: string;
+    direction: "positive" | "negative";
+  };
+}
+
+interface CrmStatisticsChartProps {
+  title?: string;
+  subtitle?: string;
+  firstMetric?: StatisticsMetric;
+  secondMetric?: StatisticsMetric;
+  categories?: string[];
+  series?: ApexAxisChartSeries;
+  showLegend?: boolean;
+  showPeriodTabs?: boolean;
+  yAxisFormatter?: (value: number) => string;
+  xAxisTitle?: string;
+  yAxisTitle?: string;
+  yAxisAsCount?: boolean;
+  xAxisTickAmount?: number;
+}
+
+export default function CrmStatisticsChart({
+  title,
+  subtitle,
+  firstMetric,
+  secondMetric,
+  categories,
+  series,
+  showLegend = false,
+  showPeriodTabs = true,
+  yAxisFormatter,
+  xAxisTitle,
+  yAxisTitle,
+  yAxisAsCount = false,
+  xAxisTickAmount,
+}: CrmStatisticsChartProps) {
   const { t } = useTranslation();
+  const metrics = [
+    firstMetric ?? {
+      value: "$212,142.12",
+      label: t("crm.statistics.avgYearlyProfit"),
+      trend: { value: "+23.2%", direction: "positive" as const },
+    },
+    secondMetric ?? {
+      value: "$30,321.23",
+      label: t("crm.statistics.avgYearlyProfit"),
+      trend: { value: "-12.3%", direction: "negative" as const },
+    },
+  ];
 
   const options: ApexOptions = {
     legend: {
-      show: false,
+      show: showLegend,
       position: "top",
       horizontalAlign: "left",
     },
@@ -59,7 +110,7 @@ export default function CrmStatisticsChart() {
       width: [2, 2],
     },
     markers: {
-      size: 0,
+      size: categories?.length === 1 ? 4 : 0,
     },
     grid: {
       xaxis: {
@@ -80,10 +131,12 @@ export default function CrmStatisticsChart() {
       x: {
         format: "dd MMM yyyy",
       },
+      y: yAxisFormatter ? { formatter: yAxisFormatter } : undefined,
     },
     xaxis: {
       type: "category",
-      categories: [
+      tickAmount: xAxisTickAmount,
+      categories: categories ?? [
         "Jan",
         "Feb",
         "Mar",
@@ -106,15 +159,20 @@ export default function CrmStatisticsChart() {
       tooltip: {
         enabled: false,
       },
+      title: xAxisTitle ? { text: xAxisTitle } : undefined,
     },
     yaxis: {
+      min: yAxisAsCount ? 0 : undefined,
+      forceNiceScale: yAxisAsCount,
+      decimalsInFloat: yAxisAsCount ? 0 : undefined,
+      labels: yAxisFormatter ? { formatter: yAxisFormatter } : undefined,
       title: {
-        text: undefined, // Removed the `fontSize: "0px"` workaround.
+        text: yAxisTitle,
       },
     },
   };
 
-  const series = [
+  const chartSeries = series ?? [
     {
       name: "Sales",
       data: [180, 190, 170, 160, 175, 165, 170, 205, 230, 210, 240, 235],
@@ -130,47 +188,44 @@ export default function CrmStatisticsChart() {
       <div className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            {t("crm.statistics.title")}
+            {title ?? t("crm.statistics.title")}
           </h3>
           <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
-            {t("crm.statistics.subtitle")}
+            {subtitle ?? t("crm.statistics.subtitle")}
           </p>
         </div>
-        <ChartTab />
+        {showPeriodTabs && <ChartTab />}
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:gap-9">
-        <div className="flex items-start gap-2">
-          <div>
-            <h4 className="text-base font-bold text-gray-800 sm:text-theme-xl dark:text-white/90">
-              $212,142.12
-            </h4>
-            <span className="text-theme-xs text-gray-500 dark:text-gray-400">
-              {t("crm.statistics.avgYearlyProfit")}
-            </span>
+        {metrics.map((metric, index) => (
+          <div key={`${metric.label}-${index}`} className="flex items-start gap-2">
+            <div>
+              <h4 className="text-base font-bold text-gray-800 sm:text-theme-xl dark:text-white/90">
+                {metric.value}
+              </h4>
+              <span className="text-theme-xs text-gray-500 dark:text-gray-400">
+                {metric.label}
+              </span>
+            </div>
+            {metric.trend && (
+              <span
+                className={`mt-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-theme-xs font-medium ${
+                  metric.trend.direction === "positive"
+                    ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
+                    : "bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500"
+                }`}
+              >
+                {metric.trend.value}
+              </span>
+            )}
           </div>
-          <span className="mt-1.5 flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-theme-xs font-medium text-success-600 dark:bg-success-500/15 dark:text-success-500">
-            +23.2%
-          </span>
-        </div>
-        <div className="flex items-start gap-2">
-          <div>
-            <h4 className="text-base font-bold text-gray-800 sm:text-theme-xl dark:text-white/90">
-              $30,321.23
-            </h4>
-            <span className="text-theme-xs text-gray-500 dark:text-gray-400">
-              {t("crm.statistics.avgYearlyProfit")}
-            </span>
-          </div>
-          <span className="mt-1.5 flex items-center gap-1 rounded-full bg-error-50 px-2 py-0.5 text-theme-xs font-medium text-error-600 dark:bg-error-500/15 dark:text-error-500">
-            -12.3%
-          </span>
-        </div>
+        ))}
       </div>
 
       <div className="custom-scrollbar max-w-full overflow-x-auto">
         <div className="-ms-4 min-w-162.5 ps-2 xl:min-w-full">
-          <Chart options={options} series={series} type="area" height={220} />
+          <Chart options={options} series={chartSeries} type="area" height={220} />
         </div>
       </div>
     </div>

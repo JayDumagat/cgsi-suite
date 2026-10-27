@@ -71,6 +71,7 @@ export interface EmployeeAttendanceRecord extends Omit<
   workEmail: string;
   department: string | null;
   jobTitle: string | null;
+  workSchedule: string | null;
   status: AttendanceRecordStatus | null;
   hoursWorked: number | null;
 }
@@ -86,6 +87,38 @@ export interface AttendanceDailyReport {
     onLeaveCount: number;
   };
   items: EmployeeAttendanceRecord[];
+}
+
+export interface AttendanceMonthlyStatistics {
+  year: number;
+  months: Array<{
+    month: number;
+    averageClockIn: number | null;
+    averageClockOut: number | null;
+  }>;
+}
+
+export interface TimesheetEntryInput {
+  clockIn: string | null;
+  clockOut: string | null;
+  regularHours: number;
+  overtimeHours: number;
+  breakMinutes: number;
+  notes: string | null;
+}
+
+export interface EmployeeTimesheetEntry extends TimesheetEntryInput {
+  id: string | null;
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string | null;
+  department: string | null;
+  jobTitle: string | null;
+}
+
+export interface TimesheetDailyReport {
+  date: string;
+  items: EmployeeTimesheetEntry[];
 }
 
 export interface EmployeeHrDetails {
@@ -413,6 +446,40 @@ export async function getAttendanceReport(
   return requestJson<AttendanceDailyReport>(
     `/api/eris/attendance?${search.toString()}`,
     signal,
+  );
+}
+
+export async function getAttendanceMonthlyStatistics(
+  year: number,
+  signal?: AbortSignal,
+): Promise<AttendanceMonthlyStatistics> {
+  const search = new URLSearchParams({ year: String(year) });
+  return requestJson<AttendanceMonthlyStatistics>(
+    `/api/eris/attendance/statistics?${search.toString()}`,
+    signal,
+  );
+}
+
+export async function getTimesheetReport(
+  date: string,
+  signal?: AbortSignal,
+): Promise<TimesheetDailyReport> {
+  const search = new URLSearchParams({ date });
+  return requestJson<TimesheetDailyReport>(
+    `/api/eris/timesheets?${search.toString()}`,
+    signal,
+  );
+}
+
+export async function saveTimesheetEntry(
+  employeeId: string,
+  date: string,
+  input: TimesheetEntryInput,
+): Promise<EmployeeTimesheetEntry> {
+  return requestJson<EmployeeTimesheetEntry>(
+    `/api/eris/timesheets/${encodeURIComponent(employeeId)}/${encodeURIComponent(date)}`,
+    undefined,
+    { method: "PUT", body: JSON.stringify(input) },
   );
 }
 
