@@ -1,5 +1,8 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import PageMeta from "@/components/common/PageMeta";
+import BasicTableFive, {
+  type BasicTableFiveColumn,
+} from "@/components/tables/BasicTables/BasicTableFive";
 import {
   createRecruitmentCandidate,
   createRecruitmentInterview,
@@ -226,6 +229,91 @@ export default function RecruitmentPage() {
     () => Object.fromEntries(pipelineStages.map((stage) => [stage, candidates.filter((candidate) => candidate.stage === stage).length])) as Record<RecruitmentCandidateInput["stage"], number>,
     [candidates],
   );
+  const candidateColumns: BasicTableFiveColumn<RecruitmentCandidate>[] = [
+      {
+        key: "candidate",
+        label: t("recruitmentPage.tabs.candidates"),
+        render: (candidate) => (
+          <div className="min-w-48">
+            <p className="font-medium text-gray-800 dark:text-white/90">
+              {candidate.firstName} {candidate.lastName}
+            </p>
+            <a href={`mailto:${candidate.email}`} className="mt-1 block text-xs text-brand-600 hover:underline dark:text-brand-400">
+              {candidate.email}
+            </a>
+            {candidate.phone && (
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {candidate.phone}
+              </p>
+            )}
+          </div>
+        ),
+        className: "min-w-64",
+      },
+      {
+        key: "opening",
+        label: t("recruitmentPage.table.opening"),
+        render: (candidate) => candidate.openingTitle,
+        className: "min-w-48",
+      },
+      {
+        key: "department",
+        label: t("recruitmentPage.table.department"),
+        render: (candidate) => candidate.department || "—",
+      },
+      {
+        key: "notes",
+        label: t("recruitmentPage.form.notes"),
+        render: (candidate) => candidate.notes || "—",
+        className: "max-w-72",
+      },
+      {
+        key: "appliedAt",
+        label: t("recruitmentPage.table.applied"),
+        render: (candidate) => new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(candidate.appliedAt)),
+      },
+      {
+        key: "stage",
+        label: t("recruitmentPage.form.stage"),
+        render: (candidate) => canManage ? (
+          <div className="min-w-36">
+            <label className="sr-only" htmlFor={`candidate-stage-${candidate.id}`}>
+              {t("recruitmentPage.form.stage")}: {candidate.firstName} {candidate.lastName}
+            </label>
+            <select
+              id={`candidate-stage-${candidate.id}`}
+              className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              value={candidate.stage}
+              onChange={(event) => void changeCandidateStage(candidate, event.target.value as RecruitmentCandidateInput["stage"])}
+            >
+              {pipelineStages.map((option) => (
+                <option key={option} value={option}>{t(`recruitmentPage.pipeline.stages.${option}`)}</option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <StatusPill label={t(`recruitmentPage.pipeline.stages.${candidate.stage}`)} tone={candidate.stage === "hired" ? "success" : candidate.stage === "rejected" ? "neutral" : candidate.stage === "offer" ? "warning" : "brand"} />
+        ),
+      },
+    ];
+
+    if (canManage) {
+      candidateColumns.push({
+        key: "actions",
+        label: t("recruitmentPage.table.actions"),
+        render: (candidate) => (
+          <div className="flex min-w-40 flex-wrap items-center gap-x-4 gap-y-2">
+            <TextAction onClick={() => openDialog({ kind: "candidate", record: candidate })}>
+              {t("recruitmentPage.actions.edit")}
+            </TextAction>
+            <TextAction onClick={() => openDialog({ kind: "interview", candidateId: candidate.id })}>
+              {t("recruitmentPage.actions.scheduleInterview")}
+            </TextAction>
+          </div>
+        ),
+        className: "min-w-52",
+      });
+    }
 
   return (
     <>
@@ -308,53 +396,25 @@ export default function RecruitmentPage() {
         )}
 
         {activeTab === "candidates" && (
-          <ModuleSection title={t("recruitmentPage.pipeline.title")} description={t("recruitmentPage.pipeline.description")}>
-            {isLoading ? <LoadingState label={t("recruitmentPage.loading")} /> : candidates.length === 0 ? (
-              <EmptyModuleState title={t("recruitmentPage.candidates.emptyTitle")} description={openOpenings.length ? t("recruitmentPage.candidates.emptyDescription") : t("recruitmentPage.candidates.noOpenings")} />
-            ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                {pipelineStages.map((stage) => {
-                  const stageCandidates = candidates.filter((candidate) => candidate.stage === stage);
-                  return (
-                    <section key={stage} className="min-h-44 rounded-xl border border-gray-200 bg-gray-50/70 p-3 dark:border-gray-800 dark:bg-gray-900/50">
-                      <div className="mb-3 flex items-center justify-between gap-3 px-1">
-                        <h2 className="text-sm font-semibold text-gray-800 dark:text-white/90">{t(`recruitmentPage.pipeline.stages.${stage}`)}</h2>
-                        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">{numberFormat.format(stageCandidates.length)}</span>
-                      </div>
-                      {stageCandidates.length === 0 ? <p className="px-1 py-4 text-xs text-gray-400 dark:text-gray-500">{t("recruitmentPage.candidates.emptyStage")}</p> : (
-                        <ul className="space-y-3">
-                          {stageCandidates.map((candidate) => (
-                            <li key={candidate.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-gray-800 dark:text-white/90">{candidate.firstName} {candidate.lastName}</p>
-                                  <p className="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{candidate.openingTitle}</p>
-                                </div>
-                                <span className="shrink-0 rounded-full bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">{t(`recruitmentPage.pipeline.stages.${candidate.stage}`)}</span>
-                              </div>
-                              <a href={`mailto:${candidate.email}`} className="mt-3 block truncate text-xs text-brand-600 hover:underline dark:text-brand-400">{candidate.email}</a>
-                              {candidate.phone && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{candidate.phone}</p>}
-                              {candidate.notes && <p className="mt-3 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">{candidate.notes}</p>}
-                              {canManage && (
-                                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 pt-3 dark:border-gray-800">
-                                  <label className="sr-only" htmlFor={`candidate-stage-${candidate.id}`}>{t("recruitmentPage.form.stage")}: {candidate.firstName} {candidate.lastName}</label>
-                                  <select id={`candidate-stage-${candidate.id}`} className="max-w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300" value={candidate.stage} onChange={(event) => void changeCandidateStage(candidate, event.target.value as RecruitmentCandidateInput["stage"])}>
-                                    {pipelineStages.map((option) => <option key={option} value={option}>{t(`recruitmentPage.pipeline.stages.${option}`)}</option>)}
-                                  </select>
-                                  <TextAction onClick={() => openDialog({ kind: "candidate", record: candidate })}>{t("recruitmentPage.actions.edit")}</TextAction>
-                                  <TextAction onClick={() => openDialog({ kind: "interview", candidateId: candidate.id })}>{t("recruitmentPage.actions.scheduleInterview")}</TextAction>
-                                </div>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </section>
-                  );
-                })}
+          <BasicTableFive
+            title={t("recruitmentPage.pipeline.title")}
+            description={t("recruitmentPage.pipeline.description")}
+            data={candidates}
+            columns={candidateColumns}
+            getRowKey={(candidate) => candidate.id}
+            loading={isLoading}
+            loadingText={t("recruitmentPage.loading")}
+            emptyState={(
+              <div>
+                <p className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("recruitmentPage.candidates.emptyTitle")}
+                </p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {t(openOpenings.length ? "recruitmentPage.candidates.emptyDescription" : "recruitmentPage.candidates.noOpenings")}
+                </p>
               </div>
             )}
-          </ModuleSection>
+          />
         )}
 
         {activeTab === "interviews" && (

@@ -6,9 +6,6 @@ import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { Card } from "@/components/ui/card";
-import OrganizationChartCanvas, {
-  getHighestPositionEmployeeId,
-} from "@/components/organization/OrganizationChartCanvas";
 import {
   Table,
   TableBody,
@@ -22,28 +19,23 @@ import {
   createOrganization,
   createPosition,
   getOrganizationStructure,
-  getEmployee,
   updateBranch,
   updateDepartment,
   updatePosition,
-  updateEmployee,
   EmployeeDirectoryRequestError,
   listEmployees,
   type EmployeeDirectoryItem,
-  type EmployeeMasterInput,
-  type EmployeeMasterRecord,
   type EmployeeDirectoryResponse,
   type OrganizationStructureResponse,
 } from "@/components/employee-directory/employeeDirectoryApi";
-import { GridIcon, GroupIcon, MapIcon, PencilIcon, SearchIcon, UserCircleIcon } from "@/icons";
+import { GridIcon, GroupIcon, MapIcon, PencilIcon, UserCircleIcon } from "@/icons";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
 import { TabButton } from "@/components/ui/tabs/TabWithUnderline";
 
 const pageSize = 100;
 const unassignedKey = "__unassigned__";
-type OrganizationTab = "branches" | "departments" | "positions" | "orgChart";
+type OrganizationTab = "branches" | "departments" | "positions";
 type OrganizationForm = "organization" | "branch" | "department" | "position" | null;
 type OrganizationEditingRecord =
   | { kind: "branch"; id: string }
@@ -79,69 +71,8 @@ function organizationSaveErrorKey(error: unknown) {
   return "organizationPage.management.errors.saveFailed";
 }
 
-function employeeInputForPositionAssignment(
-  record: EmployeeMasterRecord,
-  positionId: string | null,
-): EmployeeMasterInput {
-  const educationHistory = record.educationHistory.length > 0
-    ? record.educationHistory.map(({ id: _id, ...entry }) => entry)
-    : record.educationLevel || record.educationInstitution || record.educationField || record.graduationYear
-      ? [{
-          educationLevel: record.educationLevel,
-          institution: record.educationInstitution,
-          fieldOfStudy: record.educationField,
-          startYear: null,
-          graduationYear: record.graduationYear,
-        }]
-      : [];
-
-  return {
-    positionId,
-    employeeNumber: record.employeeNumber,
-    firstName: record.firstName ?? "",
-    middleName: record.middleName,
-    lastName: record.lastName ?? "",
-    suffix: record.suffix,
-    preferredName: record.preferredName,
-    gender: record.gender?.toLowerCase() ?? null,
-    dateOfBirth: record.dateOfBirth,
-    placeOfBirth: record.placeOfBirth,
-    bloodType: record.bloodType,
-    maritalStatus: record.maritalStatus,
-    permanentAddress: record.permanentAddress,
-    currentAddress: record.currentAddress,
-    nationality: record.nationality,
-    religion: record.religion,
-    personalEmail: record.personalEmail,
-    personalPhone: record.personalPhone,
-    emergencyContactName: record.emergencyContactName,
-    emergencyContactRelationship: record.emergencyContactRelationship,
-    emergencyContactPhone: record.emergencyContactPhone,
-    emergencyContactEmail: record.emergencyContactEmail,
-    emergencyContactAddress: record.emergencyContactAddress,
-    educationLevel: record.educationLevel,
-    educationInstitution: record.educationInstitution,
-    educationField: record.educationField,
-    graduationYear: record.graduationYear,
-    educationHistory,
-    workEmail: record.workEmail,
-    department: positionId ? record.department : null,
-    managerWorkEmail: record.managerWorkEmail,
-    jobTitle: positionId ? record.jobTitle : null,
-    employmentType: record.employmentType,
-    employmentStatus: record.employmentStatus,
-    isProbationary: record.isProbationary,
-    regularizationDate: record.regularizationDate,
-    hireDate: record.hireDate,
-    terminationDate: record.terminationDate,
-    workPhone: record.workPhone,
-    workLocation: record.workLocation,
-  };
-}
-
 export default function OrganizationPage() {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
   const [employees, setEmployees] = useState<EmployeeDirectoryItem[]>([]);
   const [summary, setSummary] = useState<
     EmployeeDirectoryResponse["summary"] | null
@@ -153,11 +84,6 @@ export default function OrganizationPage() {
   const [activeTab, setActiveTab] = useState<OrganizationTab>("branches");
   const [activeForm, setActiveForm] = useState<OrganizationForm>(null);
   const [editingRecord, setEditingRecord] = useState<OrganizationEditingRecord>(null);
-  const [chartSearch, setChartSearch] = useState("");
-  const [selectedChartEmployeeId, setSelectedChartEmployeeId] = useState("");
-  const [collapsedChartNodes, setCollapsedChartNodes] = useState<Set<string>>(
-    () => new Set(),
-  );
 
   const [organizationName, setOrganizationName] = useState("");
   const [organizationCode, setOrganizationCode] = useState("");
@@ -570,110 +496,11 @@ export default function OrganizationPage() {
     }
   }
 
-  function createPositionForDepartment(departmentId: string) {
-    setSelectedDepartmentId(departmentId);
-    openForm("position");
-  }
-
-  function editDepartmentFromChart(departmentId: string) {
-    const department = departments.find((item) => item.id === departmentId);
-    if (department) openDepartmentEdit(department);
-  }
-
-  function editPositionFromChart(positionId: string) {
-    const position = positions.find((item) => item.id === positionId);
-    if (position) openPositionEdit(position);
-  }
-
-  async function assignEmployeePosition(employeeId: string, positionId: string | null) {
-    setFormErrorKey(null);
-    setFormSuccessKey(null);
-    try {
-      const record = await getEmployee(employeeId);
-      const updated = await updateEmployee(
-        employeeId,
-        employeeInputForPositionAssignment(record, positionId),
-      );
-      setEmployees((current) => current.map((employee) => employee.id === updated.id
-        ? {
-            ...employee,
-            positionId: updated.positionId,
-            department: updated.department,
-            jobTitle: updated.jobTitle,
-          }
-        : employee));
-      setFormSuccessKey("organizationPage.management.positionAssigned");
-    } catch (error) {
-      setFormErrorKey(organizationSaveErrorKey(error));
-      throw error;
-    }
-  }
-
   const tabs: { id: OrganizationTab; label: string }[] = [
     { id: "branches", label: t("organizationPage.tabs.branches") },
     { id: "departments", label: t("organizationPage.tabs.departments") },
     { id: "positions", label: t("organizationPage.tabs.positions") },
-    { id: "orgChart", label: t("organizationPage.tabs.orgChart") },
   ];
-
-  const chartEmployees = employees
-    .filter((employee) => ["active", "on_leave"].includes(employee.employmentStatus))
-    .sort((first, second) =>
-      first.displayName.localeCompare(second.displayName, language, {
-        sensitivity: "base",
-      }),
-    );
-  const chartEmployeeIds = new Set(chartEmployees.map((employee) => employee.id));
-  const branchManagerIds = new Set(
-    branches.flatMap((branch) => branch.managerEmployeeId ? [branch.managerEmployeeId] : []),
-  );
-  const departmentHeadIds = new Set(
-    departments.flatMap((department) => department.headEmployeeId ? [department.headEmployeeId] : []),
-  );
-  const highestPositionEmployeeId = getHighestPositionEmployeeId(
-    chartEmployees,
-    departmentHeadIds,
-    branchManagerIds,
-  );
-  const normalizedChartSearch = chartSearch.trim().toLocaleLowerCase(language);
-  const matchingChartEmployees = normalizedChartSearch
-    ? chartEmployees.filter((employee) =>
-        [employee.displayName, employee.jobTitle, employee.department, employee.workEmail]
-          .filter(Boolean)
-          .some((value) => value!.toLocaleLowerCase(language).includes(normalizedChartSearch)),
-      )
-    : [];
-  const visibleChartEmployeeIds = new Set(
-    matchingChartEmployees.map((employee) => employee.id),
-  );
-  for (const employee of matchingChartEmployees) {
-    let managerId = employee.managerEmployeeId;
-    const visited = new Set([employee.id]);
-    while (managerId && chartEmployeeIds.has(managerId) && !visited.has(managerId)) {
-      visibleChartEmployeeIds.add(managerId);
-      visited.add(managerId);
-      managerId = employeeById.get(managerId)?.managerEmployeeId ?? null;
-    }
-  }
-  if (matchingChartEmployees.length > 0 && highestPositionEmployeeId) {
-    visibleChartEmployeeIds.add(highestPositionEmployeeId);
-  }
-  const visibleChartEmployees = normalizedChartSearch
-    ? chartEmployees.filter((employee) => visibleChartEmployeeIds.has(employee.id))
-    : chartEmployees;
-  const selectedChartEmployee = visibleChartEmployees.find(
-    (employee) => employee.id === selectedChartEmployeeId,
-  ) ?? null;
-  const matchingChartEmployeeIds = new Set(matchingChartEmployees.map((employee) => employee.id));
-
-  function toggleChartEmployee(employeeId: string) {
-    setCollapsedChartNodes((current) => {
-      const next = new Set(current);
-      if (next.has(employeeId)) next.delete(employeeId);
-      else next.add(employeeId);
-      return next;
-    });
-  }
 
   const organizationForm = activeForm === "organization" && (
     <form onSubmit={submitOrganization} className="grid grid-cols-1 gap-4 rounded-xl border border-gray-200 p-4 sm:grid-cols-2 dark:border-gray-800">
@@ -1012,7 +839,7 @@ export default function OrganizationPage() {
                 </div>
               </div>
             </div>
-          ) : activeTab === "positions" ? (
+          ) : (
             <div className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t("organizationPage.tabDescriptions.positions")}</p>
@@ -1092,136 +919,7 @@ export default function OrganizationPage() {
                 </div>
               </div>
             </div>
-          ) : (
-              <div className="space-y-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="relative w-full lg:max-w-md">
-                    <Input
-                      type="search"
-                      value={chartSearch}
-                      onChange={(event) => setChartSearch(event.target.value)}
-                      placeholder={t("organizationPage.orgChartControls.searchPlaceholder")}
-                      aria-label={t("organizationPage.orgChartControls.searchPlaceholder")}
-                      className="ps-10"
-                    />
-                    <SearchIcon
-                      className="pointer-events-none absolute start-3 top-1/2 z-10 size-4 -translate-y-1/2 fill-gray-500 text-gray-500 dark:fill-gray-400 dark:text-gray-400"
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <p className="hidden text-sm text-gray-500 dark:text-gray-400 xl:block">
-                      {t("organizationPage.management.reportingDescription")}
-                    </p>
-                    {canManageOrganization && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setActiveTab("branches");
-                            openForm("branch");
-                          }}
-                        >
-                          {t("organizationPage.management.createBranch")}
-                        </Button>
-                      </>
-                    )}
-                    <Button size="sm" className="shrink-0" onClick={() => navigate("/employees")}>
-                      {t("organizationPage.orgChartControls.addEmployee")}
-                    </Button>
-                  </div>
-                </div>
-
-                {canManageOrganization && (
-                  <div className="space-y-3">
-                    {departmentForm}
-                    {positionForm}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { label: t("organizationPage.totalEmployees"), value: chartEmployees.length },
-                    { label: t("organizationPage.tabs.branches"), value: branches.length },
-                    { label: t("organizationPage.tabs.departments"), value: departments.length },
-                    { label: t("organizationPage.tabs.positions"), value: totalPositionCount },
-                  ].map((item) => (
-                    <Badge
-                      key={item.label}
-                      size="sm"
-                      color="light"
-                    >
-                      <span className="font-semibold">{numberFormat.format(item.value)}</span> {item.label}
-                    </Badge>
-                  ))}
-                </div>
-
-                {chartEmployees.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-gray-300 py-10 text-center dark:border-gray-700">
-                    <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
-                      {t("organizationPage.management.noEmployeesForChart")}
-                    </p>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      {t("organizationPage.orgChartControls.emptyChartDescription")}
-                    </p>
-                  </div>
-                ) : normalizedChartSearch && matchingChartEmployees.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-gray-300 py-10 text-center dark:border-gray-700">
-                    <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
-                      {t("organizationPage.orgChartControls.noSearchResults")}
-                    </p>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      {t("organizationPage.orgChartControls.searchHint")}
-                    </p>
-                  </div>
-                ) : organization ? (
-                  <OrganizationChartCanvas
-                    employees={visibleChartEmployees}
-                    departments={departments}
-                    positions={positions}
-                    canManageOrganization={canManageOrganization}
-                    matchedEmployeeIds={matchingChartEmployeeIds}
-                    selectedEmployeeId={selectedChartEmployeeId}
-                    selectedEmployee={selectedChartEmployee}
-                    branchManagerIds={branchManagerIds}
-                    departmentHeadIds={departmentHeadIds}
-                    collapsedEmployeeIds={collapsedChartNodes}
-                    searchActive={Boolean(normalizedChartSearch)}
-                    labels={{
-                      employee: t("organizationPage.management.employee"),
-                      reportsTo: t("organizationPage.orgChartControls.reportsTo"),
-                      structure: t("organizationPage.orgChartControls.structure"),
-                      departments: t("organizationPage.tabs.departments").toLocaleLowerCase(language),
-                      addDepartment: t("organizationPage.management.createDepartment"),
-                      addPosition: t("organizationPage.management.createPosition"),
-                      edit: t("common.edit"),
-                      emptyDepartments: t("organizationPage.management.noDepartments"),
-                      emptyPositions: t("organizationPage.management.noPositions"),
-                      assignPosition: t("organizationPage.orgChartControls.assignPosition"),
-                      selectPosition: t("employeeDirectory.fields.selectJobPosition"),
-                      noPosition: t("employeeDirectory.fields.noJobPosition"),
-                      saveAssignment: t("organizationPage.orgChartControls.saveAssignment"),
-                      branchManager: t("organizationPage.orgChartControls.branchManager"),
-                      departmentHead: t("organizationPage.orgChartControls.departmentHead"),
-                      expandReports: (count) => t("organizationPage.orgChartControls.expandReports", { count }),
-                      collapseReports: (count) => t("organizationPage.orgChartControls.collapseReports", { count }),
-                      centerView: t("organizationPage.orgChartControls.centerView"),
-                      zoomOut: t("organizationPage.orgChartControls.zoomOut"),
-                      zoomIn: t("organizationPage.orgChartControls.zoomIn"),
-                      controls: t("organizationPage.orgChartControls.controls"),
-                    }}
-                    onSelectEmployee={setSelectedChartEmployeeId}
-                    onToggleCollapse={toggleChartEmployee}
-                    onCreateDepartment={() => openForm("department")}
-                    onEditDepartment={editDepartmentFromChart}
-                    onCreatePosition={createPositionForDepartment}
-                    onEditPosition={editPositionFromChart}
-                    onAssignPosition={assignEmployeePosition}
-                  />
-                ) : null}
-              </div>
-            )}
+          )}
           </div>
       </div>
     </>

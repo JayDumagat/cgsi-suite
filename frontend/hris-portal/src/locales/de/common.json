@@ -1639,6 +1639,7 @@
       "opening": "Stelle",
       "department": "Abteilung",
       "applicants": "Bewerbungen",
+      "applied": "Beworben am",
       "status": "Status",
       "actions": "Aktionen"
     },
@@ -1825,7 +1826,7 @@
     "overview": "Übersicht der Gehaltsprofile",
     "manageEmployees": "Mitarbeitende verwalten",
     "stats": {
-      "employeesOnPage": "Mitarbeitende auf dieser Seite",
+      "employeesOnPage": "Mitarbeitende",
       "profilesConfigured": "Eingerichtete Gehaltsprofile"
     },
     "profiles": {
@@ -1840,7 +1841,10 @@
       "frequency": "Zahlungsrhythmus",
       "grade": "Gehaltsstufe",
       "action": "Aktion",
-      "manageProfile": "Profil verwalten"
+      "manageProfile": "Profil verwalten",
+      "show": "Anzeigen",
+      "entries": "Einträge",
+      "showingEntries": "Zeige {{from}} bis {{to}} von {{total}} Einträgen"
     },
     "notProvided": "Nicht angegeben",
     "frequencies": {

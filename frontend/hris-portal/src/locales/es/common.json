@@ -1639,6 +1639,7 @@
       "opening": "Vacante",
       "department": "Departamento",
       "applicants": "Candidatos",
+      "applied": "Fecha de solicitud",
       "status": "Estado",
       "actions": "Acciones"
     },
@@ -1825,7 +1826,7 @@
     "overview": "Resumen de perfiles de nómina",
     "manageEmployees": "Gestionar empleados",
     "stats": {
-      "employeesOnPage": "Empleados en esta página",
+      "employeesOnPage": "Empleados",
       "profilesConfigured": "Perfiles salariales configurados"
     },
     "profiles": {
@@ -1840,7 +1841,10 @@
       "frequency": "Frecuencia de pago",
       "grade": "Nivel salarial",
       "action": "Acción",
-      "manageProfile": "Gestionar perfil"
+      "manageProfile": "Gestionar perfil",
+      "show": "Mostrar",
+      "entries": "registros",
+      "showingEntries": "Mostrando {{from}}–{{to}} de {{total}} registros"
     },
     "notProvided": "Sin información",
     "frequencies": {

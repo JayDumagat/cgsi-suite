@@ -1639,6 +1639,7 @@
       "opening": "الوظيفة الشاغرة",
       "department": "القسم",
       "applicants": "المتقدمون",
+      "applied": "تاريخ التقديم",
       "status": "الحالة",
       "actions": "الإجراءات"
     },
@@ -1825,7 +1826,7 @@
     "overview": "نظرة عامة على ملفات الرواتب",
     "manageEmployees": "إدارة الموظفين",
     "stats": {
-      "employeesOnPage": "الموظفون في هذه الصفحة",
+      "employeesOnPage": "الموظفون",
       "profilesConfigured": "ملفات الرواتب المُعدة"
     },
     "profiles": {
@@ -1840,7 +1841,10 @@
       "frequency": "تكرار الدفع",
       "grade": "الدرجة الوظيفية",
       "action": "الإجراء",
-      "manageProfile": "إدارة الملف"
+      "manageProfile": "إدارة الملف",
+      "show": "عرض",
+      "entries": "سجلات",
+      "showingEntries": "عرض {{from}} إلى {{to}} من أصل {{total}} سجل"
     },
     "notProvided": "غير متوفر",
     "frequencies": {

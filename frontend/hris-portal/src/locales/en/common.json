@@ -1639,6 +1639,7 @@
       "opening": "Opening",
       "department": "Department",
       "applicants": "Applicants",
+      "applied": "Applied",
       "status": "Status",
       "actions": "Actions"
     },
@@ -1825,7 +1826,7 @@
     "overview": "Payroll profile overview",
     "manageEmployees": "Manage employees",
     "stats": {
-      "employeesOnPage": "Employees on this page",
+      "employeesOnPage": "Employees",
       "profilesConfigured": "Salary profiles configured"
     },
     "profiles": {
@@ -1840,7 +1841,10 @@
       "frequency": "Pay frequency",
       "grade": "Pay grade",
       "action": "Action",
-      "manageProfile": "Manage profile"
+      "manageProfile": "Manage profile",
+      "show": "Show",
+      "entries": "entries",
+      "showingEntries": "Showing {{from}} to {{to}} of {{total}} entries"
     },
     "notProvided": "Not provided",
     "frequencies": {
