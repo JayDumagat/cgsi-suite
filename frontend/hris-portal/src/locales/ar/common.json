@@ -1050,9 +1050,10 @@
     "statistics": {
       "title": "إحصاءات الحضور",
       "subtitle": "متوسط وقت الدخول والخروج للفترة {{period}}.",
-      "daySubtitle": "عدد مرات الدخول والخروج حسب الوقت للفترة {{period}}.",
+      "daySubtitle": "متوسط أوقات الدخول والخروج للفترة {{period}}.",
       "yearSubtitle": "متوسط أوقات الدخول والخروج الشهرية لعام {{year}}.",
       "loadingYear": "جارٍ تحميل إحصاءات الحضور الشهرية لعام {{year}}...",
+      "dayAxis": "اليوم",
       "timeAxis": "وقت اليوم",
       "weekdayAxis": "يوم الأسبوع",
       "monthAxis": "الشهر",
@@ -1069,6 +1070,7 @@
       "presentEmployees": "الموظفون الحاضرون",
       "absentEmployees": "الموظفون الغائبون",
       "onLeaveEmployees": "الموظفون في إجازة",
+      "noRecordEmployees": "لا يوجد سجل حضور",
       "present": "حاضرون",
       "late": "متأخرون",
       "absent": "غائبون",
@@ -1129,16 +1131,21 @@
     "previousDay": "اليوم السابق",
     "nextDay": "اليوم التالي",
     "selectedDate": "سجلات ساعات العمل ليوم {{date}}",
+    "selectedPeriod": "سجلات ساعات العمل للفترة {{period}}",
     "enter": "إدخال الساعات",
     "edit": "تعديل السجل",
     "enterFor": "إدخال ساعات {{employee}}",
     "editFor": "تعديل سجل ساعات {{employee}}",
     "editor": {
       "title": "سجل ساعات {{employee}}",
-      "description": "حدّث دوام هذا الموظف وإجماليات اليوم."
+      "description": "حدّث دوام هذا الموظف وإجماليات اليوم.",
+      "periodDescription": "تعديل سجل {{date}}."
     },
     "stats": {
       "title": "إجماليات اليوم",
+      "dailyTitle": "إجماليات اليوم",
+      "weeklyTitle": "إجماليات الأسبوع",
+      "monthlyTitle": "إجماليات الشهر",
       "regularHours": "ساعات العمل العادية",
       "overtimeHours": "ساعات العمل الإضافية",
       "breakMinutes": "دقائق الاستراحة",
@@ -1162,8 +1169,16 @@
     "timeline": {
       "title": "سجل ساعات اليوم",
       "lunch": "استراحة الغداء",
+      "clockIn": "وقت الدخول",
+      "clockOut": "وقت الخروج",
+      "clockInMarker": "وقت دخول {{employee}} عند {{time}}",
+      "clockOutMarker": "وقت خروج {{employee}} عند {{time}}",
       "employeeHours": "الجدول الزمني لـ {{employee}}",
       "shiftSegment": "{{employee}}: {{status}} من {{start}} إلى {{end}}"
+    },
+    "periodTable": {
+      "title": "سجلات ساعات العمل لهذه الفترة",
+      "description": "راجع وعدّل سجل كل موظف حسب التاريخ."
     },
     "loading": "جارٍ تحميل سجل ساعات العمل...",
     "noEmployees": "لم يتم العثور على موظفين نشطين.",
@@ -1217,6 +1232,10 @@
       "addEmployee": "إضافة موظف",
       "branchManager": "مدير الفرع",
       "departmentHead": "رئيس القسم",
+      "reportsTo": "يتبع لـ",
+      "structure": "الأقسام والمناصب",
+      "assignPosition": "تعيين منصب",
+      "saveAssignment": "حفظ التعيين",
       "controls": "عناصر التحكم في المخطط التنظيمي",
       "centerView": "توسيط العرض",
       "zoomIn": "تكبير",
@@ -1284,7 +1303,12 @@
         "duplicateName": "يوجد عنصر بهذا الاسم في هذا الجزء من الهيكل التنظيمي بالفعل.",
         "invalidAssignee": "اختر موظفًا نشطًا لهذا التعيين.",
         "saveFailed": "تعذر حفظ تفاصيل المؤسسة. يرجى المحاولة مرة أخرى."
-      }
+      },
+      "actions": "الإجراءات",
+      "branchUpdated": "تم تحديث الفرع.",
+      "departmentUpdated": "تم تحديث القسم.",
+      "positionUpdated": "تم تحديث المسمى الوظيفي.",
+      "positionAssigned": "تم تحديث منصب الموظف."
     },
     "errors": {
       "loadFailed": "تعذر تحميل الهيكل التنظيمي. يرجى المحاولة مرة أخرى."
@@ -1349,7 +1373,7 @@
       "suffix": "لاحقة الاسم",
       "suffixOptional": "لاحقة الاسم (اختياري)",
       "personalEmail": "البريد الإلكتروني الشخصي",
-      "personalPhone": "الهاتف الشخصي",
+      "personalPhone": "رقم الهاتف المحمول الشخصي",
       "educationLevel": "أعلى مستوى تعليمي",
       "educationInstitution": "المدرسة / المؤسسة التعليمية",
       "educationField": "الشهادة / مجال الدراسة",
@@ -1357,6 +1381,9 @@
       "graduationYear": "سنة التخرج",
       "department": "القسم",
       "jobTitle": "المسمى الوظيفي",
+      "jobPosition": "المنصب الوظيفي",
+      "selectJobPosition": "اختر منصبًا وظيفيًا",
+      "noJobPosition": "لا يوجد منصب وظيفي",
       "status": "الحالة",
       "employmentType": "نوع التوظيف",
       "probationaryStatus": "حالة فترة التجربة",
@@ -1370,7 +1397,7 @@
       "managerEmail": "البريد الإلكتروني للمدير",
       "managerEmailOptional": "البريد الإلكتروني للمدير (اختياري)",
       "managerEmailHint": "يجب أن يكون للمدير سجل موظف نشط في ERIS. اترك الحقل فارغًا إذا لم يتم تعيين مدير.",
-      "preferredName": "الاسم المفضل",
+      "preferredName": "الاسم المستعار",
       "gender": "الجنس",
       "dateOfBirth": "تاريخ الميلاد",
       "placeOfBirth": "مكان الميلاد",
@@ -1400,7 +1427,10 @@
       "currentMedications": "الأدوية الحالية",
       "healthInsuranceProvider": "مقدم التأمين الصحي",
       "healthInsurancePolicyNumber": "رقم وثيقة التأمين الصحي",
-      "updatedAt": "آخر تحديث"
+      "updatedAt": "آخر تحديث",
+      "nationality": "الجنسية",
+      "religion": "الديانة",
+      "emergencyContactAddress": "عنوان جهة الاتصال للطوارئ"
     },
     "statuses": {
       "active": "نشط",
@@ -1494,6 +1524,17 @@
       "units": {
         "hoursPerWeek": "{value} ساعة أسبوعيًا",
         "days": "{value} يوم"
+      },
+      "familyTitle": "معلومات الأسرة",
+      "familyDescription": "بيانات الزوج أو الزوجة والوالدين والأطفال. يقتصر الوصول على محرري بيانات الموظفين.",
+      "familyFields": {
+        "middleInitial": "الحرف الأول من الاسم الأوسط"
+      },
+      "familyMembers": {
+        "spouse": "الزوج أو الزوجة",
+        "mother": "الأم",
+        "father": "الأب",
+        "child": "الطفل {number}"
       }
     },
     "details": {
@@ -1514,7 +1555,8 @@
         "medical": "طبي",
         "documents": "المستندات",
         "assets": "الأصول",
-        "activity": "النشاط"
+        "activity": "النشاط",
+        "family": "الأسرة"
       }
     },
     "errors": {
@@ -1526,13 +1568,38 @@
       "sessionExpired": "انتهت جلستك. سجّل الدخول مجددًا للمتابعة.",
       "notFound": "تعذر العثور على سجل الموظف هذا.",
       "loadFailed": "تعذر تحميل سجلات الموظفين. حاول مرة أخرى.",
-      "invalidManager": "يجب أن يكون للمدير سجل موظف نشط في ERIS. اترك الحقل فارغًا إذا لم يتم تعيين مدير."
-    }
+      "invalidManager": "يجب أن يكون للمدير سجل موظف نشط في ERIS. اترك الحقل فارغًا إذا لم يتم تعيين مدير.",
+      "invalidPosition": "اختر منصبًا وظيفيًا من الهيكل التنظيمي."
+    },
+    "genders": {
+      "female": "أنثى",
+      "male": "ذكر"
+    },
+    "addressFormatHint": "أدخل رقم المنزل والشارع والبارانغاي أو البلدية والمدينة أو المقاطعة والرمز البريدي."
   },
   "recruitmentPage": {
     "title": "التوظيف",
     "description": "أدر الوظائف الشاغرة وتابع المرشحين من التقديم حتى التوظيف.",
     "overview": "نظرة عامة على التوظيف",
+    "loading": "جارٍ تحميل سجلات التوظيف…",
+    "minutes": "دقيقة",
+    "tabs": {
+      "label": "أقسام التوظيف",
+      "openings": "الوظائف الشاغرة",
+      "candidates": "المرشحون",
+      "interviews": "المقابلات"
+    },
+    "actions": {
+      "addOpening": "إضافة وظيفة شاغرة",
+      "editOpening": "تعديل الوظيفة الشاغرة",
+      "addCandidate": "إضافة مرشح",
+      "editCandidate": "تعديل المرشح",
+      "scheduleInterview": "جدولة مقابلة",
+      "editInterview": "تعديل المقابلة",
+      "edit": "تعديل",
+      "save": "حفظ",
+      "saving": "جارٍ الحفظ…"
+    },
     "stats": {
       "openings": "الوظائف الشاغرة",
       "candidates": "المرشحون",
@@ -1542,25 +1609,89 @@
     "pipeline": {
       "title": "مسار التوظيف",
       "description": "تابع المرشحين من أول طلب تقديم حتى التوظيف.",
-      "notConnected": "سجلات التوظيف غير متصلة بعد.",
       "stages": {
         "applied": "تم التقديم",
         "screening": "الفرز الأولي",
         "interview": "المقابلة",
         "offer": "العرض الوظيفي",
-        "hired": "تم التوظيف"
+        "hired": "تم التوظيف",
+        "rejected": "مرفوض"
       }
     },
     "positions": {
-      "description": "الوظائف المعتمدة التي تستقبل الطلبات حاليًا.",
-      "emptyTitle": "لا توجد وظائف شاغرة حتى الآن",
-      "emptyDescription": "ستظهر الوظائف الشاغرة هنا عند ربط بيانات التوظيف."
+      "description": "أنشئ الوظائف الشاغرة وأدرها، بما في ذلك الوظائف التي تستقبل الطلبات.",
+      "emptyTitle": "لا توجد وظائف شاغرة بعد",
+      "emptyDescription": "أضف وظيفة شاغرة لبدء مسار التوظيف."
+    },
+    "candidates": {
+      "emptyTitle": "لا يوجد مرشحون بعد",
+      "emptyDescription": "أضف مرشحًا إلى وظيفة شاغرة لمتابعة تقدمه.",
+      "noOpenings": "افتح وظيفة شاغرة قبل إضافة المرشحين.",
+      "emptyStage": "لا يوجد مرشحون في هذه المرحلة."
     },
     "interviewSchedule": {
       "title": "المقابلات القادمة",
       "description": "تابع المحادثات القادمة مع المرشحين.",
       "emptyTitle": "لا توجد مقابلات مجدولة",
-      "emptyDescription": "ستظهر المقابلات المجدولة هنا عند ربط بيانات التوظيف."
+      "emptyDescription": "جدول مقابلة من صفحة المرشح في مسار التوظيف."
+    },
+    "table": {
+      "opening": "الوظيفة الشاغرة",
+      "department": "القسم",
+      "applicants": "المتقدمون",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "form": {
+      "title": "المسمى الوظيفي",
+      "position": "المنصب التنظيمي",
+      "noLinkedPosition": "لا يوجد منصب مرتبط",
+      "department": "القسم",
+      "location": "الموقع",
+      "employmentType": "نوع التوظيف",
+      "headcount": "عدد الموظفين المطلوب",
+      "openingStatus": "حالة الوظيفة",
+      "description": "الوصف",
+      "opening": "الوظيفة الشاغرة",
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "source": "المصدر",
+      "stage": "مرحلة التوظيف",
+      "notes": "ملاحظات",
+      "candidate": "المرشح",
+      "scheduledAt": "التاريخ والوقت",
+      "durationMinutes": "المدة (بالدقائق)",
+      "interviewType": "نوع المقابلة",
+      "interviewer": "المحاور",
+      "unassigned": "غير معيّن",
+      "interviewStatus": "حالة المقابلة"
+    },
+    "employmentTypes": {
+      "full_time": "دوام كامل",
+      "part_time": "دوام جزئي",
+      "contractor": "متعاقد",
+      "temporary": "مؤقت",
+      "intern": "تدريب"
+    },
+    "openingStatuses": {
+      "draft": "مسودة",
+      "open": "مفتوحة",
+      "closed": "مغلقة"
+    },
+    "interviewStatuses": {
+      "scheduled": "مجدولة",
+      "completed": "مكتملة",
+      "cancelled": "ملغاة"
+    },
+    "errors": {
+      "loadFailed": "تعذر تحميل سجلات التوظيف. حاول مرة أخرى لاحقًا.",
+      "saveFailed": "تعذر حفظ سجل التوظيف. تحقق من البيانات ثم حاول مرة أخرى.",
+      "accessDenied": "ليس لديك إذن لعرض سجلات التوظيف أو إدارتها.",
+      "duplicateCandidate": "هذا البريد مسجل بالفعل للوظيفة المحددة.",
+      "openingNotOpen": "يمكن إضافة المرشحين إلى الوظائف المفتوحة فقط.",
+      "invalidPosition": "اختر منصبًا من الهيكل التنظيمي."
     }
   },
   "performancePage": {
@@ -1602,6 +1733,90 @@
     "empty": {
       "title": "لا توجد تقييمات أداء بعد",
       "description": "لا تُحفظ دورات الأداء والتقييمات في ERIS بعد."
+    },
+    "loading": "جارٍ تحميل بيانات الأداء…",
+    "saving": "جارٍ الحفظ…",
+    "stats": {
+      "activeGoals": "الأهداف النشطة",
+      "completedGoals": "الأهداف المكتملة",
+      "feedbackNotes": "ملاحظات التقييم",
+      "averageRating": "متوسط التقييم"
+    },
+    "employees": {
+      "title": "الموظفون",
+      "description": "اختر موظفًا لمراجعة أهدافه وملاحظاته وتقييماته.",
+      "search": "البحث عن موظفين",
+      "noMatches": "لا يوجد موظفون يطابقون البحث.",
+      "emptyTitle": "لا يوجد موظفون متاحون",
+      "emptyDescription": "ستظهر سجلات الموظفين النشطين هنا."
+    },
+    "details": {
+      "title": "تفاصيل الأداء",
+      "description": "راجع أهداف هذا الموظف وملاحظاته وتقييماته."
+    },
+    "tabs": {
+      "label": "أقسام الأداء",
+      "goals": "الأهداف",
+      "feedback": "الملاحظات",
+      "ratings": "التقييمات"
+    },
+    "statuses": {
+      "notStarted": "لم يبدأ",
+      "inProgress": "قيد التنفيذ",
+      "completed": "مكتمل"
+    },
+    "ratingChoice": "{{rating}} من 5",
+    "goals": {
+      "title": "الأهداف",
+      "description": "حدد أهدافًا واضحة وحدّث التقدم مع إنجاز العمل.",
+      "addGoal": "إضافة هدف",
+      "saveGoal": "حفظ الهدف",
+      "updateGoal": "حفظ التقدم",
+      "emptyTitle": "لا توجد أهداف مسجلة",
+      "emptyDescription": "أضف هدفًا لمتابعة تطور الموظف.",
+      "dueDate": "تاريخ الاستحقاق {{date}}",
+      "progress": "التقدم",
+      "fields": {
+        "title": "عنوان الهدف",
+        "description": "الوصف",
+        "dueDate": "تاريخ الاستحقاق",
+        "status": "الحالة",
+        "progress": "التقدم (%)"
+      }
+    },
+    "feedback": {
+      "title": "الملاحظات",
+      "description": "سجل ملاحظات محددة متعلقة بعمل هذا الموظف.",
+      "writeLabel": "ملاحظة تقييم",
+      "placeholder": "صف نقطة قوة أو مساهمة أو مجالًا للتحسين لاحظته…",
+      "saveFeedback": "إضافة ملاحظة",
+      "emptyTitle": "لا توجد ملاحظات مسجلة",
+      "emptyDescription": "ستظهر الملاحظات هنا بعد إضافتها.",
+      "authorFallback": "فريق الموارد البشرية"
+    },
+    "ratings": {
+      "title": "التقييم السنوي",
+      "description": "احفظ تقييمًا واحدًا لكل موظف في كل سنة مراجعة. حفظ السنة نفسها يحدّث تقييمها.",
+      "reviewYear": "سنة المراجعة",
+      "rating": "التقييم",
+      "selectRating": "اختر تقييمًا",
+      "summary": "ملخص المراجعة",
+      "saveRating": "حفظ التقييم",
+      "emptyTitle": "لا توجد تقييمات مسجلة",
+      "emptyDescription": "ستظهر التقييمات السنوية هنا بعد حفظها.",
+      "reviewerFallback": "مراجع الموارد البشرية"
+    },
+    "messages": {
+      "goalSaved": "تم حفظ الهدف.",
+      "goalUpdated": "تم تحديث تقدم الهدف.",
+      "feedbackSaved": "تمت إضافة الملاحظة.",
+      "ratingSaved": "تم حفظ التقييم."
+    },
+    "errors": {
+      "loadFailed": "تعذر تحميل بيانات الأداء. يرجى المحاولة مرة أخرى.",
+      "saveFailed": "تعذر حفظ التغيير. تحقق من التفاصيل وحاول مرة أخرى.",
+      "employeeNotFound": "الموظف المحدد لم يعد نشطًا.",
+      "goalNotFound": "هذا الهدف لم يعد موجودًا. حدّث الصفحة وحاول مرة أخرى."
     }
   },
   "payrollPage": {
@@ -1623,7 +1838,9 @@
       "department": "القسم",
       "baseSalary": "الراتب الأساسي",
       "frequency": "تكرار الدفع",
-      "grade": "الدرجة الوظيفية"
+      "grade": "الدرجة الوظيفية",
+      "action": "الإجراء",
+      "manageProfile": "إدارة الملف"
     },
     "notProvided": "غير متوفر",
     "frequencies": {
@@ -1641,7 +1858,7 @@
     "pagination": "عرض {{from}}–{{to}} من {{total}} موظفًا",
     "previous": "السابق",
     "next": "التالي",
-    "scopeNote": "تعرض هذه الصفحة ملفات التعويضات. لم يتم إعداد دورات الرواتب أو قسائم الدفع أو معالجة المدفوعات في ERIS بعد."
+    "scopeNote": "يدير قسم الموارد البشرية ملفات التعويضات ويجهز بيانات الرواتب. وتتولى المحاسبة حساب الرواتب والمدفوعات."
   },
   "reportsAnalyticsPage": {
     "title": "التقارير والتحليلات",

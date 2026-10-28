@@ -130,7 +130,10 @@ export default function PayrollPage() {
         description={t("payrollPage.description")}
       />
       <div className="space-y-6">
-        <PageBreadcrumb pageTitle={t("payrollPage.title")} />
+        <PageBreadcrumb
+          pageTitle={t("payrollPage.title")}
+          showPageTitle={false}
+        />
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">
@@ -216,6 +219,9 @@ export default function PayrollPage() {
                         <TableCell isHeader className="px-3 py-3 text-start">
                           {t("payrollPage.table.grade")}
                         </TableCell>
+                        <TableCell isHeader className="px-3 py-3 text-end">
+                          {t("payrollPage.table.action")}
+                        </TableCell>
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -256,12 +262,20 @@ export default function PayrollPage() {
                           <TableCell className="px-3 py-4 whitespace-nowrap text-gray-600 dark:text-gray-300">
                             {payroll.payGrade || t("payrollPage.notProvided")}
                           </TableCell>
+                          <TableCell className="px-3 py-4 text-end whitespace-nowrap">
+                            <Link
+                              to={`/employees/${employee.id}?tab=payroll`}
+                              className="inline-flex h-9 items-center justify-center rounded-lg border border-gray-300 px-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5"
+                            >
+                              {t("payrollPage.table.manageProfile")}
+                            </Link>
+                          </TableCell>
                         </TableRow>
                       ))}
                       {!isLoading && rows.length === 0 && (
                         <TableRow>
                           <TableCell
-                            colSpan={5}
+                            colSpan={6}
                             className="px-3 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
                           >
                             {t("payrollPage.empty")}
@@ -271,7 +285,7 @@ export default function PayrollPage() {
                       {isLoading && (
                         <TableRow>
                           <TableCell
-                            colSpan={5}
+                            colSpan={6}
                             className="px-3 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
                           >
                             {t("payrollPage.loading")}

@@ -1050,9 +1050,10 @@
     "statistics": {
       "title": "Anwesenheitsstatistik",
       "subtitle": "Durchschnittliche Ein- und Ausstempelzeiten für {{period}}.",
-      "daySubtitle": "Anzahl der Ein- und Ausstempelungen nach Uhrzeit für {{period}}.",
+      "daySubtitle": "Durchschnittliche Ein- und Ausstempelzeiten für {{period}}.",
       "yearSubtitle": "Monatliche durchschnittliche Ein- und Ausstempelzeiten für {{year}}.",
       "loadingYear": "Monatliche Anwesenheitsstatistik für {{year}} wird geladen...",
+      "dayAxis": "Tag",
       "timeAxis": "Uhrzeit",
       "weekdayAxis": "Wochentag",
       "monthAxis": "Monat",
@@ -1069,6 +1070,7 @@
       "presentEmployees": "Anwesende Mitarbeitende",
       "absentEmployees": "Abwesende Mitarbeitende",
       "onLeaveEmployees": "Mitarbeitende im Urlaub",
+      "noRecordEmployees": "Kein Anwesenheitseintrag",
       "present": "Anwesend",
       "late": "Verspätet",
       "absent": "Abwesend",
@@ -1129,16 +1131,21 @@
     "previousDay": "Vorheriger Tag",
     "nextDay": "Nächster Tag",
     "selectedDate": "Zeiterfassung für {{date}}",
+    "selectedPeriod": "Zeiterfassung für {{period}}",
     "enter": "Stunden erfassen",
     "edit": "Eintrag bearbeiten",
     "enterFor": "Stunden für {{employee}} erfassen",
     "editFor": "Zeiteintrag für {{employee}} bearbeiten",
     "editor": {
       "title": "Zeiteintrag für {{employee}}",
-      "description": "Arbeitszeit und Tagessummen dieser Person aktualisieren."
+      "description": "Arbeitszeit und Tagessummen dieser Person aktualisieren.",
+      "periodDescription": "Eintrag für {{date}} wird bearbeitet."
     },
     "stats": {
       "title": "Tagessummen",
+      "dailyTitle": "Tagessummen",
+      "weeklyTitle": "Wochensummen",
+      "monthlyTitle": "Monatssummen",
       "regularHours": "Reguläre Stunden",
       "overtimeHours": "Überstunden",
       "breakMinutes": "Pausenminuten",
@@ -1162,8 +1169,16 @@
     "timeline": {
       "title": "Täglicher Stundenzettel",
       "lunch": "Mittagspause",
+      "clockIn": "Arbeitsbeginn",
+      "clockOut": "Arbeitsende",
+      "clockInMarker": "{{employee}} Arbeitsbeginn um {{time}}",
+      "clockOutMarker": "{{employee}} Arbeitsende um {{time}}",
       "employeeHours": "Arbeitszeit von {{employee}}",
       "shiftSegment": "{{employee}}: {{status}} von {{start}} bis {{end}}"
+    },
+    "periodTable": {
+      "title": "Zeiteinträge für diesen Zeitraum",
+      "description": "Einträge nach Datum prüfen und bearbeiten."
     },
     "loading": "Stundenzettel wird geladen...",
     "noEmployees": "Keine aktiven Mitarbeitenden gefunden.",
@@ -1217,6 +1232,10 @@
       "addEmployee": "Mitarbeiter hinzufügen",
       "branchManager": "Niederlassungsleitung",
       "departmentHead": "Abteilungsleitung",
+      "reportsTo": "Berichtet an",
+      "structure": "Abteilungen und Stellen",
+      "assignPosition": "Stellenposition zuweisen",
+      "saveAssignment": "Zuweisung speichern",
       "controls": "Steuerung des Organigramms",
       "centerView": "Ansicht zentrieren",
       "zoomIn": "Vergrößern",
@@ -1284,7 +1303,12 @@
         "duplicateName": "Ein Eintrag mit diesem Namen existiert in diesem Teil der Organisation bereits.",
         "invalidAssignee": "Wählen Sie einen aktiven Mitarbeiter für diese Zuweisung aus.",
         "saveFailed": "Die Organisationsdaten konnten nicht gespeichert werden. Bitte versuchen Sie es erneut."
-      }
+      },
+      "actions": "Aktionen",
+      "branchUpdated": "Niederlassung aktualisiert.",
+      "departmentUpdated": "Abteilung aktualisiert.",
+      "positionUpdated": "Stelle aktualisiert.",
+      "positionAssigned": "Mitarbeiterposition aktualisiert."
     },
     "errors": {
       "loadFailed": "Die Organisation konnte nicht geladen werden. Bitte versuchen Sie es erneut."
@@ -1349,7 +1373,7 @@
       "suffix": "Namenszusatz",
       "suffixOptional": "Namenszusatz (optional)",
       "personalEmail": "Private E-Mail-Adresse",
-      "personalPhone": "Private Telefonnummer",
+      "personalPhone": "Persönliche Mobilnummer",
       "educationLevel": "Höchster Bildungsabschluss",
       "educationInstitution": "Schule / Bildungseinrichtung",
       "educationField": "Abschluss / Studienfach",
@@ -1357,6 +1381,9 @@
       "graduationYear": "Abschlussjahr",
       "department": "Abteilung",
       "jobTitle": "Stellenbezeichnung",
+      "jobPosition": "Stellenposition",
+      "selectJobPosition": "Stellenposition auswählen",
+      "noJobPosition": "Keine Stellenposition",
       "status": "Status",
       "employmentType": "Beschäftigungsart",
       "probationaryStatus": "Probezeitstatus",
@@ -1370,7 +1397,7 @@
       "managerEmail": "E-Mail der vorgesetzten Person",
       "managerEmailOptional": "E-Mail der vorgesetzten Person (optional)",
       "managerEmailHint": "Die vorgesetzte Person benötigt einen aktiven Mitarbeiterdatensatz in ERIS. Leer lassen, wenn keine Person zugeordnet ist.",
-      "preferredName": "Bevorzugter Name",
+      "preferredName": "Spitzname",
       "gender": "Geschlecht",
       "dateOfBirth": "Geburtsdatum",
       "placeOfBirth": "Geburtsort",
@@ -1400,7 +1427,10 @@
       "currentMedications": "Aktuelle Medikamente",
       "healthInsuranceProvider": "Krankenversicherer",
       "healthInsurancePolicyNumber": "Krankenversicherungspolicennummer",
-      "updatedAt": "Zuletzt aktualisiert"
+      "updatedAt": "Zuletzt aktualisiert",
+      "nationality": "Staatsangehörigkeit",
+      "religion": "Religion",
+      "emergencyContactAddress": "Adresse des Notfallkontakts"
     },
     "statuses": {
       "active": "Aktiv",
@@ -1494,6 +1524,17 @@
       "units": {
         "hoursPerWeek": "{value} Stunden pro Woche",
         "days": "{value} Tage"
+      },
+      "familyTitle": "Familienangaben",
+      "familyDescription": "Ehepartner, Eltern und Kinder. Zugriff ist auf Personen mit Bearbeitungsrechten für Mitarbeitende beschränkt.",
+      "familyFields": {
+        "middleInitial": "Initial des zweiten Vornamens"
+      },
+      "familyMembers": {
+        "spouse": "Ehepartner/in",
+        "mother": "Mutter",
+        "father": "Vater",
+        "child": "Kind {number}"
       }
     },
     "details": {
@@ -1514,7 +1555,8 @@
         "medical": "Medizin",
         "documents": "Dokumente",
         "assets": "Assets",
-        "activity": "Aktivität"
+        "activity": "Aktivität",
+        "family": "Familie"
       }
     },
     "errors": {
@@ -1526,13 +1568,38 @@
       "sessionExpired": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
       "notFound": "Dieser Mitarbeiterdatensatz wurde nicht gefunden.",
       "loadFailed": "Mitarbeiterdatensätze konnten nicht geladen werden. Bitte erneut versuchen.",
-      "invalidManager": "Die vorgesetzte Person benötigt einen aktiven Mitarbeiterdatensatz in ERIS. Dieses Feld leer lassen, wenn keine Person zugeordnet ist."
-    }
+      "invalidManager": "Die vorgesetzte Person benötigt einen aktiven Mitarbeiterdatensatz in ERIS. Dieses Feld leer lassen, wenn keine Person zugeordnet ist.",
+      "invalidPosition": "Wählen Sie eine Stellenposition aus der Organisationsstruktur aus."
+    },
+    "genders": {
+      "female": "Weiblich",
+      "male": "Männlich"
+    },
+    "addressFormatHint": "Bitte Hausnummer und Straße, Barangay oder Gemeinde, Stadt oder Provinz sowie Postleitzahl angeben."
   },
   "recruitmentPage": {
     "title": "Personalbeschaffung",
     "description": "Verwalten Sie offene Stellen und begleiten Sie Kandidaten von der Bewerbung bis zur Einstellung.",
     "overview": "Übersicht zur Personalbeschaffung",
+    "loading": "Rekrutierungsdaten werden geladen…",
+    "minutes": "Min.",
+    "tabs": {
+      "label": "Bereiche der Personalbeschaffung",
+      "openings": "Stellen",
+      "candidates": "Kandidaten",
+      "interviews": "Gespräche"
+    },
+    "actions": {
+      "addOpening": "Stelle hinzufügen",
+      "editOpening": "Stelle bearbeiten",
+      "addCandidate": "Kandidat hinzufügen",
+      "editCandidate": "Kandidat bearbeiten",
+      "scheduleInterview": "Gespräch planen",
+      "editInterview": "Gespräch bearbeiten",
+      "edit": "Bearbeiten",
+      "save": "Speichern",
+      "saving": "Wird gespeichert…"
+    },
     "stats": {
       "openings": "Offene Stellen",
       "candidates": "Kandidaten",
@@ -1542,25 +1609,89 @@
     "pipeline": {
       "title": "Bewerbungsprozess",
       "description": "Begleiten Sie Kandidaten von der ersten Bewerbung bis zur Einstellung.",
-      "notConnected": "Daten zur Personalbeschaffung sind noch nicht angebunden.",
       "stages": {
         "applied": "Eingegangen",
         "screening": "Vorauswahl",
         "interview": "Vorstellungsgespräch",
         "offer": "Angebot",
-        "hired": "Eingestellt"
+        "hired": "Eingestellt",
+        "rejected": "Abgelehnt"
       }
     },
     "positions": {
-      "description": "Freigegebene Stellen, für die derzeit Bewerbungen angenommen werden.",
-      "emptyTitle": "Noch keine offenen Stellen",
-      "emptyDescription": "Offene Stellen werden angezeigt, sobald Rekrutierungsdaten angebunden sind."
+      "description": "Erstellen und verwalten Sie Stellen, für die Bewerbungen angenommen werden.",
+      "emptyTitle": "Noch keine Stellen",
+      "emptyDescription": "Fügen Sie eine Stelle hinzu, um den Bewerbungsprozess zu starten."
+    },
+    "candidates": {
+      "emptyTitle": "Noch keine Kandidaten",
+      "emptyDescription": "Fügen Sie einer offenen Stelle einen Kandidaten hinzu, um den Fortschritt zu verfolgen.",
+      "noOpenings": "Öffnen Sie eine Stelle, bevor Sie Kandidaten hinzufügen.",
+      "emptyStage": "Keine Kandidaten in dieser Phase."
     },
     "interviewSchedule": {
       "title": "Anstehende Vorstellungsgespräche",
       "description": "Behalten Sie bevorstehende Gespräche mit Kandidaten im Blick.",
       "emptyTitle": "Keine Vorstellungsgespräche geplant",
-      "emptyDescription": "Geplante Gespräche werden angezeigt, sobald Rekrutierungsdaten angebunden sind."
+      "emptyDescription": "Planen Sie ein Gespräch direkt über einen Kandidaten im Bewerbungsprozess."
+    },
+    "table": {
+      "opening": "Stelle",
+      "department": "Abteilung",
+      "applicants": "Bewerbungen",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "form": {
+      "title": "Stellenbezeichnung",
+      "position": "Organisationsposition",
+      "noLinkedPosition": "Keine verknüpfte Position",
+      "department": "Abteilung",
+      "location": "Standort",
+      "employmentType": "Beschäftigungsart",
+      "headcount": "Anzahl der Einstellungen",
+      "openingStatus": "Stellenstatus",
+      "description": "Beschreibung",
+      "opening": "Stelle",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "source": "Quelle",
+      "stage": "Bewerbungsphase",
+      "notes": "Notizen",
+      "candidate": "Kandidat",
+      "scheduledAt": "Datum und Uhrzeit",
+      "durationMinutes": "Dauer (Minuten)",
+      "interviewType": "Gesprächsart",
+      "interviewer": "Gesprächsleitung",
+      "unassigned": "Nicht zugewiesen",
+      "interviewStatus": "Gesprächsstatus"
+    },
+    "employmentTypes": {
+      "full_time": "Vollzeit",
+      "part_time": "Teilzeit",
+      "contractor": "Auftragnehmer",
+      "temporary": "Befristet",
+      "intern": "Praktikum"
+    },
+    "openingStatuses": {
+      "draft": "Entwurf",
+      "open": "Offen",
+      "closed": "Geschlossen"
+    },
+    "interviewStatuses": {
+      "scheduled": "Geplant",
+      "completed": "Abgeschlossen",
+      "cancelled": "Abgesagt"
+    },
+    "errors": {
+      "loadFailed": "Rekrutierungsdaten konnten nicht geladen werden. Bitte versuchen Sie es später erneut.",
+      "saveFailed": "Der Rekrutierungseintrag konnte nicht gespeichert werden. Prüfen Sie die Angaben und versuchen Sie es erneut.",
+      "accessDenied": "Sie dürfen Rekrutierungsdaten nicht anzeigen oder verwalten.",
+      "duplicateCandidate": "Diese E-Mail-Adresse ist für die ausgewählte Stelle bereits registriert.",
+      "openingNotOpen": "Kandidaten können nur zu offenen Stellen hinzugefügt werden.",
+      "invalidPosition": "Wählen Sie eine Position aus der Organisationsstruktur aus."
     }
   },
   "performancePage": {
@@ -1602,6 +1733,90 @@
     "empty": {
       "title": "Noch keine Beurteilungen",
       "description": "Leistungszyklen und Beurteilungen werden noch nicht in ERIS gespeichert."
+    },
+    "loading": "Leistungsdaten werden geladen…",
+    "saving": "Wird gespeichert…",
+    "stats": {
+      "activeGoals": "Aktive Ziele",
+      "completedGoals": "Abgeschlossene Ziele",
+      "feedbackNotes": "Feedbacknotizen",
+      "averageRating": "Durchschnittliche Bewertung"
+    },
+    "employees": {
+      "title": "Mitarbeitende",
+      "description": "Wählen Sie eine Person aus, um Ziele, Feedback und Bewertungen anzusehen.",
+      "search": "Mitarbeitende suchen",
+      "noMatches": "Keine Mitarbeitenden entsprechen der Suche.",
+      "emptyTitle": "Keine Mitarbeitenden verfügbar",
+      "emptyDescription": "Aktive Mitarbeiterdatensätze erscheinen hier."
+    },
+    "details": {
+      "title": "Leistungsdetails",
+      "description": "Ziele, Feedback und Bewertungen dieser Person prüfen."
+    },
+    "tabs": {
+      "label": "Leistungsbereiche",
+      "goals": "Ziele",
+      "feedback": "Feedback",
+      "ratings": "Bewertungen"
+    },
+    "statuses": {
+      "notStarted": "Nicht begonnen",
+      "inProgress": "In Bearbeitung",
+      "completed": "Abgeschlossen"
+    },
+    "ratingChoice": "{{rating}} von 5",
+    "goals": {
+      "title": "Ziele",
+      "description": "Klare Ziele festlegen und den Fortschritt regelmäßig aktualisieren.",
+      "addGoal": "Ziel hinzufügen",
+      "saveGoal": "Ziel speichern",
+      "updateGoal": "Fortschritt speichern",
+      "emptyTitle": "Keine Ziele erfasst",
+      "emptyDescription": "Fügen Sie ein Ziel hinzu, um die Entwicklung dieser Person zu verfolgen.",
+      "dueDate": "Fällig am {{date}}",
+      "progress": "Fortschritt",
+      "fields": {
+        "title": "Zieltitel",
+        "description": "Beschreibung",
+        "dueDate": "Fälligkeitsdatum",
+        "status": "Status",
+        "progress": "Fortschritt (%)"
+      }
+    },
+    "feedback": {
+      "title": "Feedback",
+      "description": "Konkretes, arbeitsbezogenes Feedback für diese Person erfassen.",
+      "writeLabel": "Feedbacknotiz",
+      "placeholder": "Beobachtete Stärken, Beiträge oder Entwicklungsbereiche beschreiben…",
+      "saveFeedback": "Feedback hinzufügen",
+      "emptyTitle": "Kein Feedback erfasst",
+      "emptyDescription": "Neue Feedbacknotizen erscheinen hier.",
+      "authorFallback": "Personalteam"
+    },
+    "ratings": {
+      "title": "Jahresbewertung",
+      "description": "Pro Person und Beurteilungsjahr eine Bewertung speichern. Eine erneute Speicherung aktualisiert das Jahr.",
+      "reviewYear": "Beurteilungsjahr",
+      "rating": "Bewertung",
+      "selectRating": "Bewertung auswählen",
+      "summary": "Zusammenfassung",
+      "saveRating": "Bewertung speichern",
+      "emptyTitle": "Keine Bewertungen erfasst",
+      "emptyDescription": "Gespeicherte Jahresbewertungen erscheinen hier.",
+      "reviewerFallback": "Personalbeurteilung"
+    },
+    "messages": {
+      "goalSaved": "Ziel gespeichert.",
+      "goalUpdated": "Zielfortschritt aktualisiert.",
+      "feedbackSaved": "Feedback hinzugefügt.",
+      "ratingSaved": "Bewertung gespeichert."
+    },
+    "errors": {
+      "loadFailed": "Leistungsdaten konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
+      "saveFailed": "Die Änderung konnte nicht gespeichert werden. Bitte prüfen Sie die Angaben.",
+      "employeeNotFound": "Die ausgewählte Person ist nicht mehr aktiv.",
+      "goalNotFound": "Dieses Ziel ist nicht mehr vorhanden. Aktualisieren Sie die Seite und versuchen Sie es erneut."
     }
   },
   "payrollPage": {
@@ -1623,7 +1838,9 @@
       "department": "Abteilung",
       "baseSalary": "Grundgehalt",
       "frequency": "Zahlungsrhythmus",
-      "grade": "Gehaltsstufe"
+      "grade": "Gehaltsstufe",
+      "action": "Aktion",
+      "manageProfile": "Profil verwalten"
     },
     "notProvided": "Nicht angegeben",
     "frequencies": {
@@ -1641,7 +1858,7 @@
     "pagination": "{{from}}–{{to}} von {{total}} Mitarbeitenden",
     "previous": "Zurück",
     "next": "Weiter",
-    "scopeNote": "Diese Seite zeigt Vergütungsprofile. Abrechnungsläufe, Gehaltsabrechnungen und Zahlungsabwicklung sind in ERIS noch nicht eingerichtet."
+    "scopeNote": "Die Personalabteilung pflegt Vergütungsprofile und bereitet Lohndaten vor. Die Buchhaltung übernimmt Berechnung und Auszahlung."
   },
   "reportsAnalyticsPage": {
     "title": "Berichte & Analysen",

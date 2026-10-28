@@ -49,6 +49,8 @@ interface AttendanceTimelineEmployeeInfo {
   status: AttendanceDisplayStatus | null;
   clockIn: string | null;
   clockOut: string | null;
+  breakMinutes: number | null;
+  notes: string | null;
   workSchedule: string | null;
 }
 
@@ -184,53 +186,26 @@ function getPreviousRangeDates(anchorDate: string, range: AttendanceRange) {
 
 function clockTimeToMinutes(value: string | null) {
   if (!value) return null;
-  const match = /^(\d{2}):(\d{2})$/.exec(value);
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(am|pm)?$/i.exec(
+    value.trim(),
+  );
   if (!match) return null;
-  return Number(match[1]) * 60 + Number(match[2]);
+
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const meridiem = match[3]?.toLowerCase();
+  if (meridiem) {
+    if (hours < 1 || hours > 12) return null;
+    if (meridiem === "am" && hours === 12) hours = 0;
+    if (meridiem === "pm" && hours < 12) hours += 12;
+  }
+  return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
 }
 
 function average(values: number[]) {
   return values.length
     ? values.reduce((total, value) => total + value, 0) / values.length
     : null;
-}
-
-function getDailyClockTimeCounts(
-  report: AttendanceDailyReport | undefined,
-  formatClockMinutes: (minutes: number) => string,
-) {
-  const clockInCounts = new Map<number, number>();
-  const clockOutCounts = new Map<number, number>();
-  const addToBucket = (counts: Map<number, number>, value: string | null) => {
-    const minutes = clockTimeToMinutes(value);
-    if (minutes === null) return;
-    const bucket = Math.min(47, Math.round(minutes / 30));
-    counts.set(bucket, (counts.get(bucket) ?? 0) + 1);
-  };
-
-  for (const record of report?.items ?? []) {
-    addToBucket(clockInCounts, record.clockIn);
-    addToBucket(clockOutCounts, record.clockOut);
-  }
-
-  const buckets = [...clockInCounts.keys(), ...clockOutCounts.keys()];
-  if (buckets.length === 0) {
-    return { categories: [] as string[], clockIn: [] as number[], clockOut: [] as number[] };
-  }
-  const firstBucket = Math.min(...buckets);
-  const lastBucket = Math.max(...buckets);
-  const activeBuckets = Array.from(
-    { length: lastBucket - firstBucket + 1 },
-    (_, index) => firstBucket + index,
-  );
-
-  return {
-    categories: activeBuckets.map((bucket) =>
-      formatClockMinutes(bucket * 30),
-    ),
-    clockIn: activeBuckets.map((bucket) => clockInCounts.get(bucket) ?? 0),
-    clockOut: activeBuckets.map((bucket) => clockOutCounts.get(bucket) ?? 0),
-  };
 }
 
 function moveMonth(value: string, amount: -1 | 1) {
@@ -344,22 +319,34 @@ export default function AttendancePage() {
     comparisonData.requestKey === comparisonRequestKey
       ? comparisonData.reports
       : [];
-  const selectedAttendanceInfoByEmployee = useMemo(() => {
-    const selectedDayReport = reports.find(
-      (report) => report.date === selectedDate,
-    );
-    return Object.fromEntries(
-      (selectedDayReport?.items ?? []).map((record) => [
-        record.employeeId,
-        {
-          status: getAttendanceDisplayStatus(record, selectedDate, leaveRequests),
-          clockIn: record.clockIn,
-          clockOut: record.clockOut,
-          workSchedule: record.workSchedule,
-        },
-      ]),
-    ) as Record<string, AttendanceTimelineEmployeeInfo>;
-  }, [leaveRequests, reports, selectedDate]);
+  const attendanceInfoByDateAndEmployee = useMemo(
+    () =>
+      Object.fromEntries(
+        reports.map((report) => [
+          report.date,
+          Object.fromEntries(
+            report.items.map((record) => [
+              record.employeeId,
+              {
+                status: getAttendanceDisplayStatus(
+                  record,
+                  report.date,
+                  leaveRequests,
+                ),
+                clockIn: record.clockIn,
+                clockOut: record.clockOut,
+                breakMinutes: record.breakMinutes,
+                notes: record.notes,
+                workSchedule: record.workSchedule,
+              },
+            ]),
+          ),
+        ]),
+      ) as Record<string, Record<string, AttendanceTimelineEmployeeInfo>>,
+    [leaveRequests, reports],
+  );
+  const selectedAttendanceInfoByEmployee =
+    attendanceInfoByDateAndEmployee[selectedDate] ?? {};
 
   const weekdayFormatter = useMemo(
     () => new Intl.DateTimeFormat(i18n.language, { weekday: "short" }),
@@ -450,14 +437,23 @@ export default function AttendancePage() {
       daily,
     };
   }, [reports]);
-  const dailyClockTimeCounts = useMemo(
-    () =>
-      getDailyClockTimeCounts(
-        reports.find((report) => report.date === selectedDate),
-        formatClockMinutes,
-      ),
-    [formatClockMinutes, reports, selectedDate],
+  const selectedDayReport = reports.find(
+    (report) => report.date === selectedDate,
   );
+  const selectedDayClockIns = (selectedDayReport?.items ?? [])
+    .map((record) => clockTimeToMinutes(record.clockIn))
+    .filter((value): value is number => value !== null);
+  const selectedDayClockOuts = (selectedDayReport?.items ?? [])
+    .map((record) => clockTimeToMinutes(record.clockOut))
+    .filter((value): value is number => value !== null);
+  const averageClockInForMetric =
+    selectedRange === "day"
+      ? average(selectedDayClockIns)
+      : timeStatistics.averageClockIn;
+  const averageClockOutForMetric =
+    selectedRange === "day"
+      ? average(selectedDayClockOuts)
+      : timeStatistics.averageClockOut;
   const annualMonthlyAverageMap = useMemo(
     () =>
       new Map(
@@ -480,7 +476,7 @@ export default function AttendancePage() {
   );
   const statisticsCategories =
     selectedRange === "day"
-      ? dailyClockTimeCounts.categories
+      ? [periodLabel]
       : selectedRange === "week"
         ? calendarDates.map(({ date }) => fullWeekdayFormatter.format(date))
         : annualMonthCategories;
@@ -489,11 +485,11 @@ export default function AttendancePage() {
       ? [
           {
             name: t("attendancePage.statistics.timeIn"),
-            data: dailyClockTimeCounts.clockIn,
+            data: [averageClockInForMetric],
           },
           {
             name: t("attendancePage.statistics.timeOut"),
-            data: dailyClockTimeCounts.clockOut,
+            data: [averageClockOutForMetric],
           },
         ]
       : selectedRange === "week"
@@ -538,12 +534,10 @@ export default function AttendancePage() {
           : t("attendancePage.statistics.yearSubtitle", { year: selectedYear })
         : t("attendancePage.statistics.subtitle", { period: periodLabel });
   const statisticsXAxisTitle = t(
-    `attendancePage.statistics.${selectedRange === "day" ? "timeAxis" : selectedRange === "week" ? "weekdayAxis" : "monthAxis"}`,
+    `attendancePage.statistics.${selectedRange === "day" ? "dayAxis" : selectedRange === "week" ? "weekdayAxis" : "monthAxis"}`,
   );
   const statisticsYAxisTitle = t(
-    selectedRange === "day"
-      ? "attendancePage.statistics.countAxis"
-      : "attendancePage.statistics.averageTimeAxis",
+    "attendancePage.statistics.averageTimeAxis",
   );
 
   useEffect(() => {
@@ -686,8 +680,7 @@ export default function AttendancePage() {
     {
       label: t("attendancePage.summary.presentEmployees"),
       value: Object.values(selectedAttendanceInfoByEmployee).filter(
-        ({ status }) =>
-          status === "present" || status === "late" || status === "official_business",
+        ({ status }) => status === "present" || status === "official_business",
       ).length,
     },
     {
@@ -878,6 +871,32 @@ export default function AttendancePage() {
                 </Card>
               ))}
             </section>
+
+            <CrmStatisticsChart
+              title={t("attendancePage.statistics.title")}
+              subtitle={statisticsSubtitle}
+              firstMetric={{
+                value:
+                  averageClockInForMetric === null
+                    ? "—"
+                    : formatClockMinutes(averageClockInForMetric),
+                label: t("attendancePage.statistics.averageTimeIn"),
+              }}
+              secondMetric={{
+                value:
+                  averageClockOutForMetric === null
+                    ? "—"
+                    : formatClockMinutes(averageClockOutForMetric),
+                label: t("attendancePage.statistics.averageTimeOut"),
+              }}
+              categories={statisticsCategories}
+              series={statisticsSeries}
+              showLegend
+              showPeriodTabs={false}
+              xAxisTitle={statisticsXAxisTitle}
+              yAxisTitle={statisticsYAxisTitle}
+              yAxisFormatter={formatClockMinutes}
+            />
 
             <Card>
               <section
@@ -1140,59 +1159,29 @@ export default function AttendancePage() {
             hidden={activeTab !== "timesheet"}
             className="space-y-6"
           >
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-              <div className="xl:col-span-4">
-                <AttendanceRateCard
-                  currentReports={reports}
-                  previousReports={previousReports}
-                  leaveRequests={leaveRequests}
-                  period={selectedRange}
-                  isLoading={isLoading}
-                  loadErrorKey={loadErrorKey}
-                  description={t(
-                    "attendancePage.rate.selectedPeriodDescription",
-                    {
-                      period: periodLabel,
-                    },
-                  )}
-                />
-              </div>
-              <div className="xl:col-span-8">
-                <CrmStatisticsChart
-                  title={t("attendancePage.statistics.title")}
-                  subtitle={statisticsSubtitle}
-                  firstMetric={{
-                    value:
-                      timeStatistics.averageClockIn === null
-                        ? "—"
-                        : formatClockMinutes(timeStatistics.averageClockIn),
-                    label: t("attendancePage.statistics.averageTimeIn"),
-                  }}
-                  secondMetric={{
-                    value:
-                      timeStatistics.averageClockOut === null
-                        ? "—"
-                        : formatClockMinutes(timeStatistics.averageClockOut),
-                    label: t("attendancePage.statistics.averageTimeOut"),
-                  }}
-                  categories={statisticsCategories}
-                  series={statisticsSeries}
-                  showLegend
-                  showPeriodTabs={false}
-                  xAxisTitle={statisticsXAxisTitle}
-                  yAxisTitle={statisticsYAxisTitle}
-                  yAxisAsCount={selectedRange === "day"}
-                  xAxisTickAmount={selectedRange === "day" ? 10 : undefined}
-                  yAxisFormatter={
-                    selectedRange === "day" ? undefined : formatClockMinutes
-                  }
-                />
-              </div>
+            <div>
+              <AttendanceRateCard
+                currentReports={reports}
+                previousReports={previousReports}
+                leaveRequests={leaveRequests}
+                period={selectedRange}
+                isLoading={isLoading}
+                loadErrorKey={loadErrorKey}
+                description={t(
+                  "attendancePage.rate.selectedPeriodDescription",
+                  {
+                    period: periodLabel,
+                  },
+                )}
+              />
             </div>
             <TimesheetTab
               selectedDate={selectedDate}
+              selectedRange={selectedRange}
+              dateKeys={calendarDates.map(({ key }) => key)}
+              isActive={activeTab === "timesheet"}
               onTimesheetSaved={() => setTimesheetRevision((revision) => revision + 1)}
-              attendanceInfoByEmployee={selectedAttendanceInfoByEmployee}
+              attendanceInfoByDateAndEmployee={attendanceInfoByDateAndEmployee}
             />
           </div>
         </div>

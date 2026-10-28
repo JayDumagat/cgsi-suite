@@ -284,7 +284,10 @@ export default function LeaveManagementPage() {
         description={t("leaveManagementPage.description")}
       />
       <div className="space-y-6">
-        <PageBreadcrumb pageTitle={t("leaveManagementPage.title")} />
+        <PageBreadcrumb
+          pageTitle={t("leaveManagementPage.title")}
+          showPageTitle={false}
+        />
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">

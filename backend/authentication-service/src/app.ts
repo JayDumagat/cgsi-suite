@@ -9,6 +9,10 @@ import { DirectoryRepository } from "./infrastructure/persistence/directory.js";
 import { AuthorizationOutboxDispatcher } from "./infrastructure/persistence/outbox-dispatcher.js";
 import { EmployeeDirectoryService } from "./modules/directory/application/service.js";
 import { ErisDirectoryController } from "./modules/directory/http/eris-controller.js";
+import { RecruitmentController } from "./modules/recruitment/http/controller.js";
+import { RecruitmentRepository } from "./infrastructure/persistence/recruitment.js";
+import { PerformanceController } from "./modules/performance/http/controller.js";
+import { PerformanceRepository } from "./infrastructure/persistence/performance.js";
 import { AuthenticationController } from "./modules/authentication/http/controller.js";
 import { createAuthenticationRoutes } from "./modules/authentication/http/routes.js";
 import { createApp, errorHandler, notFound } from "./platform/http.js";
@@ -19,6 +23,16 @@ export function createAuthenticationApp(): Express {
   const directory = new EmployeeDirectoryService(new DirectoryRepository(sessionPool));
   const erisDirectory = new ErisDirectoryController(
     directory,
+    config.erisDirectoryServiceToken,
+    canEditEmployeeInformation,
+  );
+  const recruitment = new RecruitmentController(
+    new RecruitmentRepository(sessionPool),
+    config.erisDirectoryServiceToken,
+    canEditEmployeeInformation,
+  );
+  const performance = new PerformanceController(
+    new PerformanceRepository(sessionPool),
     config.erisDirectoryServiceToken,
     canEditEmployeeInformation,
   );
@@ -63,11 +77,26 @@ export function createAuthenticationApp(): Express {
   app.post("/internal/eris/organizations/:organizationId/departments", erisDirectory.createDepartment);
   app.post("/internal/eris/organizations/:organizationId/branches", erisDirectory.createBranch);
   app.post("/internal/eris/organizations/:organizationId/departments/:departmentId/positions", erisDirectory.createPosition);
+  app.put("/internal/eris/organizations/:organizationId/branches/:branchId", erisDirectory.updateBranch);
+  app.put("/internal/eris/organizations/:organizationId/departments/:departmentId", erisDirectory.updateDepartment);
+  app.put("/internal/eris/organizations/:organizationId/departments/:departmentId/positions/:positionId", erisDirectory.updatePosition);
   app.get("/internal/eris/attendance", erisDirectory.getAttendanceReport);
   app.get("/internal/eris/attendance/statistics", erisDirectory.getAttendanceMonthlyStatistics);
   app.put("/internal/eris/attendance/:employeeId/:attendanceDate", erisDirectory.updateAttendanceRecord);
   app.get("/internal/eris/timesheets", erisDirectory.getTimesheetReport);
   app.put("/internal/eris/timesheets/:employeeId/:workDate", erisDirectory.saveTimesheetEntry);
+  app.get("/internal/eris/recruitment", recruitment.getReport);
+  app.post("/internal/eris/recruitment/openings", recruitment.createOpening);
+  app.put("/internal/eris/recruitment/openings/:openingId", recruitment.updateOpening);
+  app.post("/internal/eris/recruitment/candidates", recruitment.createCandidate);
+  app.put("/internal/eris/recruitment/candidates/:candidateId", recruitment.updateCandidate);
+  app.post("/internal/eris/recruitment/interviews", recruitment.createInterview);
+  app.put("/internal/eris/recruitment/interviews/:interviewId", recruitment.updateInterview);
+  app.get("/internal/eris/performance", performance.getReport);
+  app.post("/internal/eris/performance/goals", performance.createGoal);
+  app.put("/internal/eris/performance/goals/:goalId", performance.updateGoal);
+  app.post("/internal/eris/performance/feedback", performance.createFeedback);
+  app.post("/internal/eris/performance/ratings", performance.saveRating);
   app.get("/internal/eris/leave-requests", erisDirectory.getLeaveManagementReport);
   app.post("/internal/eris/leave-requests", erisDirectory.createLeaveRequest);
   app.put("/internal/eris/leave-requests/:requestId/decision", erisDirectory.decideLeaveRequest);

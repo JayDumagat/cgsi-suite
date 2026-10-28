@@ -255,7 +255,10 @@ export default function ReportsAnalyticsPage() {
         description={t("reportsAnalyticsPage.description")}
       />
       <div className="space-y-6">
-        <PageBreadcrumb pageTitle={t("reportsAnalyticsPage.title")} />
+        <PageBreadcrumb
+          pageTitle={t("reportsAnalyticsPage.title")}
+          showPageTitle={false}
+        />
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">

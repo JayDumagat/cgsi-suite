@@ -12,7 +12,7 @@ import { PencilIcon } from "@/icons";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-type EmployeeHrDetailsSection = keyof EmployeeHrDetails;
+type EmployeeHrDetailsSection = Exclude<keyof EmployeeHrDetails, "family">;
 type FieldKind = "text" | "number" | "amount" | "textarea" | "select" | "schedule";
 
 interface FieldDefinition {
@@ -53,6 +53,19 @@ const emptyDetails: EmployeeHrDetails = {
     currentMedications: null,
     healthInsuranceProvider: null,
     healthInsurancePolicyNumber: null,
+  },
+  family: {
+    spouse: { firstName: null, middleInitial: null, lastName: null, birthDate: null, nationality: null },
+    mother: { firstName: null, middleInitial: null, lastName: null, birthDate: null, nationality: null },
+    father: { firstName: null, middleInitial: null, lastName: null, birthDate: null, nationality: null },
+    children: Array.from({ length: 4 }, () => ({
+      firstName: null,
+      middleInitial: null,
+      lastName: null,
+      birthDate: null,
+      nationality: null,
+      gender: null,
+    })),
   },
 };
 
@@ -179,6 +192,12 @@ export default function EmployeeHrDetailsTab({ employeeId, section }: EmployeeHr
       attendanceAndLeave: { ...details.attendanceAndLeave },
       payroll: { ...details.payroll },
       medical: { ...details.medical },
+      family: {
+        spouse: { ...details.family.spouse },
+        mother: { ...details.family.mother },
+        father: { ...details.family.father },
+        children: details.family.children.map((child) => ({ ...child })),
+      },
     });
     setErrorKey(null);
     setIsEditing(true);

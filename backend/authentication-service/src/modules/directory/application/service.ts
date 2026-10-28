@@ -24,6 +24,7 @@ import type {
   DepartmentInput,
   OrganizationInput,
   PositionInput,
+  PositionUpdateInput,
   OrganizationRecord,
   OrganizationStructure,
 } from "../domain/organization.js";
@@ -76,6 +77,25 @@ export interface EmployeeDirectory {
     organizationId: string,
     departmentId: string,
     input: PositionInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]["positions"][number]>;
+  updateBranch(
+    organizationId: string,
+    branchId: string,
+    input: BranchInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["branches"][number]>;
+  updateDepartment(
+    organizationId: string,
+    departmentId: string,
+    input: DepartmentInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]>;
+  updatePosition(
+    organizationId: string,
+    departmentId: string,
+    positionId: string,
+    input: PositionUpdateInput,
     requestedByEmployeeId: string,
   ): Promise<OrganizationRecord["departments"][number]["positions"][number]>;
 }
@@ -208,6 +228,40 @@ export class EmployeeDirectoryService {
     return this.directory.createPosition(
       organizationId,
       departmentId,
+      input,
+      requestedByEmployeeId,
+    );
+  }
+
+  updateBranch(
+    organizationId: string,
+    branchId: string,
+    input: BranchInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["branches"][number]> {
+    return this.directory.updateBranch(organizationId, branchId, input, requestedByEmployeeId);
+  }
+
+  updateDepartment(
+    organizationId: string,
+    departmentId: string,
+    input: DepartmentInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]> {
+    return this.directory.updateDepartment(organizationId, departmentId, input, requestedByEmployeeId);
+  }
+
+  updatePosition(
+    organizationId: string,
+    departmentId: string,
+    positionId: string,
+    input: PositionUpdateInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]["positions"][number]> {
+    return this.directory.updatePosition(
+      organizationId,
+      departmentId,
+      positionId,
       input,
       requestedByEmployeeId,
     );

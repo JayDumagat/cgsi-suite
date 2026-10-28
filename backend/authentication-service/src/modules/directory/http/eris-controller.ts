@@ -136,6 +136,9 @@ const positionInputSchema = organizationInputSchema.extend({
   description: nullableText(2000).optional().transform((value) => value ?? null),
   jobLevel: nullableText(80).optional().transform((value) => value ?? null),
 });
+const positionUpdateSchema = positionInputSchema.extend({
+  targetDepartmentId: z.string().uuid(),
+});
 const nullableEmail = z.string().trim().toLowerCase().email().max(320).or(z.literal(""))
   .nullable().optional().transform((value) => value || null);
 const nullableYear = z.number().int().min(1900).max(2200).nullable();
@@ -175,12 +178,15 @@ const employeeMasterSchema = z.object({
   maritalStatus: maritalStatusSchema,
   permanentAddress: nullableText(1000),
   currentAddress: nullableText(1000),
+  nationality: nullableText(120),
+  religion: nullableText(120),
   personalEmail: nullableEmail,
   personalPhone: nullableText(50).optional().transform((value) => value ?? null),
   emergencyContactName: nullableText(200),
   emergencyContactRelationship: nullableText(80),
   emergencyContactPhone: nullableText(50),
   emergencyContactEmail: nullableEmail,
+  emergencyContactAddress: nullableText(1000),
   educationLevel: nullableText(120).optional().transform((value) => value ?? null),
   educationInstitution: nullableText(200).optional().transform((value) => value ?? null),
   educationField: nullableText(160).optional().transform((value) => value ?? null),
@@ -189,6 +195,7 @@ const employeeMasterSchema = z.object({
   educationHistory: z.array(educationHistoryEntrySchema).max(30).optional(),
   workEmail: z.string().trim().toLowerCase().email().max(320),
   department: nullableText(120),
+  positionId: z.string().uuid().nullable().optional().transform((value) => value ?? null),
   managerWorkEmail: z.union([z.string().trim().toLowerCase().email().max(320), z.literal("")]).nullable()
     .transform((value) => value || null),
   jobTitle: nullableText(120),
@@ -247,6 +254,37 @@ const employeeHrDetailsSchema = z.object({
     currentMedications: nullableText(2000),
     healthInsuranceProvider: nullableText(160),
     healthInsurancePolicyNumber: nullableText(120),
+  }),
+  family: z.object({
+    spouse: z.object({
+      firstName: nullableText(100),
+      middleInitial: nullableText(20),
+      lastName: nullableText(100),
+      birthDate: nullableDateSchema,
+      nationality: nullableText(120),
+    }),
+    mother: z.object({
+      firstName: nullableText(100),
+      middleInitial: nullableText(20),
+      lastName: nullableText(100),
+      birthDate: nullableDateSchema,
+      nationality: nullableText(120),
+    }),
+    father: z.object({
+      firstName: nullableText(100),
+      middleInitial: nullableText(20),
+      lastName: nullableText(100),
+      birthDate: nullableDateSchema,
+      nationality: nullableText(120),
+    }),
+    children: z.array(z.object({
+      firstName: nullableText(100),
+      middleInitial: nullableText(20),
+      lastName: nullableText(100),
+      gender: z.enum(["female", "male"]).nullable(),
+      birthDate: nullableDateSchema,
+      nationality: nullableText(120),
+    })).length(4),
   }),
 });
 
@@ -408,6 +446,89 @@ export class ErisDirectoryController {
       response.status(201).json(position);
     } catch (error) {
       writeOrganizationError(response, error, "eris_position_create_failed");
+    }
+  };
+
+  updateBranch = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const organizationId = z.string().uuid().safeParse(request.params.organizationId);
+    const branchId = z.string().uuid().safeParse(request.params.branchId);
+    const parsed = branchInputSchema.safeParse(request.body);
+    if (!organizationId.success || !branchId.success || !parsed.success) {
+      response.status(400).json({ error: "invalid_branch" });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const branch = await this.directory.updateBranch(
+        organizationId.data,
+        branchId.data,
+        parsed.data,
+        user.employeeId!,
+      );
+      response.status(200).json(branch);
+    } catch (error) {
+      writeOrganizationError(response, error, "eris_branch_update_failed");
+    }
+  };
+
+  updateDepartment = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const organizationId = z.string().uuid().safeParse(request.params.organizationId);
+    const departmentId = z.string().uuid().safeParse(request.params.departmentId);
+    const parsed = departmentInputSchema.safeParse(request.body);
+    if (!organizationId.success || !departmentId.success || !parsed.success) {
+      response.status(400).json({ error: "invalid_department" });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const department = await this.directory.updateDepartment(
+        organizationId.data,
+        departmentId.data,
+        parsed.data,
+        user.employeeId!,
+      );
+      response.status(200).json(department);
+    } catch (error) {
+      writeOrganizationError(response, error, "eris_department_update_failed");
+    }
+  };
+
+  updatePosition = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const organizationId = z.string().uuid().safeParse(request.params.organizationId);
+    const departmentId = z.string().uuid().safeParse(request.params.departmentId);
+    const positionId = z.string().uuid().safeParse(request.params.positionId);
+    const parsed = positionUpdateSchema.safeParse(request.body);
+    if (!organizationId.success || !departmentId.success || !positionId.success || !parsed.success) {
+      response.status(400).json({ error: "invalid_position" });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const position = await this.directory.updatePosition(
+        organizationId.data,
+        departmentId.data,
+        positionId.data,
+        parsed.data,
+        user.employeeId!,
+      );
+      response.status(200).json(position);
+    } catch (error) {
+      writeOrganizationError(response, error, "eris_position_update_failed");
     }
   };
 
@@ -751,6 +872,7 @@ function writeDirectoryError(response: Response, error: unknown, event: string):
       duplicate_employee_number: { status: 409, message: "employee_number_already_exists" },
       duplicate_work_email: { status: 409, message: "work_email_already_exists" },
       invalid_manager: { status: 422, message: "manager_must_be_an_active_employee" },
+      invalid_position: { status: 422, message: "invalid_organization_position" },
     };
     const result = responseByCode[error.code];
     response.status(result.status).json({ error: result.message });
@@ -772,7 +894,7 @@ function writeLeaveManagementError(response: Response, error: unknown, event: st
 
 function writeOrganizationError(response: Response, error: unknown, event: string): void {
   if (error instanceof OrganizationManagementError) {
-    const notFound = error.code === "not_found" || error.code === "department_not_found";
+    const notFound = error.code === "not_found" || error.code === "department_not_found" || error.code === "position_not_found";
     response.status(notFound ? 404 : error.code === "invalid_assignee" ? 400 : 409).json({
       error: error.code === "invalid_assignee"
         ? "employee_not_assignable"
@@ -780,6 +902,8 @@ function writeOrganizationError(response: Response, error: unknown, event: strin
           ? "organization_not_found"
           : error.code === "department_not_found"
             ? "department_not_found"
+            : error.code === "position_not_found"
+              ? "position_not_found"
             : "organization_name_already_exists",
     });
     return;

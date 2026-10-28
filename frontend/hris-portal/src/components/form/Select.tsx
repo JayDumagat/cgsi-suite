@@ -13,6 +13,7 @@ interface SelectProps {
   onChange: (value: string) => void;
   className?: string;
   defaultValue?: string;
+  value?: string;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -22,13 +23,15 @@ const Select: React.FC<SelectProps> = ({
   onChange,
   className = "",
   defaultValue = "",
+  value: controlledValue,
 }) => {
-  const [selectedValue, setSelectedValue] = useState(defaultValue);
+  const [internalValue, setInternalValue] = useState(defaultValue);
+  const selectedValue = controlledValue ?? internalValue;
   const collection = createListCollection({ items: options });
 
   const handleValueChange = ({ value }: { value: string[] }) => {
     const nextValue = value[0] ?? "";
-    setSelectedValue(nextValue);
+    if (controlledValue === undefined) setInternalValue(nextValue);
     onChange(nextValue);
   };
 

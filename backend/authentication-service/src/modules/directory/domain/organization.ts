@@ -59,11 +59,16 @@ export interface PositionInput {
   jobLevel: string | null;
 }
 
+export interface PositionUpdateInput extends PositionInput {
+  targetDepartmentId: string;
+}
+
 export class OrganizationManagementError extends Error {
   constructor(
     readonly code:
       | "not_found"
       | "department_not_found"
+      | "position_not_found"
       | "duplicate_name"
       | "invalid_assignee",
   ) {

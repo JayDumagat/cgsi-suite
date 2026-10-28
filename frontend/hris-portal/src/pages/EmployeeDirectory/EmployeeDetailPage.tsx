@@ -3,11 +3,13 @@ import PageMeta from "@/components/common/PageMeta";
 import EducationHistoryTimeline from "@/components/employee-directory/EducationHistoryTimeline";
 import EmployeeActivityTimeline from "@/components/employee-directory/EmployeeActivityTimeline";
 import EmployeeHrDetailsTab from "@/components/employee-directory/EmployeeHrDetailsTab";
+import EmployeeFamilyDetailsTab from "@/components/employee-directory/EmployeeFamilyDetailsTab";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import {
   EmployeeDirectoryRequestError,
+  getOrganizationStructure,
   getEmployee,
   updateEmployee,
   type EmployeeMasterRecord,
@@ -16,11 +18,12 @@ import {
 import { BoxCubeIcon, DocsIcon, PencilIcon } from "@/icons";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router";
+import { Link, useLocation, useParams } from "react-router";
 
 type EmployeeDetailTab =
   | "overview"
   | "personalInformation"
+  | "family"
   | "employmentDetails"
   | "attendanceAndLeave"
   | "payroll"
@@ -48,12 +51,15 @@ type NullableTextField =
   | "placeOfBirth"
   | "permanentAddress"
   | "currentAddress"
+  | "nationality"
+  | "religion"
   | "personalEmail"
   | "personalPhone"
   | "emergencyContactName"
   | "emergencyContactRelationship"
   | "emergencyContactPhone"
   | "emergencyContactEmail"
+  | "emergencyContactAddress"
   | "department"
   | "managerWorkEmail"
   | "jobTitle"
@@ -61,6 +67,13 @@ type NullableTextField =
   | "workLocation";
 
 type NullableDateField = "dateOfBirth" | "regularizationDate" | "hireDate" | "terminationDate";
+
+interface EmployeePositionOption {
+  id: string;
+  name: string;
+  departmentName: string;
+  organizationName: string;
+}
 
 function initialsFor(name: string) {
   return name
@@ -105,25 +118,29 @@ function employeeInputFromRecord(record: EmployeeMasterRecord): EmployeeMasterIn
       : [];
 
   return {
+    positionId: record.positionId,
     employeeNumber: record.employeeNumber,
     firstName: record.firstName ?? "",
     middleName: record.middleName,
     lastName: record.lastName ?? "",
     suffix: record.suffix,
     preferredName: record.preferredName,
-    gender: record.gender,
+    gender: record.gender?.toLowerCase() ?? null,
     dateOfBirth: record.dateOfBirth,
     placeOfBirth: record.placeOfBirth,
     bloodType: record.bloodType,
     maritalStatus: record.maritalStatus,
     permanentAddress: record.permanentAddress,
     currentAddress: record.currentAddress,
+    nationality: record.nationality,
+    religion: record.religion,
     personalEmail: record.personalEmail,
     personalPhone: record.personalPhone,
     emergencyContactName: record.emergencyContactName,
     emergencyContactRelationship: record.emergencyContactRelationship,
     emergencyContactPhone: record.emergencyContactPhone,
     emergencyContactEmail: record.emergencyContactEmail,
+    emergencyContactAddress: record.emergencyContactAddress,
     educationLevel: record.educationLevel,
     educationInstitution: record.educationInstitution,
     educationField: record.educationField,
@@ -152,6 +169,9 @@ function mapSaveErrorKey(error: unknown) {
     }
     if (error.status === 404 || error.code === "employee_not_found") {
       return "employeeDirectory.errors.notFound";
+    }
+    if (error.code === "invalid_organization_position") {
+      return "employeeDirectory.errors.invalidPosition";
     }
   }
   return "employeeDirectory.errors.editFailed";
@@ -323,11 +343,10 @@ function EditorSelect({ id, label, value, options, onChange, placeholder }: Edit
     <div className="min-w-0">
       <Label htmlFor={id}>{label}</Label>
       <Select
-        key={`${id}-${value}`}
         id={id}
         options={options}
         placeholder={placeholder}
-        defaultValue={value}
+        value={value}
         onChange={onChange}
       />
     </div>
@@ -337,15 +356,45 @@ function EditorSelect({ id, label, value, options, onChange, placeholder }: Edit
 export default function EmployeeDetailPage() {
   const { t, i18n } = useTranslation();
   const { employeeId } = useParams();
+  const location = useLocation();
   const [employee, setEmployee] = useState<EmployeeMasterRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<EmployeeDetailTab>("overview");
   const [editingSection, setEditingSection] = useState<EditableEmployeeSection | null>(null);
   const [draft, setDraft] = useState<EmployeeMasterInput | null>(null);
+  const [organizationPositions, setOrganizationPositions] = useState<EmployeePositionOption[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveErrorKey, setSaveErrorKey] = useState<string | null>(null);
   const notProvided = t("employeeDirectory.notProvided");
+
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get("tab") === "payroll") {
+      setActiveTab("payroll");
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void getOrganizationStructure(controller.signal)
+      .then(({ organizations }) => {
+        setOrganizationPositions(organizations.flatMap((organization) =>
+          organization.departments.flatMap((department) =>
+            department.positions.map((position) => ({
+              id: position.id,
+              name: position.name,
+              departmentName: department.name,
+              organizationName: organization.name,
+            })),
+          ),
+        ));
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setOrganizationPositions([]);
+      });
+
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (!employeeId) {
@@ -377,6 +426,7 @@ export default function EmployeeDetailPage() {
   const tabKeys: EmployeeDetailTab[] = [
     "overview",
     "personalInformation",
+    "family",
     "employmentDetails",
     "attendanceAndLeave",
     "payroll",
@@ -405,6 +455,18 @@ export default function EmployeeDetailPage() {
   ) => {
     setDraft((current) => current
       ? { ...current, [key]: value } as EmployeeMasterInput
+      : current);
+  };
+
+  const setDraftPosition = (positionId: string) => {
+    const position = organizationPositions.find((item) => item.id === positionId);
+    setDraft((current) => current
+      ? {
+          ...current,
+          positionId: position?.id ?? null,
+          department: position?.departmentName ?? null,
+          jobTitle: position?.name ?? null,
+        }
       : current);
   };
 
@@ -527,6 +589,37 @@ export default function EmployeeDetailPage() {
     />
   );
 
+  const positionOptions = [
+    { value: "__no_position__", label: t("employeeDirectory.fields.noJobPosition") },
+    ...organizationPositions.map((position) => ({
+      value: position.id,
+      label: `${position.name} · ${position.departmentName} · ${position.organizationName}`,
+    })),
+  ];
+
+  const positionSelectEditor = (id: string) => (
+    <EditorSelect
+      id={id}
+      label={t("employeeDirectory.fields.jobPosition")}
+      value={draft?.positionId ?? ""}
+      options={positionOptions}
+      placeholder={t("employeeDirectory.fields.selectJobPosition")}
+      onChange={setDraftPosition}
+    />
+  );
+
+  const departmentValueEditor = (id: string) => (
+    <div className="min-w-0">
+      <Label htmlFor={id}>{t("employeeDirectory.fields.department")}</Label>
+      <div
+        id={id}
+        className="flex min-h-11 items-center rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/5 dark:text-gray-300"
+      >
+        {draft?.department || notProvided}
+      </div>
+    </div>
+  );
+
   const editorGrid = (children: ReactNode) => (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>
   );
@@ -538,6 +631,10 @@ export default function EmployeeDetailPage() {
   const maritalStatusOptions = [
     "single", "married", "separated", "divorced", "widowed", "domestic_partner", "other",
   ].map((value) => ({ value, label: t(`employeeDirectory.maritalStatuses.${value}`) }));
+  const genderOptions = ["female", "male"].map((value) => ({
+    value,
+    label: t(`employeeDirectory.genders.${value}`),
+  }));
   const employmentTypeOptions = [
     "full_time", "part_time", "contractor", "temporary", "intern",
   ].map((value) => ({ value, label: t(`employeeDirectory.employmentTypes.${value}`) }));
@@ -547,6 +644,9 @@ export default function EmployeeDetailPage() {
     .map((value) => ({ value, label: t(`employeeDirectory.probationaryStatuses.${value}`) }));
 
   const renderTabPanel = (record: EmployeeMasterRecord) => {
+    if (activeTab === "family") {
+      return <EmployeeFamilyDetailsTab employeeId={record.id} />;
+    }
     if (activeTab === "personalInformation") {
       return (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -560,9 +660,18 @@ export default function EmployeeDetailPage() {
                 {requiredTextEditor("edit-lastName", t("employeeDirectory.fields.lastName"), "lastName", "text", 100)}
                 {nullableTextEditor("edit-suffix", t("employeeDirectory.fields.suffix"), "suffix", "text", 20)}
                 {nullableTextEditor("edit-preferredName", t("employeeDirectory.fields.preferredName"), "preferredName", "text", 200)}
-                {nullableTextEditor("edit-gender", t("employeeDirectory.fields.gender"), "gender", "text", 100)}
+                {selectEditor(
+                  "edit-gender",
+                  t("employeeDirectory.fields.gender"),
+                  draft.gender ?? "",
+                  genderOptions,
+                  (value) => setDraftField("gender", value || null),
+                  notProvided,
+                )}
                 {dateEditor("edit-dateOfBirth", t("employeeDirectory.fields.dateOfBirth"), "dateOfBirth")}
                 {nullableTextEditor("edit-placeOfBirth", t("employeeDirectory.fields.placeOfBirth"), "placeOfBirth", "text", 200)}
+                {nullableTextEditor("edit-nationality", t("employeeDirectory.fields.nationality"), "nationality", "text", 120)}
+                {nullableTextEditor("edit-religion", t("employeeDirectory.fields.religion"), "religion", "text", 120)}
                 {selectEditor(
                   "edit-bloodType",
                   t("employeeDirectory.fields.bloodType"),
@@ -587,7 +696,14 @@ export default function EmployeeDetailPage() {
             <InfoRow label={t("employeeDirectory.fields.lastName")} value={record.lastName || notProvided} />
             <InfoRow label={t("employeeDirectory.fields.suffix")} value={record.suffix || notProvided} />
             <InfoRow label={t("employeeDirectory.fields.preferredName")} value={record.preferredName || notProvided} />
-            <InfoRow label={t("employeeDirectory.fields.gender")} value={record.gender || notProvided} />
+            <InfoRow
+              label={t("employeeDirectory.fields.gender")}
+              value={record.gender && ["female", "male"].includes(record.gender.toLowerCase())
+                ? t(`employeeDirectory.genders.${record.gender.toLowerCase()}`)
+                : record.gender || notProvided}
+            />
+            <InfoRow label={t("employeeDirectory.fields.nationality")} value={record.nationality || notProvided} />
+            <InfoRow label={t("employeeDirectory.fields.religion")} value={record.religion || notProvided} />
             <InfoRow label={t("employeeDirectory.fields.dateOfBirth")} value={formatDate(record.dateOfBirth, i18n.language, notProvided)} />
             <InfoRow label={t("employeeDirectory.fields.placeOfBirth")} value={record.placeOfBirth || notProvided} />
             <InfoRow
@@ -731,6 +847,7 @@ export default function EmployeeDetailPage() {
                   {nullableTextEditor("edit-emergency-relationship", t("employeeDirectory.fields.emergencyContactRelationship"), "emergencyContactRelationship", "text", 80)}
                   {nullableTextEditor("edit-emergency-phone", t("employeeDirectory.fields.emergencyContactPhone"), "emergencyContactPhone", "tel", 50)}
                   {nullableTextEditor("edit-emergency-email", t("employeeDirectory.fields.emergencyContactEmail"), "emergencyContactEmail", "email", 320)}
+                  {nullableTextEditor("edit-emergency-address", t("employeeDirectory.fields.emergencyContactAddress"), "emergencyContactAddress", "text", 1000)}
                 </>,
               )}
             >
@@ -738,6 +855,7 @@ export default function EmployeeDetailPage() {
               <InfoRow label={t("employeeDirectory.fields.emergencyContactRelationship")} value={record.emergencyContactRelationship || notProvided} />
               <InfoRow label={t("employeeDirectory.fields.emergencyContactPhone")} value={record.emergencyContactPhone || notProvided} />
               <InfoRow label={t("employeeDirectory.fields.emergencyContactEmail")} value={record.emergencyContactEmail || notProvided} />
+              <InfoRow label={t("employeeDirectory.fields.emergencyContactAddress")} value={record.emergencyContactAddress || notProvided} />
             </InfoSection>
           </div>
         </div>
@@ -753,8 +871,8 @@ export default function EmployeeDetailPage() {
             editor={draft && editorGrid(
               <>
                 {nullableTextEditor("edit-employeeNumber", t("employeeDirectory.fields.employeeNumber"), "employeeNumber", "text", 50)}
-                {nullableTextEditor("edit-department", t("employeeDirectory.fields.department"), "department", "text", 120)}
-                {nullableTextEditor("edit-jobTitle", t("employeeDirectory.fields.jobTitle"), "jobTitle", "text", 120)}
+                {positionSelectEditor("edit-jobPosition")}
+                {departmentValueEditor("edit-department")}
                 {selectEditor(
                   "edit-employmentType",
                   t("employeeDirectory.fields.employmentType"),
@@ -785,7 +903,7 @@ export default function EmployeeDetailPage() {
           >
             <InfoRow label={t("employeeDirectory.fields.employeeNumber")} value={record.employeeNumber || notProvided} />
             <InfoRow label={t("employeeDirectory.fields.department")} value={record.department || notProvided} />
-            <InfoRow label={t("employeeDirectory.fields.jobTitle")} value={record.jobTitle || notProvided} />
+            <InfoRow label={t("employeeDirectory.fields.jobPosition")} value={record.jobTitle || notProvided} />
             <InfoRow label={t("employeeDirectory.fields.employmentType")} value={t(`employeeDirectory.employmentTypes.${record.employmentType}`)} />
             <InfoRow label={t("employeeDirectory.fields.status")} value={t(`employeeDirectory.statuses.${record.employmentStatus}`)} />
             <InfoRow
@@ -881,8 +999,8 @@ export default function EmployeeDetailPage() {
           editor={draft && editorGrid(
             <>
               {nullableTextEditor("overview-edit-employeeNumber", t("employeeDirectory.fields.employeeNumber"), "employeeNumber", "text", 50)}
-              {nullableTextEditor("overview-edit-department", t("employeeDirectory.fields.department"), "department", "text", 120)}
-              {nullableTextEditor("overview-edit-jobTitle", t("employeeDirectory.fields.jobTitle"), "jobTitle", "text", 120)}
+              {positionSelectEditor("overview-edit-jobPosition")}
+              {departmentValueEditor("overview-edit-department")}
               {selectEditor(
                 "overview-edit-employmentType",
                 t("employeeDirectory.fields.employmentType"),
@@ -910,7 +1028,7 @@ export default function EmployeeDetailPage() {
           )}
         >
           <InfoRow label={t("employeeDirectory.fields.department")} value={record.department || notProvided} />
-          <InfoRow label={t("employeeDirectory.fields.jobTitle")} value={record.jobTitle || notProvided} />
+          <InfoRow label={t("employeeDirectory.fields.jobPosition")} value={record.jobTitle || notProvided} />
           <InfoRow label={t("employeeDirectory.fields.employmentType")} value={t(`employeeDirectory.employmentTypes.${record.employmentType}`)} />
           <InfoRow label={t("employeeDirectory.fields.status")} value={t(`employeeDirectory.statuses.${record.employmentStatus}`)} />
           <InfoRow

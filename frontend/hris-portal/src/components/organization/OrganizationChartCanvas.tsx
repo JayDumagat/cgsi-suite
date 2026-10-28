@@ -14,16 +14,15 @@ import {
   type NodeTypes,
 } from "@xyflow/react";
 import { useEffect, useMemo } from "react";
-import type { EmployeeDirectoryItem } from "@/components/employee-directory/employeeDirectoryApi";
+import { useState } from "react";
+import Select from "@/components/form/Select";
+import type {
+  EmployeeDirectoryItem,
+  OrganizationDepartment,
+  OrganizationPosition,
+} from "@/components/employee-directory/employeeDirectoryApi";
 import Badge from "@/components/ui/badge/Badge";
 import { Card } from "@/components/ui/card";
-
-type OrganizationNodeData = {
-  name: string;
-  employeeCount: number;
-  organizationLabel: string;
-  employeesLabel: string;
-};
 
 type EmployeeNodeData = {
   employee: EmployeeDirectoryItem;
@@ -34,6 +33,8 @@ type EmployeeNodeData = {
   reportCount: number;
   isCollapsed: boolean;
   employeeLabel: string;
+  reportsToLabel: string;
+  reportsToName: string | null;
   branchManagerLabel: string;
   departmentHeadLabel: string;
   reportLabel: (count: number, collapsed: boolean) => string;
@@ -41,14 +42,17 @@ type EmployeeNodeData = {
   onToggleCollapse: (employeeId: string) => void;
 };
 
-type OrganizationFlowNode = Node<OrganizationNodeData, "organization">;
 type EmployeeFlowNode = Node<EmployeeNodeData, "employee">;
-type OrganizationChartNode = OrganizationFlowNode | EmployeeFlowNode;
+type ChartPosition = OrganizationPosition & {
+  departmentId: string;
+  departmentName: string;
+};
 
 type OrganizationChartCanvasProps = {
-  organizationName: string;
-  totalEmployeeCount: number;
   employees: EmployeeDirectoryItem[];
+  departments: OrganizationDepartment[];
+  positions: ChartPosition[];
+  canManageOrganization: boolean;
   matchedEmployeeIds: ReadonlySet<string>;
   selectedEmployeeId: string;
   selectedEmployee: EmployeeDirectoryItem | null;
@@ -57,9 +61,19 @@ type OrganizationChartCanvasProps = {
   collapsedEmployeeIds: ReadonlySet<string>;
   searchActive: boolean;
   labels: {
-    organization: string;
-    employees: string;
     employee: string;
+    reportsTo: string;
+    structure: string;
+    departments: string;
+    addDepartment: string;
+    addPosition: string;
+    edit: string;
+    emptyDepartments: string;
+    emptyPositions: string;
+    assignPosition: string;
+    selectPosition: string;
+    noPosition: string;
+    saveAssignment: string;
     branchManager: string;
     departmentHead: string;
     expandReports: (count: number) => string;
@@ -71,27 +85,63 @@ type OrganizationChartCanvasProps = {
   };
   onSelectEmployee: (employeeId: string) => void;
   onToggleCollapse: (employeeId: string) => void;
+  onCreateDepartment: () => void;
+  onEditDepartment: (departmentId: string) => void;
+  onCreatePosition: (departmentId: string) => void;
+  onEditPosition: (positionId: string) => void;
+  onAssignPosition: (employeeId: string, positionId: string | null) => Promise<void>;
 };
 
 const nodeWidth = 280;
 const horizontalGap = 56;
 const verticalGap = 170;
+const noPositionValue = "__no_position__";
 
-function OrganizationNode({ data }: NodeProps<OrganizationFlowNode>) {
-  return (
-    <div className="relative w-[280px] rounded-xl border border-brand-300 bg-brand-50 p-4 text-center shadow-theme-md dark:border-brand-500/40 dark:bg-brand-500/10">
-      <Handle type="source" position={Position.Bottom} className="!size-2 !border-0 !bg-transparent" />
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:text-brand-300">
-        {data.organizationLabel}
-      </p>
-      <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
-        {data.name}
-      </p>
-      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-        {data.employeeCount} {data.employeesLabel}
-      </p>
-    </div>
+function positionRank(
+  employee: EmployeeDirectoryItem,
+  departmentHeadIds: ReadonlySet<string>,
+  branchManagerIds: ReadonlySet<string>,
+): number {
+  const title = employee.jobTitle?.toLocaleLowerCase() ?? "";
+  if (/\b(chairman|chairperson|chief executive officer|ceo)\b/.test(title)) return 100;
+  if (/\b(president)\b/.test(title)) return 95;
+  if (/\b(founder|managing director)\b/.test(title)) return 90;
+  if (/\b(chief operating officer|coo)\b/.test(title)) return 85;
+  if (/\b(chief|cfo|cto|cio|cmo|chro|cpo)\b/.test(title)) return 80;
+  if (/\b(senior vice president|svp)\b/.test(title)) return 75;
+  if (/\b(vice president|vp)\b/.test(title)) return 70;
+  if (/\b(director)\b/.test(title)) return 65;
+  if (departmentHeadIds.has(employee.id)) return 60;
+  if (branchManagerIds.has(employee.id)) return 55;
+  if (/\b(head|general manager|manager)\b/.test(title)) return 50;
+  if (/\b(supervisor)\b/.test(title)) return 45;
+  if (/\b(lead)\b/.test(title)) return 40;
+  if (/\b(senior)\b/.test(title)) return 30;
+  return 0;
+}
+
+export function getHighestPositionEmployeeId(
+  employees: EmployeeDirectoryItem[],
+  departmentHeadIds: ReadonlySet<string>,
+  branchManagerIds: ReadonlySet<string>,
+): string | null {
+  const employeeIds = new Set(employees.map((employee) => employee.id));
+  const candidates = employees.filter((employee) =>
+    !employee.managerEmployeeId ||
+    employee.managerEmployeeId === employee.id ||
+    !employeeIds.has(employee.managerEmployeeId),
   );
+  const ranked = candidates
+    .map((employee) => ({
+      employee,
+      rank: positionRank(employee, departmentHeadIds, branchManagerIds),
+    }))
+    .filter(({ rank }) => rank > 0)
+    .sort((first, second) =>
+      second.rank - first.rank || first.employee.displayName.localeCompare(second.employee.displayName),
+    );
+
+  return ranked[0]?.employee.id ?? null;
 }
 
 function EmployeeNode({ data }: NodeProps<EmployeeFlowNode>) {
@@ -121,7 +171,7 @@ function EmployeeNode({ data }: NodeProps<EmployeeFlowNode>) {
             data.onSelect(data.employee.id);
           }
         }}
-        className={`min-h-[104px] rounded-xl border bg-white p-3 text-start shadow-theme-xs outline-none transition hover:-translate-y-0.5 hover:shadow-theme-md focus-visible:ring-2 focus-visible:ring-brand-500 dark:bg-gray-900 ${borderColor}`}
+        className={`min-h-[126px] rounded-xl border bg-white p-3 text-start shadow-theme-xs outline-none transition hover:-translate-y-0.5 hover:shadow-theme-md focus-visible:ring-2 focus-visible:ring-brand-500 dark:bg-gray-900 ${borderColor}`}
       >
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
@@ -153,6 +203,11 @@ function EmployeeNode({ data }: NodeProps<EmployeeFlowNode>) {
             </Badge>
           )}
         </span>
+        {data.reportsToName && (
+          <span className="mt-2 block truncate border-t border-gray-100 pt-2 text-[11px] text-gray-500 dark:border-gray-800 dark:text-gray-400">
+            {data.reportsToLabel}: <span className="font-medium text-gray-700 dark:text-gray-300">{data.reportsToName}</span>
+          </span>
+        )}
       </div>
       {data.reportCount > 0 && (
         <button
@@ -174,7 +229,6 @@ function EmployeeNode({ data }: NodeProps<EmployeeFlowNode>) {
 }
 
 const nodeTypes = {
-  organization: OrganizationNode,
   employee: EmployeeNode,
 } satisfies NodeTypes;
 
@@ -240,9 +294,10 @@ function FitGraphToView({ layoutKey }: { layoutKey: string }) {
 }
 
 export default function OrganizationChartCanvas({
-  organizationName,
-  totalEmployeeCount,
   employees,
+  departments,
+  positions,
+  canManageOrganization,
   matchedEmployeeIds,
   selectedEmployeeId,
   selectedEmployee,
@@ -253,29 +308,82 @@ export default function OrganizationChartCanvas({
   labels,
   onSelectEmployee,
   onToggleCollapse,
+  onCreateDepartment,
+  onEditDepartment,
+  onCreatePosition,
+  onEditPosition,
+  onAssignPosition,
 }: OrganizationChartCanvasProps) {
-  const { nodes, edges, layoutKey } = useMemo(() => {
+  const [draftPositionId, setDraftPositionId] = useState(selectedEmployee?.positionId ?? "");
+  const [isSavingPosition, setIsSavingPosition] = useState(false);
+
+  useEffect(() => {
+    setDraftPositionId(selectedEmployee?.positionId ?? "");
+  }, [selectedEmployee?.id, selectedEmployee?.positionId]);
+
+  const positionOptions = [
+    { value: noPositionValue, label: labels.noPosition },
+    ...positions.map((position) => ({
+      value: position.id,
+      label: `${position.name} · ${position.departmentName}`,
+    })),
+  ];
+
+  const selectedPositionChanged = selectedEmployee
+    ? draftPositionId === noPositionValue
+      ? Boolean(selectedEmployee.positionId)
+      : draftPositionId !== (selectedEmployee.positionId ?? "")
+    : false;
+
+  const savePositionAssignment = async () => {
+    if (!selectedEmployee || !selectedPositionChanged) return;
+    setIsSavingPosition(true);
+    try {
+      await onAssignPosition(
+        selectedEmployee.id,
+        draftPositionId === noPositionValue ? null : draftPositionId || null,
+      );
+    } catch {
+      // The organization page reports save errors next to the chart.
+    } finally {
+      setIsSavingPosition(false);
+    }
+  };
+
+  const { nodes, edges, layoutKey, reportsToByEmployeeId } = useMemo(() => {
     const employeeIds = new Set(employees.map((employee) => employee.id));
+    const employeeById = new Map(employees.map((employee) => [employee.id, employee]));
+    const highestPositionId = getHighestPositionEmployeeId(
+      employees,
+      departmentHeadIds,
+      branchManagerIds,
+    );
+    const managerIdByEmployee = new Map<string, string | null>();
     const reportsByManager = new Map<string, EmployeeDirectoryItem[]>();
 
     for (const employee of employees) {
       const managerId = employee.managerEmployeeId;
-      if (!managerId || managerId === employee.id || !employeeIds.has(managerId)) {
-        continue;
+      const hasAssignedManager = Boolean(
+        managerId && managerId !== employee.id && employeeIds.has(managerId),
+      );
+      const effectiveManagerId = employee.id === highestPositionId
+        ? null
+        : hasAssignedManager
+          ? managerId!
+          : highestPositionId;
+      managerIdByEmployee.set(employee.id, effectiveManagerId);
+
+      if (effectiveManagerId) {
+        const reports = reportsByManager.get(effectiveManagerId) ?? [];
+        reports.push(employee);
+        reportsByManager.set(effectiveManagerId, reports);
       }
-      const reports = reportsByManager.get(managerId) ?? [];
-      reports.push(employee);
-      reportsByManager.set(managerId, reports);
     }
 
-    const roots = employees.filter((employee) => {
-      const managerId = employee.managerEmployeeId;
-      return !managerId || managerId === employee.id || !employeeIds.has(managerId);
-    });
+    const roots = employees.filter((employee) => !managerIdByEmployee.get(employee.id));
     const visited = new Set<string>();
     const positions = new Map<string, { x: number; y: number }>();
     const flowEdges: Edge[] = [];
-    const topLevelCenters: number[] = [];
     let nextLeaf = 0;
 
     function layoutEmployee(employee: EmployeeDirectoryItem, depth: number): number {
@@ -302,22 +410,14 @@ export default function OrganizationChartCanvas({
         : nextLeaf++ * (nodeWidth + horizontalGap) + nodeWidth / 2;
       positions.set(employee.id, {
         x: center - nodeWidth / 2,
-        y: 170 + depth * verticalGap,
+        y: 24 + depth * verticalGap,
       });
       return center;
     }
 
-    const chartRoots = [...roots];
-    for (const root of chartRoots) {
+    for (const root of roots) {
       if (visited.has(root.id)) continue;
-      topLevelCenters.push(layoutEmployee(root, 0));
-      flowEdges.push({
-        id: `organization-edge-${root.id}`,
-        source: "organization-root",
-        target: root.id,
-        type: "smoothstep",
-        style: { stroke: "var(--org-chart-edge-color)", strokeWidth: 1.5 },
-      });
+      layoutEmployee(root, 0);
     }
 
     const hiddenByCollapsedAncestor = new Set<string>();
@@ -333,35 +433,21 @@ export default function OrganizationChartCanvas({
     }
     for (const employee of employees) {
       if (visited.has(employee.id) || hiddenByCollapsedAncestor.has(employee.id)) continue;
-      topLevelCenters.push(layoutEmployee(employee, 0));
-      flowEdges.push({
-        id: `organization-edge-${employee.id}`,
-        source: "organization-root",
-        target: employee.id,
-        type: "smoothstep",
-        style: { stroke: "var(--org-chart-edge-color)", strokeWidth: 1.5 },
-      });
+      layoutEmployee(employee, 0);
     }
 
-    const rootCenter = topLevelCenters.length
-      ? (topLevelCenters[0] + topLevelCenters[topLevelCenters.length - 1]) / 2
-      : nodeWidth / 2;
-    const flowNodes: OrganizationChartNode[] = [
-      {
-        id: "organization-root",
-        type: "organization",
-        position: { x: rootCenter - nodeWidth / 2, y: 24 },
-        data: {
-          name: organizationName,
-          employeeCount: totalEmployeeCount,
-          organizationLabel: labels.organization,
-          employeesLabel: labels.employees,
-        },
-        draggable: false,
-      },
-      ...employees
-        .filter((employee) => positions.has(employee.id))
-        .map((employee): EmployeeFlowNode => ({
+    const reportsToByEmployeeId = new Map<string, string | null>();
+    for (const employee of employees) {
+      const managerId = managerIdByEmployee.get(employee.id);
+      reportsToByEmployeeId.set(
+        employee.id,
+        managerId ? employeeById.get(managerId)?.displayName ?? null : null,
+      );
+    }
+
+    const flowNodes: EmployeeFlowNode[] = employees
+      .filter((employee) => positions.has(employee.id))
+      .map((employee): EmployeeFlowNode => ({
           id: employee.id,
           type: "employee",
           position: positions.get(employee.id)!,
@@ -374,6 +460,8 @@ export default function OrganizationChartCanvas({
             reportCount: reportsByManager.get(employee.id)?.length ?? 0,
             isCollapsed: collapsedEmployeeIds.has(employee.id) && !searchActive,
             employeeLabel: labels.employee,
+            reportsToLabel: labels.reportsTo,
+            reportsToName: reportsToByEmployeeId.get(employee.id) ?? null,
             branchManagerLabel: labels.branchManager,
             departmentHeadLabel: labels.departmentHead,
             reportLabel: (count, collapsed) => (collapsed ? labels.expandReports : labels.collapseReports)(count),
@@ -381,13 +469,13 @@ export default function OrganizationChartCanvas({
             onToggleCollapse,
           },
           draggable: false,
-        })),
-    ];
+        }));
 
     return {
       nodes: flowNodes,
       edges: flowEdges,
-      layoutKey: flowNodes.map((node) => node.id).join("|"),
+      layoutKey: `${flowNodes.map((node) => node.id).join("|")}:${flowEdges.map((edge) => edge.id).join("|")}`,
+      reportsToByEmployeeId,
     };
   }, [
     branchManagerIds,
@@ -398,11 +486,12 @@ export default function OrganizationChartCanvas({
     matchedEmployeeIds,
     onSelectEmployee,
     onToggleCollapse,
-    organizationName,
     searchActive,
     selectedEmployeeId,
-    totalEmployeeCount,
   ]);
+  const selectedReportsTo = selectedEmployee
+    ? reportsToByEmployeeId.get(selectedEmployee.id) ?? null
+    : null;
 
   return (
     <div className="org-chart-flow h-[38rem] overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
@@ -430,6 +519,95 @@ export default function OrganizationChartCanvas({
         />
         <FitGraphToView layoutKey={layoutKey} />
         <LocalizedControls labels={labels} />
+        <Panel position="top-right" className="!m-4">
+          <Card className="max-h-[34rem] w-80 overflow-y-auto !p-4 shadow-theme-md">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold text-gray-800 dark:text-white/90">
+                  {labels.structure}
+                </h2>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {departments.length} {labels.departments}
+                </p>
+              </div>
+              {canManageOrganization && (
+                <button
+                  type="button"
+                  onClick={onCreateDepartment}
+                  className="shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200"
+                >
+                  + {labels.addDepartment}
+                </button>
+              )}
+            </div>
+            {departments.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-gray-200 px-3 py-4 text-center text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                {labels.emptyDepartments}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {departments.map((department) => (
+                  <section
+                    key={department.id}
+                    className="rounded-lg border border-gray-200 p-3 dark:border-gray-700"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-xs font-semibold text-gray-800 dark:text-white/90">
+                        {department.name}
+                      </p>
+                      {canManageOrganization && (
+                        <button
+                          type="button"
+                          aria-label={`${labels.edit} ${department.name}`}
+                          onClick={() => onEditDepartment(department.id)}
+                          className="shrink-0 text-[11px] font-medium text-brand-600 hover:underline dark:text-brand-300"
+                        >
+                          {labels.edit}
+                        </button>
+                      )}
+                    </div>
+                    {positions.filter((position) => position.departmentId === department.id).length > 0 ? (
+                      <div className="mt-2 space-y-1 border-s border-gray-200 ps-3 dark:border-gray-700">
+                        {positions
+                          .filter((position) => position.departmentId === department.id)
+                          .map((position) => (
+                            <div key={position.id} className="flex min-w-0 items-center justify-between gap-2">
+                              <span className="truncate text-xs text-gray-600 dark:text-gray-300">
+                                {position.name}
+                              </span>
+                              {canManageOrganization && (
+                                <button
+                                  type="button"
+                                  aria-label={`${labels.edit} ${position.name}`}
+                                  onClick={() => onEditPosition(position.id)}
+                                  className="shrink-0 text-[11px] font-medium text-brand-600 hover:underline dark:text-brand-300"
+                                >
+                                  {labels.edit}
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+                        {labels.emptyPositions}
+                      </p>
+                    )}
+                    {canManageOrganization && (
+                      <button
+                        type="button"
+                        onClick={() => onCreatePosition(department.id)}
+                        className="mt-2 text-[11px] font-medium text-brand-600 hover:underline dark:text-brand-300"
+                      >
+                        + {labels.addPosition}
+                      </button>
+                    )}
+                  </section>
+                ))}
+              </div>
+            )}
+          </Card>
+        </Panel>
         {selectedEmployee && (
           <Panel position="top-left" className="!m-4">
             <Card className="w-72 !border-orange-300 !p-4 !shadow-theme-md dark:!border-orange-500/40">
@@ -450,6 +628,11 @@ export default function OrganizationChartCanvas({
                     {selectedEmployee.jobTitle || labels.employee}
                     {selectedEmployee.department ? ` · ${selectedEmployee.department}` : ""}
                   </p>
+                  {selectedReportsTo && (
+                    <p className="mt-2 truncate text-xs text-gray-500 dark:text-gray-400">
+                      {labels.reportsTo}: <span className="font-medium text-gray-700 dark:text-gray-300">{selectedReportsTo}</span>
+                    </p>
+                  )}
                 </div>
               </div>
               {selectedEmployee.workEmail && (
@@ -459,6 +642,28 @@ export default function OrganizationChartCanvas({
                 >
                   {selectedEmployee.workEmail}
                 </a>
+              )}
+              {canManageOrganization && (
+                <div className="mt-3 space-y-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+                  <label htmlFor="employee-position-assignment" className="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                    {labels.assignPosition}
+                  </label>
+                  <Select
+                    id="employee-position-assignment"
+                    options={positionOptions}
+                    value={draftPositionId}
+                    placeholder={labels.selectPosition}
+                    onChange={setDraftPositionId}
+                  />
+                  <button
+                    type="button"
+                    disabled={!selectedPositionChanged || isSavingPosition}
+                    onClick={() => void savePositionAssignment()}
+                    className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-brand-500 px-3 text-xs font-medium text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {labels.saveAssignment}
+                  </button>
+                </div>
               )}
               {(branchManagerIds.has(selectedEmployee.id) || departmentHeadIds.has(selectedEmployee.id)) && (
                 <div className="mt-3 flex flex-wrap gap-1.5">

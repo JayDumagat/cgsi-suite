@@ -1,24 +1,32 @@
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
 interface BreadcrumbProps {
   pageTitle: string;
   breadcrumbTitle?: string;
   parentBreadcrumb?: { title: string; to: string };
+  showPageTitle?: boolean;
 }
 
 const PageBreadcrumb: React.FC<BreadcrumbProps> = ({
   pageTitle,
   breadcrumbTitle = pageTitle,
   parentBreadcrumb,
+  showPageTitle = true,
 }) => {
+  const { t } = useTranslation();
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <h2
-        className="text-xl font-semibold text-gray-800 dark:text-white/90"
-        x-text="pageName"
-      >
-        {pageTitle}
-      </h2>
+    <div
+      className={`mb-6 flex flex-wrap items-center gap-3 ${
+        showPageTitle ? "justify-between" : "justify-end"
+      }`}
+    >
+      {showPageTitle && (
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">
+          {pageTitle}
+        </h2>
+      )}
       <nav>
         <ol className="flex items-center gap-1.5">
           <li>
@@ -26,7 +34,7 @@ const PageBreadcrumb: React.FC<BreadcrumbProps> = ({
               className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400"
               to="/"
             >
-              Home
+              {t("common.home")}
               <svg
                 className="stroke-current rtl:rotate-180"
                 width="17"
@@ -72,9 +80,7 @@ const PageBreadcrumb: React.FC<BreadcrumbProps> = ({
             </li>
           )}
           <li className="text-sm text-gray-800 dark:text-white/90">
-            <span aria-current="page">
-            {breadcrumbTitle}
-            </span>
+            <span aria-current="page">{breadcrumbTitle}</span>
           </li>
         </ol>
       </nav>

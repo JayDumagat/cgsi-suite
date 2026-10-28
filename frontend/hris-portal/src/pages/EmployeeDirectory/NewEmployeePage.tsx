@@ -6,6 +6,7 @@ import Select from "@/components/form/Select";
 import {
   createEmployee,
   EmployeeDirectoryRequestError,
+  getOrganizationStructure,
   getEmployee,
   updateEmployee,
   type BloodType,
@@ -46,6 +47,7 @@ function createEducationHistoryEntry(): EducationHistoryFormEntry {
 type FormValues = Omit<
   EmployeeMasterInput,
   | "employeeNumber"
+  | "positionId"
   | "middleName"
   | "suffix"
   | "preferredName"
@@ -56,12 +58,15 @@ type FormValues = Omit<
   | "maritalStatus"
   | "permanentAddress"
   | "currentAddress"
+  | "nationality"
+  | "religion"
   | "personalEmail"
   | "personalPhone"
   | "emergencyContactName"
   | "emergencyContactRelationship"
   | "emergencyContactPhone"
   | "emergencyContactEmail"
+  | "emergencyContactAddress"
   | "educationHistory"
   | "educationLevel"
   | "educationInstitution"
@@ -78,6 +83,7 @@ type FormValues = Omit<
   | "workLocation"
 > & {
   employeeNumber: string;
+  positionId: string;
   middleName: string;
   suffix: string;
   gender: string;
@@ -87,6 +93,8 @@ type FormValues = Omit<
   maritalStatus: string;
   permanentAddress: string;
   currentAddress: string;
+  nationality: string;
+  religion: string;
   department: string;
   preferredName: string;
   personalEmail: string;
@@ -104,10 +112,12 @@ type FormValues = Omit<
   emergencyContactRelationship: string;
   emergencyContactPhone: string;
   emergencyContactEmail: string;
+  emergencyContactAddress: string;
 };
 
 const initialValues: FormValues = {
   employeeNumber: "",
+  positionId: "",
   firstName: "",
   middleName: "",
   lastName: "",
@@ -120,12 +130,15 @@ const initialValues: FormValues = {
   maritalStatus: "",
   permanentAddress: "",
   currentAddress: "",
+  nationality: "",
+  religion: "",
   personalEmail: "",
   personalPhone: "",
   emergencyContactName: "",
   emergencyContactRelationship: "",
   emergencyContactPhone: "",
   emergencyContactEmail: "",
+  emergencyContactAddress: "",
   educationHistory: [createEducationHistoryEntry()],
   workEmail: "",
   department: "",
@@ -153,6 +166,9 @@ function errorKey(error: unknown, isEditing: boolean) {
     if (error.code === "manager_must_be_an_active_employee") {
       return "employeeDirectory.errors.invalidManager";
     }
+    if (error.code === "invalid_organization_position") {
+      return "employeeDirectory.errors.invalidPosition";
+    }
   }
   return isEditing
     ? "employeeDirectory.errors.editFailed"
@@ -176,24 +192,28 @@ function recordToFormValues(record: EmployeeMasterRecord): FormValues {
   return {
     ...initialValues,
     employeeNumber: record.employeeNumber ?? "",
+    positionId: record.positionId ?? "",
     firstName: record.firstName ?? "",
     middleName: record.middleName ?? "",
     lastName: record.lastName ?? "",
     suffix: record.suffix ?? "",
     preferredName: record.preferredName ?? "",
-    gender: record.gender ?? "",
+    gender: record.gender?.toLowerCase() ?? "",
     dateOfBirth: record.dateOfBirth ?? "",
     placeOfBirth: record.placeOfBirth ?? "",
     bloodType: record.bloodType ?? "",
     maritalStatus: record.maritalStatus ?? "",
     permanentAddress: record.permanentAddress ?? "",
     currentAddress: record.currentAddress ?? "",
+    nationality: record.nationality ?? "",
+    religion: record.religion ?? "",
     personalEmail: record.personalEmail ?? "",
     personalPhone: record.personalPhone ?? "",
     emergencyContactName: record.emergencyContactName ?? "",
     emergencyContactRelationship: record.emergencyContactRelationship ?? "",
     emergencyContactPhone: record.emergencyContactPhone ?? "",
     emergencyContactEmail: record.emergencyContactEmail ?? "",
+    emergencyContactAddress: record.emergencyContactAddress ?? "",
     educationHistory: educationHistory.length > 0
       ? educationHistory.map((entry) => ({
           id: createEducationHistoryEntry().id,
@@ -229,10 +249,38 @@ export default function NewEmployeePage() {
   const { employeeId } = useParams();
   const isEditing = Boolean(employeeId);
   const [values, setValues] = useState(initialValues);
+  const [organizationPositions, setOrganizationPositions] = useState<{
+    id: string;
+    name: string;
+    departmentName: string;
+    organizationName: string;
+  }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadedRecordId, setLoadedRecordId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void getOrganizationStructure(controller.signal)
+      .then(({ organizations }) => {
+        setOrganizationPositions(organizations.flatMap((organization) =>
+          organization.departments.flatMap((department) =>
+            department.positions.map((position) => ({
+              id: position.id,
+              name: position.name,
+              departmentName: department.name,
+              organizationName: organization.name,
+            })),
+          ),
+        ));
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setOrganizationPositions([]);
+      });
+
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (!employeeId) {
@@ -271,6 +319,16 @@ export default function NewEmployeePage() {
     setValues((current) => ({ ...current, [key]: value }));
   };
 
+  const setOrganizationPosition = (positionId: string) => {
+    const position = organizationPositions.find((item) => item.id === positionId);
+    setValues((current) => ({
+      ...current,
+      positionId: position?.id ?? "",
+      department: position?.departmentName ?? "",
+      jobTitle: position?.name ?? "",
+    }));
+  };
+
   const updateEducationHistoryField = (
     entryId: string,
     field: Exclude<keyof EducationHistoryFormEntry, "id">,
@@ -305,6 +363,7 @@ export default function NewEmployeePage() {
     setError(null);
     try {
       const { probationaryStatus, educationHistory, ...employeeValues } = values;
+      const selectedPosition = organizationPositions.find((position) => position.id === values.positionId);
       const normalizedEducationHistory = educationHistory
         .filter((entry) => Boolean(entry.educationLevel.trim() || entry.institution.trim() || entry.fieldOfStudy.trim()))
         .map((entry) => ({
@@ -332,18 +391,22 @@ export default function NewEmployeePage() {
           : null,
         permanentAddress: values.permanentAddress.trim() || null,
         currentAddress: values.currentAddress.trim() || null,
+        nationality: values.nationality.trim() || null,
+        religion: values.religion.trim() || null,
         personalEmail: values.personalEmail.trim() || null,
         personalPhone: values.personalPhone.trim() || null,
         emergencyContactName: values.emergencyContactName.trim() || null,
         emergencyContactRelationship: values.emergencyContactRelationship.trim() || null,
         emergencyContactPhone: values.emergencyContactPhone.trim() || null,
         emergencyContactEmail: values.emergencyContactEmail.trim() || null,
+        emergencyContactAddress: values.emergencyContactAddress.trim() || null,
         educationLevel: primaryEducation?.educationLevel ?? null,
         educationInstitution: primaryEducation?.institution ?? null,
         educationField: primaryEducation?.fieldOfStudy ?? null,
         graduationYear: primaryEducation?.graduationYear ?? null,
         educationHistory: normalizedEducationHistory,
         department: values.department.trim() || null,
+        positionId: selectedPosition?.id ?? null,
         managerWorkEmail: values.managerWorkEmail.trim() || null,
         jobTitle: values.jobTitle.trim() || null,
         isProbationary:
@@ -416,6 +479,17 @@ export default function NewEmployeePage() {
     value,
     label: t(`employeeDirectory.maritalStatuses.${value}`),
   }));
+  const genderOptions = ["female", "male"].map((value) => ({
+    value,
+    label: t(`employeeDirectory.genders.${value}`),
+  }));
+  const positionOptions = [
+    { value: "__no_position__", label: t("employeeDirectory.fields.noJobPosition") },
+    ...organizationPositions.map((position) => ({
+      value: position.id,
+      label: `${position.name} · ${position.departmentName} · ${position.organizationName}`,
+    })),
+  ];
 
   return (
     <>
@@ -460,6 +534,15 @@ export default function NewEmployeePage() {
           <div className="space-y-6">
             <FormSection title={t("employeeDirectory.sections.personalInformation")}>
               <TextField
+                id="lastName"
+                label={t("employeeDirectory.fields.lastName")}
+                required
+                maxLength={100}
+                autoComplete="family-name"
+                value={values.lastName}
+                onChange={(value) => setField("lastName", value)}
+              />
+              <TextField
                 id="firstName"
                 label={t("employeeDirectory.fields.firstName")}
                 required
@@ -477,15 +560,6 @@ export default function NewEmployeePage() {
                 onChange={(value) => setField("middleName", value)}
               />
               <TextField
-                id="lastName"
-                label={t("employeeDirectory.fields.lastName")}
-                required
-                maxLength={100}
-                autoComplete="family-name"
-                value={values.lastName}
-                onChange={(value) => setField("lastName", value)}
-              />
-              <TextField
                 id="suffix"
                 label={t("employeeDirectory.fields.suffixOptional")}
                 maxLength={20}
@@ -500,11 +574,11 @@ export default function NewEmployeePage() {
                 onChange={(value) => setField("preferredName", value)}
               />
               <TextField
-                id="gender"
-                label={t("employeeDirectory.fields.gender")}
-                maxLength={100}
-                value={values.gender}
-                onChange={(value) => setField("gender", value)}
+                id="nationality"
+                label={t("employeeDirectory.fields.nationality")}
+                maxLength={120}
+                value={values.nationality}
+                onChange={(value) => setField("nationality", value)}
               />
               <TextField
                 id="dateOfBirth"
@@ -521,6 +595,14 @@ export default function NewEmployeePage() {
                 onChange={(value) => setField("placeOfBirth", value)}
               />
               <SelectField
+                id="gender"
+                label={t("employeeDirectory.fields.gender")}
+                placeholder={t("employeeDirectory.notProvided")}
+                options={genderOptions}
+                value={values.gender}
+                onChange={(value) => setField("gender", value)}
+              />
+              <SelectField
                 id="bloodType"
                 label={t("employeeDirectory.fields.bloodType")}
                 placeholder={t("employeeDirectory.notProvided")}
@@ -535,6 +617,13 @@ export default function NewEmployeePage() {
                 options={maritalStatusOptions}
                 value={values.maritalStatus}
                 onChange={(value) => setField("maritalStatus", value)}
+              />
+              <TextField
+                id="religion"
+                label={t("employeeDirectory.fields.religion")}
+                maxLength={120}
+                value={values.religion}
+                onChange={(value) => setField("religion", value)}
               />
             </FormSection>
 
@@ -563,6 +652,7 @@ export default function NewEmployeePage() {
                 id="permanentAddress"
                 label={t("employeeDirectory.fields.permanentAddress")}
                 maxLength={1000}
+                hint={t("employeeDirectory.addressFormatHint")}
                 value={values.permanentAddress}
                 onChange={(value) => setField("permanentAddress", value)}
               />
@@ -570,6 +660,7 @@ export default function NewEmployeePage() {
                 id="currentAddress"
                 label={t("employeeDirectory.fields.currentAddress")}
                 maxLength={1000}
+                hint={t("employeeDirectory.addressFormatHint")}
                 value={values.currentAddress}
                 onChange={(value) => setField("currentAddress", value)}
               />
@@ -582,6 +673,14 @@ export default function NewEmployeePage() {
                 maxLength={200}
                 value={values.emergencyContactName}
                 onChange={(value) => setField("emergencyContactName", value)}
+              />
+              <TextAreaField
+                id="emergencyContactAddress"
+                label={t("employeeDirectory.fields.emergencyContactAddress")}
+                maxLength={1000}
+                hint={t("employeeDirectory.addressFormatHint")}
+                value={values.emergencyContactAddress}
+                onChange={(value) => setField("emergencyContactAddress", value)}
               />
               <TextField
                 id="emergencyContactRelationship"
@@ -616,19 +715,18 @@ export default function NewEmployeePage() {
                 value={values.employeeNumber}
                 onChange={(value) => setField("employeeNumber", value)}
               />
-              <TextField
+              <SelectField
+                id="jobPosition"
+                label={t("employeeDirectory.fields.jobPosition")}
+                placeholder={t("employeeDirectory.fields.selectJobPosition")}
+                options={positionOptions}
+                value={values.positionId}
+                onChange={setOrganizationPosition}
+              />
+              <ReadOnlyField
                 id="department"
                 label={t("employeeDirectory.fields.department")}
-                maxLength={120}
-                value={values.department}
-                onChange={(value) => setField("department", value)}
-              />
-              <TextField
-                id="jobTitle"
-                label={t("employeeDirectory.fields.jobTitle")}
-                maxLength={120}
-                value={values.jobTitle}
-                onChange={(value) => setField("jobTitle", value)}
+                value={values.department || t("employeeDirectory.notProvided")}
               />
               <TextField
                 id="managerWorkEmail"
@@ -851,6 +949,26 @@ interface FormSectionProps {
   children: ReactNode;
 }
 
+interface ReadOnlyFieldProps {
+  id: string;
+  label: string;
+  value: string;
+}
+
+function ReadOnlyField({ id, label, value }: ReadOnlyFieldProps) {
+  return (
+    <div className="min-w-0">
+      <Label htmlFor={id}>{label}</Label>
+      <div
+        id={id}
+        className="flex min-h-11 items-center rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-white/5 dark:text-gray-300"
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
 function FormSection({ title, children }: FormSectionProps) {
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
@@ -877,7 +995,7 @@ function SelectField({ id, label, options, placeholder, value, onChange }: Selec
         id={id}
         options={options}
         placeholder={placeholder}
-        defaultValue={value}
+        value={value}
         onChange={onChange}
       />
     </div>
@@ -888,11 +1006,12 @@ interface TextAreaFieldProps {
   id: string;
   label: string;
   maxLength?: number;
+  hint?: string;
   value: string;
   onChange: (value: string) => void;
 }
 
-function TextAreaField({ id, label, maxLength, value, onChange }: TextAreaFieldProps) {
+function TextAreaField({ id, label, maxLength, hint, value, onChange }: TextAreaFieldProps) {
   return (
     <div className="sm:col-span-2 xl:col-span-3">
       <Label htmlFor={id}>{label}</Label>
@@ -905,6 +1024,7 @@ function TextAreaField({ id, label, maxLength, value, onChange }: TextAreaFieldP
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 shadow-theme-xs outline-hidden placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-gray-500 dark:focus:border-brand-800"
       />
+      {hint && <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{hint}</p>}
     </div>
   );
 }

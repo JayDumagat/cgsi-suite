@@ -121,6 +121,139 @@ export interface TimesheetDailyReport {
   items: EmployeeTimesheetEntry[];
 }
 
+export type RecruitmentOpeningStatus = "draft" | "open" | "closed";
+export type RecruitmentCandidateStage =
+  | "applied"
+  | "screening"
+  | "interview"
+  | "offer"
+  | "hired"
+  | "rejected";
+export type RecruitmentInterviewStatus = "scheduled" | "completed" | "cancelled";
+
+export interface RecruitmentOpeningInput {
+  title: string;
+  positionId: string | null;
+  department: string | null;
+  location: string | null;
+  employmentType: EmploymentType;
+  headcount: number;
+  status: RecruitmentOpeningStatus;
+  description: string | null;
+}
+
+export interface RecruitmentOpening extends RecruitmentOpeningInput {
+  id: string;
+  positionName: string | null;
+  applicantCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecruitmentCandidateInput {
+  openingId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  source: string | null;
+  stage: RecruitmentCandidateStage;
+  notes: string | null;
+}
+
+export interface RecruitmentCandidate extends RecruitmentCandidateInput {
+  id: string;
+  openingTitle: string;
+  department: string | null;
+  appliedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecruitmentInterviewInput {
+  candidateId: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  interviewType: string;
+  interviewerEmployeeId: string | null;
+  status: RecruitmentInterviewStatus;
+  notes: string | null;
+}
+
+export interface RecruitmentInterview extends RecruitmentInterviewInput {
+  id: string;
+  candidateName: string;
+  openingTitle: string;
+  interviewerName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecruitmentReport {
+  openings: RecruitmentOpening[];
+  candidates: RecruitmentCandidate[];
+  interviews: RecruitmentInterview[];
+  permissions: { canManageRecruitment: boolean };
+}
+
+export type PerformanceGoalStatus = "not_started" | "in_progress" | "completed";
+
+export interface PerformanceEmployee {
+  employeeId: string;
+  displayName: string;
+  employeeNumber: string | null;
+  department: string | null;
+  jobTitle: string | null;
+}
+
+export interface PerformanceGoalInput {
+  employeeId: string;
+  title: string;
+  description: string | null;
+  dueDate: string | null;
+  status: PerformanceGoalStatus;
+  progress: number;
+}
+
+export interface PerformanceGoal extends PerformanceGoalInput {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PerformanceFeedbackInput {
+  employeeId: string;
+  feedback: string;
+}
+
+export interface PerformanceFeedback extends PerformanceFeedbackInput {
+  id: string;
+  authorName: string | null;
+  createdAt: string;
+}
+
+export interface PerformanceRatingInput {
+  employeeId: string;
+  reviewYear: number;
+  rating: number;
+  summary: string | null;
+}
+
+export interface PerformanceRating extends PerformanceRatingInput {
+  id: string;
+  reviewerName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PerformanceReport {
+  employees: PerformanceEmployee[];
+  goals: PerformanceGoal[];
+  feedback: PerformanceFeedback[];
+  ratings: PerformanceRating[];
+  permissions: { canManagePerformance: boolean };
+}
+
 export interface EmployeeHrDetails {
   attendanceAndLeave: {
     workSchedule: string | null;
@@ -145,6 +278,26 @@ export interface EmployeeHrDetails {
     healthInsuranceProvider: string | null;
     healthInsurancePolicyNumber: string | null;
   };
+  family: EmployeeFamilyDetails;
+}
+
+export interface EmployeeFamilyPerson {
+  firstName: string | null;
+  middleInitial: string | null;
+  lastName: string | null;
+  birthDate: string | null;
+  nationality: string | null;
+}
+
+export interface EmployeeFamilyChild extends EmployeeFamilyPerson {
+  gender: "female" | "male" | null;
+}
+
+export interface EmployeeFamilyDetails {
+  spouse: EmployeeFamilyPerson;
+  mother: EmployeeFamilyPerson;
+  father: EmployeeFamilyPerson;
+  children: EmployeeFamilyChild[];
 }
 
 export type EmployeeLeaveType =
@@ -198,6 +351,7 @@ export type EmployeeSortKey =
 
 export interface EmployeeDirectoryItem {
   id: string;
+  positionId: string | null;
   employeeNumber: string | null;
   displayName: string;
   workEmail: string;
@@ -278,12 +432,15 @@ export interface EmployeeMasterRecord extends EmployeeDirectoryItem {
   maritalStatus: MaritalStatus | null;
   permanentAddress: string | null;
   currentAddress: string | null;
+  nationality: string | null;
+  religion: string | null;
   personalEmail: string | null;
   personalPhone: string | null;
   emergencyContactName: string | null;
   emergencyContactRelationship: string | null;
   emergencyContactPhone: string | null;
   emergencyContactEmail: string | null;
+  emergencyContactAddress: string | null;
   educationLevel: string | null;
   educationInstitution: string | null;
   educationField: string | null;
@@ -301,6 +458,7 @@ export interface EmployeeMasterRecord extends EmployeeDirectoryItem {
 }
 
 export interface EmployeeMasterInput {
+  positionId: string | null;
   employeeNumber: string | null;
   firstName: string;
   middleName: string | null;
@@ -314,12 +472,15 @@ export interface EmployeeMasterInput {
   maritalStatus: MaritalStatus | null;
   permanentAddress: string | null;
   currentAddress: string | null;
+  nationality: string | null;
+  religion: string | null;
   personalEmail: string | null;
   personalPhone: string | null;
   emergencyContactName: string | null;
   emergencyContactRelationship: string | null;
   emergencyContactPhone: string | null;
   emergencyContactEmail: string | null;
+  emergencyContactAddress: string | null;
   educationLevel: string | null;
   educationInstitution: string | null;
   educationField: string | null;
@@ -437,6 +598,54 @@ export async function createPosition(
   );
 }
 
+export async function updateBranch(
+  organizationId: string,
+  branchId: string,
+  input: {
+    name: string;
+    code: string | null;
+    address: string | null;
+    managerEmployeeId: string | null;
+  },
+): Promise<OrganizationBranch> {
+  return requestJson<OrganizationBranch>(
+    `/api/eris/organizations/${encodeURIComponent(organizationId)}/branches/${encodeURIComponent(branchId)}`,
+    undefined,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+export async function updateDepartment(
+  organizationId: string,
+  departmentId: string,
+  input: { name: string; code: string | null; headEmployeeId: string | null },
+): Promise<OrganizationDepartment> {
+  return requestJson<OrganizationDepartment>(
+    `/api/eris/organizations/${encodeURIComponent(organizationId)}/departments/${encodeURIComponent(departmentId)}`,
+    undefined,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+export async function updatePosition(
+  organizationId: string,
+  departmentId: string,
+  positionId: string,
+  input: {
+    name: string;
+    code: string | null;
+    description: string | null;
+    jobLevel: string | null;
+    targetDepartmentId: string;
+  },
+): Promise<OrganizationPosition> {
+  return requestJson<OrganizationPosition>(
+    `/api/eris/organizations/${encodeURIComponent(organizationId)}/departments/${encodeURIComponent(departmentId)}/positions/${encodeURIComponent(positionId)}`,
+    undefined,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
 export async function getAttendanceReport(
   date: string,
   query: string,
@@ -528,6 +737,122 @@ export async function decideLeaveRequest(
     `/api/eris/leave-requests/${encodeURIComponent(requestId)}/decision`,
     undefined,
     { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+export async function getRecruitmentReport(
+  signal?: AbortSignal,
+): Promise<RecruitmentReport> {
+  return requestJson<RecruitmentReport>("/api/eris/recruitment", signal);
+}
+
+export async function createRecruitmentOpening(
+  input: RecruitmentOpeningInput,
+): Promise<RecruitmentOpening> {
+  return requestJson<RecruitmentOpening>(
+    "/api/eris/recruitment/openings",
+    undefined,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function updateRecruitmentOpening(
+  openingId: string,
+  input: RecruitmentOpeningInput,
+): Promise<RecruitmentOpening> {
+  return requestJson<RecruitmentOpening>(
+    `/api/eris/recruitment/openings/${encodeURIComponent(openingId)}`,
+    undefined,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+export async function createRecruitmentCandidate(
+  input: RecruitmentCandidateInput,
+): Promise<RecruitmentCandidate> {
+  return requestJson<RecruitmentCandidate>(
+    "/api/eris/recruitment/candidates",
+    undefined,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function updateRecruitmentCandidate(
+  candidateId: string,
+  input: RecruitmentCandidateInput,
+): Promise<RecruitmentCandidate> {
+  return requestJson<RecruitmentCandidate>(
+    `/api/eris/recruitment/candidates/${encodeURIComponent(candidateId)}`,
+    undefined,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+export async function createRecruitmentInterview(
+  input: RecruitmentInterviewInput,
+): Promise<RecruitmentInterview> {
+  return requestJson<RecruitmentInterview>(
+    "/api/eris/recruitment/interviews",
+    undefined,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function updateRecruitmentInterview(
+  interviewId: string,
+  input: RecruitmentInterviewInput,
+): Promise<RecruitmentInterview> {
+  return requestJson<RecruitmentInterview>(
+    `/api/eris/recruitment/interviews/${encodeURIComponent(interviewId)}`,
+    undefined,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+export async function getPerformanceReport(
+  signal?: AbortSignal,
+): Promise<PerformanceReport> {
+  return requestJson<PerformanceReport>("/api/eris/performance", signal);
+}
+
+export async function createPerformanceGoal(
+  input: PerformanceGoalInput,
+): Promise<PerformanceGoal> {
+  return requestJson<PerformanceGoal>(
+    "/api/eris/performance/goals",
+    undefined,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function updatePerformanceGoal(
+  goalId: string,
+  input: PerformanceGoalInput,
+): Promise<PerformanceGoal> {
+  return requestJson<PerformanceGoal>(
+    `/api/eris/performance/goals/${encodeURIComponent(goalId)}`,
+    undefined,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+export async function createPerformanceFeedback(
+  input: PerformanceFeedbackInput,
+): Promise<PerformanceFeedback> {
+  return requestJson<PerformanceFeedback>(
+    "/api/eris/performance/feedback",
+    undefined,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function savePerformanceRating(
+  input: PerformanceRatingInput,
+): Promise<PerformanceRating> {
+  return requestJson<PerformanceRating>(
+    "/api/eris/performance/ratings",
+    undefined,
+    { method: "POST", body: JSON.stringify(input) },
   );
 }
 

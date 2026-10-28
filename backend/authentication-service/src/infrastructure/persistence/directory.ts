@@ -18,6 +18,7 @@ import {
   type DepartmentInput,
   type OrganizationInput,
   type PositionInput,
+  type PositionUpdateInput,
   type OrganizationRecord,
   type OrganizationStructure,
 } from "../../modules/directory/domain/organization.js";
@@ -27,8 +28,8 @@ const directorySortExpressions = {
   employeeNumber: "lower(COALESCE(employee.employee_number, ''))",
   displayName: "lower(employee.display_name)",
   workEmail: "lower(employee.work_email)",
-  department: "lower(COALESCE(employee.department, ''))",
-  jobTitle: "lower(COALESCE(employee.job_title, ''))",
+  department: "lower(COALESCE(role_department.display_name, employee.department, ''))",
+  jobTitle: "lower(COALESCE(role_position.display_name, employee.job_title, ''))",
   employmentType: "employee.employment_type",
   employmentStatus: "employee.employment_status",
   hireDate: "employee.hire_date",
@@ -400,6 +401,234 @@ export class DirectoryRepository extends EmployeeMasterRepository {
     }
   }
 
+  async updateBranch(
+    organizationId: string,
+    branchId: string,
+    input: BranchInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["branches"][number]> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await requireOrganization(client, organizationId);
+      await requireAssignableEmployee(client, input.managerEmployeeId);
+      const updated = await client.query<{
+        id: string;
+        unit_code: string | null;
+        display_name: string;
+        address: string | null;
+        branch_manager_employee_id: string | null;
+      }>(
+        [
+          "UPDATE directory.org_units AS branch",
+          "   SET unit_code = $3, display_name = $4, address = $5, branch_manager_employee_id = $6",
+          " WHERE branch.id = $1 AND branch.parent_id = $2",
+          "   AND branch.source = 'eris' AND branch.unit_type = 'branch'",
+          "RETURNING id::text AS id, unit_code, display_name, address, branch_manager_employee_id::text",
+        ].join("\n"),
+        [branchId, organizationId, input.code, input.name, input.address, input.managerEmployeeId],
+      );
+      const branch = updated.rows[0];
+      if (!branch) throw new OrganizationManagementError("not_found");
+      await auditOrganizationChange(
+        client,
+        requestedByEmployeeId,
+        "eris.branch.update",
+        "branch",
+        branch.id,
+        {
+          name: branch.display_name,
+          code: branch.unit_code,
+          organizationId,
+          address: branch.address,
+          managerEmployeeId: branch.branch_manager_employee_id,
+        },
+      );
+      await client.query("COMMIT");
+      return {
+        id: branch.id,
+        name: branch.display_name,
+        code: branch.unit_code,
+        address: branch.address,
+        managerEmployeeId: branch.branch_manager_employee_id,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      if (isUniqueViolation(error)) {
+        throw new OrganizationManagementError("duplicate_name");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateDepartment(
+    organizationId: string,
+    departmentId: string,
+    input: DepartmentInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await requireOrganization(client, organizationId);
+      await requireAssignableEmployee(client, input.headEmployeeId);
+      const updated = await client.query<{
+        id: string;
+        unit_code: string | null;
+        display_name: string;
+        department_head_employee_id: string | null;
+      }>(
+        [
+          "UPDATE directory.org_units AS department",
+          "   SET unit_code = $3, display_name = $4, department_head_employee_id = $5",
+          " WHERE department.id = $1 AND department.parent_id = $2",
+          "   AND department.source = 'eris' AND department.unit_type = 'department'",
+          "RETURNING id::text AS id, unit_code, display_name, department_head_employee_id::text",
+        ].join("\n"),
+        [departmentId, organizationId, input.code, input.name, input.headEmployeeId],
+      );
+      const department = updated.rows[0];
+      if (!department) throw new OrganizationManagementError("department_not_found");
+      const positions = await client.query<{
+        id: string;
+        unit_code: string | null;
+        display_name: string;
+        description: string | null;
+        job_level: string | null;
+      }>(
+        [
+          "SELECT id::text AS id, unit_code, display_name, description, job_level",
+          "  FROM directory.org_units",
+          " WHERE source = 'eris' AND unit_type = 'position' AND parent_id = $1",
+          " ORDER BY lower(display_name), id",
+        ].join("\n"),
+        [departmentId],
+      );
+      await auditOrganizationChange(
+        client,
+        requestedByEmployeeId,
+        "eris.department.update",
+        "department",
+        department.id,
+        {
+          name: department.display_name,
+          code: department.unit_code,
+          organizationId,
+          headEmployeeId: department.department_head_employee_id,
+        },
+      );
+      await client.query("COMMIT");
+      return {
+        id: department.id,
+        name: department.display_name,
+        code: department.unit_code,
+        headEmployeeId: department.department_head_employee_id,
+        positions: positions.rows.map((position) => ({
+          id: position.id,
+          name: position.display_name,
+          code: position.unit_code,
+          description: position.description,
+          jobLevel: position.job_level,
+        })),
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      if (isUniqueViolation(error)) {
+        throw new OrganizationManagementError("duplicate_name");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updatePosition(
+    organizationId: string,
+    departmentId: string,
+    positionId: string,
+    input: PositionUpdateInput,
+    requestedByEmployeeId: string,
+  ): Promise<OrganizationRecord["departments"][number]["positions"][number]> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const source = await client.query<{ id: string }>(
+        [
+          "SELECT job_position.id::text AS id",
+          "  FROM directory.org_units AS job_position",
+          "  JOIN directory.org_units AS department ON department.id = job_position.parent_id",
+          "  JOIN directory.org_units AS organization ON organization.id = department.parent_id",
+          " WHERE job_position.id = $1 AND department.id = $2 AND organization.id = $3",
+          "   AND job_position.source = 'eris' AND job_position.unit_type = 'position'",
+          "   AND department.source = 'eris' AND department.unit_type = 'department'",
+          "   AND organization.source = 'eris' AND organization.parent_id IS NULL",
+        ].join("\n"),
+        [positionId, departmentId, organizationId],
+      );
+      if (!source.rows[0]) throw new OrganizationManagementError("position_not_found");
+      const destination = await client.query<{ id: string }>(
+        [
+          "SELECT id::text AS id FROM directory.org_units",
+          " WHERE id = $1 AND parent_id = $2 AND source = 'eris' AND unit_type = 'department'",
+        ].join("\n"),
+        [input.targetDepartmentId, organizationId],
+      );
+      if (!destination.rows[0]) throw new OrganizationManagementError("department_not_found");
+      const updated = await client.query<{
+        id: string;
+        unit_code: string | null;
+        display_name: string;
+        description: string | null;
+        job_level: string | null;
+      }>(
+        [
+          "UPDATE directory.org_units AS job_position",
+          "   SET parent_id = $2, unit_code = $3, display_name = $4, description = $5, job_level = $6",
+          " WHERE job_position.id = $1 AND job_position.parent_id = $7",
+          "   AND job_position.source = 'eris' AND job_position.unit_type = 'position'",
+          "RETURNING id::text AS id, unit_code, display_name, description, job_level",
+        ].join("\n"),
+        [positionId, input.targetDepartmentId, input.code, input.name, input.description, input.jobLevel, departmentId],
+      );
+      const position = updated.rows[0];
+      if (!position) throw new OrganizationManagementError("position_not_found");
+      await auditOrganizationChange(
+        client,
+        requestedByEmployeeId,
+        "eris.position.update",
+        "position",
+        position.id,
+        {
+          name: position.display_name,
+          code: position.unit_code,
+          description: position.description,
+          jobLevel: position.job_level,
+          organizationId,
+          departmentId,
+          targetDepartmentId: input.targetDepartmentId,
+        },
+      );
+      await client.query("COMMIT");
+      return {
+        id: position.id,
+        name: position.display_name,
+        code: position.unit_code,
+        description: position.description,
+        jobLevel: position.job_level,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      if (isUniqueViolation(error)) {
+        throw new OrganizationManagementError("duplicate_name");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async listEmployees(
     query: EmployeeDirectoryQuery,
     requestedByEmployeeId: string,
@@ -450,12 +679,15 @@ export class DirectoryRepository extends EmployeeMasterRepository {
           const countResult = await client.query<{ total: number }>(
             `SELECT COUNT(*)::int AS total
                FROM huma.employees AS employee
+               LEFT JOIN directory.org_units AS role_position
+                 ON role_position.id = employee.position_id AND role_position.source = 'eris' AND role_position.unit_type = 'position'
+               LEFT JOIN directory.org_units AS role_department ON role_department.id = role_position.parent_id
               WHERE $1 = ''
                  OR position($1 in lower(employee.display_name)) > 0
                  OR position($1 in lower(employee.work_email)) > 0
                  OR position($1 in lower(COALESCE(employee.employee_number, ''))) > 0
-                 OR position($1 in lower(COALESCE(employee.department, ''))) > 0
-                 OR position($1 in lower(COALESCE(employee.job_title, ''))) > 0`,
+                 OR position($1 in lower(COALESCE(role_department.display_name, employee.department, ''))) > 0
+                 OR position($1 in lower(COALESCE(role_position.display_name, employee.job_title, ''))) > 0`,
             [normalizedSearch],
           );
 
@@ -467,6 +699,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
             work_email: string;
             department: string | null;
             job_title: string | null;
+            position_id: string | null;
             employment_type: EmploymentType;
             hire_date: string | null;
             employment_status: EmploymentStatus;
@@ -476,19 +709,23 @@ export class DirectoryRepository extends EmployeeMasterRepository {
                     employee.employee_number,
                     employee.display_name,
                     employee.work_email,
-                    employee.department,
-                    employee.job_title,
+                    COALESCE(role_department.display_name, employee.department) AS department,
+                    COALESCE(role_position.display_name, employee.job_title) AS job_title,
+                    employee.position_id::text AS position_id,
                     employee.manager_employee_id::text AS manager_employee_id,
                     employee.employment_type,
                     employee.hire_date::text AS hire_date,
                     employee.employment_status
                FROM huma.employees AS employee
+               LEFT JOIN directory.org_units AS role_position
+                 ON role_position.id = employee.position_id AND role_position.source = 'eris' AND role_position.unit_type = 'position'
+               LEFT JOIN directory.org_units AS role_department ON role_department.id = role_position.parent_id
               WHERE $1 = ''
                  OR position($1 in lower(employee.display_name)) > 0
                  OR position($1 in lower(employee.work_email)) > 0
                  OR position($1 in lower(COALESCE(employee.employee_number, ''))) > 0
-                 OR position($1 in lower(COALESCE(employee.department, ''))) > 0
-                 OR position($1 in lower(COALESCE(employee.job_title, ''))) > 0
+                 OR position($1 in lower(COALESCE(role_department.display_name, employee.department, ''))) > 0
+                 OR position($1 in lower(COALESCE(role_position.display_name, employee.job_title, ''))) > 0
               ORDER BY ${directorySortExpressions[query.sortBy]} ${query.sortOrder.toUpperCase()}${query.sortBy === "hireDate" ? " NULLS LAST" : ""},
                        lower(employee.display_name), employee.id
               LIMIT $2 OFFSET $3`,
@@ -515,6 +752,7 @@ export class DirectoryRepository extends EmployeeMasterRepository {
           return {
             items: employeesResult.rows.map((employee) => ({
               id: employee.id,
+              positionId: employee.position_id,
               displayName: employee.display_name,
               employeeNumber: employee.employee_number,
               workEmail: employee.work_email,
@@ -787,6 +1025,17 @@ async function requireAssignableEmployee(
   if (!employee.rows[0]) {
     throw new OrganizationManagementError("invalid_assignee");
   }
+}
+
+async function requireOrganization(client: PoolClient, organizationId: string): Promise<void> {
+  const organization = await client.query<{ id: string }>(
+    [
+      "SELECT id::text AS id FROM directory.org_units",
+      " WHERE id = $1 AND source = 'eris' AND parent_id IS NULL AND unit_type = 'organization'",
+    ].join("\n"),
+    [organizationId],
+  );
+  if (!organization.rows[0]) throw new OrganizationManagementError("not_found");
 }
 
 function isUniqueViolation(error: unknown): boolean {

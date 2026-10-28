@@ -70,6 +70,26 @@ export interface EmployeeHrDetails {
   attendanceAndLeave: EmployeeAttendanceLeaveDetails;
   payroll: EmployeePayrollDetails;
   medical: EmployeeMedicalDetails;
+  family: EmployeeFamilyDetails;
+}
+
+export interface EmployeeFamilyPerson {
+  firstName: string | null;
+  middleInitial: string | null;
+  lastName: string | null;
+  birthDate: string | null;
+  nationality: string | null;
+}
+
+export interface EmployeeFamilyChild extends EmployeeFamilyPerson {
+  gender: "female" | "male" | null;
+}
+
+export interface EmployeeFamilyDetails {
+  spouse: EmployeeFamilyPerson;
+  mother: EmployeeFamilyPerson;
+  father: EmployeeFamilyPerson;
+  children: EmployeeFamilyChild[];
 }
 
 export type AttendanceRecordStatus =
@@ -236,6 +256,7 @@ export interface EmployeeDirectoryQuery {
 
 export interface EmployeeDirectoryItem {
   id: string;
+  positionId: string | null;
   displayName: string;
   employeeNumber: string | null;
   workEmail: string;
@@ -268,6 +289,7 @@ export interface EmployeeDirectoryPage {
 
 export interface EmployeeMasterRecord {
   id: string;
+  positionId: string | null;
   employeeNumber: string | null;
   displayName: string;
   firstName: string | null;
@@ -282,12 +304,15 @@ export interface EmployeeMasterRecord {
   maritalStatus: MaritalStatus | null;
   permanentAddress: string | null;
   currentAddress: string | null;
+  nationality: string | null;
+  religion: string | null;
   personalEmail: string | null;
   personalPhone: string | null;
   emergencyContactName: string | null;
   emergencyContactRelationship: string | null;
   emergencyContactPhone: string | null;
   emergencyContactEmail: string | null;
+  emergencyContactAddress: string | null;
   educationLevel: string | null;
   educationInstitution: string | null;
   educationField: string | null;
@@ -310,6 +335,7 @@ export interface EmployeeMasterRecord {
 }
 
 export interface EmployeeMasterInput {
+  positionId: string | null;
   employeeNumber: string | null;
   firstName: string;
   middleName: string | null;
@@ -323,12 +349,15 @@ export interface EmployeeMasterInput {
   maritalStatus: MaritalStatus | null;
   permanentAddress: string | null;
   currentAddress: string | null;
+  nationality: string | null;
+  religion: string | null;
   personalEmail: string | null;
   personalPhone: string | null;
   emergencyContactName: string | null;
   emergencyContactRelationship: string | null;
   emergencyContactPhone: string | null;
   emergencyContactEmail: string | null;
+  emergencyContactAddress: string | null;
   educationLevel: string | null;
   educationInstitution: string | null;
   educationField: string | null;
@@ -349,7 +378,7 @@ export interface EmployeeMasterInput {
 }
 
 export class EmployeeRecordError extends Error {
-  constructor(readonly code: "forbidden" | "not_found" | "duplicate_employee_number" | "duplicate_work_email" | "invalid_manager") {
+  constructor(readonly code: "forbidden" | "not_found" | "duplicate_employee_number" | "duplicate_work_email" | "invalid_manager" | "invalid_position") {
     super(code);
     this.name = "EmployeeRecordError";
   }

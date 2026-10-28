@@ -212,7 +212,10 @@ export default function HrDashboardPage() {
         description={t("hrDashboard.description")}
       />
       <div className="space-y-6">
-        <PageBreadcrumb pageTitle={t("hrDashboard.title")} />
+        <PageBreadcrumb
+          pageTitle={t("hrDashboard.title")}
+          showPageTitle={false}
+        />
         <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">

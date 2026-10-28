@@ -71,6 +71,9 @@ export function getAttendanceDisplayStatus(
     return record.status;
   }
   if (record.status === "official_business") return record.status;
+  if (record.status === "late" || record.status === "absent") {
+    return record.status;
+  }
 
   if (!record.status || record.status === "on_leave") {
     const approvedLeave = leaveStatusFor(record.employeeId, date, leaveRequests);

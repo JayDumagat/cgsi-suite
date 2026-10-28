@@ -1050,9 +1050,10 @@
     "statistics": {
       "title": "Attendance statistics",
       "subtitle": "Average clock-in and clock-out times for {{period}}.",
-      "daySubtitle": "Clock-in and clock-out counts by time for {{period}}.",
+      "daySubtitle": "Average clock-in and clock-out times for {{period}}.",
       "yearSubtitle": "Monthly average clock-in and clock-out times for {{year}}.",
       "loadingYear": "Loading monthly attendance statistics for {{year}}...",
+      "dayAxis": "Day",
       "timeAxis": "Time of day",
       "weekdayAxis": "Day of week",
       "monthAxis": "Month",
@@ -1069,6 +1070,7 @@
       "presentEmployees": "Present employees",
       "absentEmployees": "Absent employees",
       "onLeaveEmployees": "On leave employees",
+      "noRecordEmployees": "No attendance record",
       "present": "Present",
       "late": "Late arrivals",
       "absent": "Absent",
@@ -1129,16 +1131,21 @@
     "previousDay": "Previous day",
     "nextDay": "Next day",
     "selectedDate": "Timesheet entries for {{date}}",
+    "selectedPeriod": "Timesheet entries for {{period}}",
     "enter": "Enter hours",
     "edit": "Edit entry",
     "enterFor": "Enter hours for {{employee}}",
     "editFor": "Edit the timesheet entry for {{employee}}",
     "editor": {
       "title": "Timesheet entry for {{employee}}",
-      "description": "Update this employee's shift and daily totals."
+      "description": "Update this employee's shift and daily totals.",
+      "periodDescription": "Editing the entry for {{date}}."
     },
     "stats": {
       "title": "Daily totals",
+      "dailyTitle": "Daily totals",
+      "weeklyTitle": "Weekly totals",
+      "monthlyTitle": "Monthly totals",
       "regularHours": "Regular hours",
       "overtimeHours": "Overtime hours",
       "breakMinutes": "Break minutes",
@@ -1162,8 +1169,16 @@
     "timeline": {
       "title": "Daily timesheet",
       "lunch": "Lunch",
+      "clockIn": "Time in",
+      "clockOut": "Time out",
+      "clockInMarker": "{{employee}} time in at {{time}}",
+      "clockOutMarker": "{{employee}} time out at {{time}}",
       "employeeHours": "Timesheet timeline for {{employee}}",
       "shiftSegment": "{{employee}}: {{status}} from {{start}} to {{end}}"
+    },
+    "periodTable": {
+      "title": "Timesheet entries for this period",
+      "description": "Review and edit each employee's entry by date."
     },
     "loading": "Loading timesheet...",
     "noEmployees": "No active employees found.",
@@ -1217,6 +1232,10 @@
       "addEmployee": "Add employee",
       "branchManager": "Branch manager",
       "departmentHead": "Department head",
+      "reportsTo": "Reports to",
+      "structure": "Departments and positions",
+      "assignPosition": "Assign position",
+      "saveAssignment": "Save assignment",
       "controls": "Organization chart controls",
       "centerView": "Center view",
       "zoomIn": "Zoom in",
@@ -1284,7 +1303,12 @@
         "duplicateName": "An item with that name already exists in this part of the organization.",
         "invalidAssignee": "Select an active employee for this assignment.",
         "saveFailed": "We couldn't save the organization details. Please try again."
-      }
+      },
+      "actions": "Actions",
+      "branchUpdated": "Branch updated.",
+      "departmentUpdated": "Department updated.",
+      "positionUpdated": "Job position updated.",
+      "positionAssigned": "Employee position updated."
     },
     "errors": {
       "loadFailed": "We couldn't load the organization. Please try again."
@@ -1349,7 +1373,7 @@
       "suffix": "Suffix",
       "suffixOptional": "Suffix (optional)",
       "personalEmail": "Personal email",
-      "personalPhone": "Personal phone",
+      "personalPhone": "Personal mobile",
       "educationLevel": "Highest education level",
       "educationInstitution": "School / institution",
       "educationField": "Degree / field of study",
@@ -1357,6 +1381,9 @@
       "graduationYear": "Graduation year",
       "department": "Department",
       "jobTitle": "Job title",
+      "jobPosition": "Job position",
+      "selectJobPosition": "Select a job position",
+      "noJobPosition": "No job position",
       "status": "Status",
       "employmentType": "Employment type",
       "probationaryStatus": "Probationary status",
@@ -1370,7 +1397,7 @@
       "managerEmail": "Manager email",
       "managerEmailOptional": "Manager email (optional)",
       "managerEmailHint": "The manager must have an active employee record in ERIS. Leave this blank if no manager is assigned.",
-      "preferredName": "Preferred name",
+      "preferredName": "Nickname",
       "gender": "Gender",
       "dateOfBirth": "Date of birth",
       "placeOfBirth": "Place of birth",
@@ -1400,7 +1427,10 @@
       "currentMedications": "Current medications",
       "healthInsuranceProvider": "Health insurance provider",
       "healthInsurancePolicyNumber": "Health insurance policy number",
-      "updatedAt": "Last updated"
+      "updatedAt": "Last updated",
+      "nationality": "Nationality",
+      "religion": "Religion",
+      "emergencyContactAddress": "Contact address"
     },
     "statuses": {
       "active": "Active",
@@ -1494,6 +1524,17 @@
       "units": {
         "hoursPerWeek": "{value} hours per week",
         "days": "{value} days"
+      },
+      "familyTitle": "Family information",
+      "familyDescription": "Spouse, parents, and children. Access is restricted to employee editors.",
+      "familyFields": {
+        "middleInitial": "Middle initial"
+      },
+      "familyMembers": {
+        "spouse": "Spouse",
+        "mother": "Mother",
+        "father": "Father",
+        "child": "Child {number}"
       }
     },
     "details": {
@@ -1514,7 +1555,8 @@
         "medical": "Medical",
         "documents": "Documents",
         "assets": "Assets",
-        "activity": "Activity"
+        "activity": "Activity",
+        "family": "Family"
       }
     },
     "errors": {
@@ -1526,13 +1568,38 @@
       "sessionExpired": "Your session has expired. Sign in again to continue.",
       "notFound": "This employee record could not be found.",
       "loadFailed": "Employee records could not be loaded. Try again.",
-      "invalidManager": "The manager must have an active employee record in ERIS. Leave the manager field blank if no manager is assigned."
-    }
+      "invalidManager": "The manager must have an active employee record in ERIS. Leave the manager field blank if no manager is assigned.",
+      "invalidPosition": "Choose a job position from the organization structure."
+    },
+    "genders": {
+      "female": "Female",
+      "male": "Male"
+    },
+    "addressFormatHint": "Include house and street, barangay or municipality, city or province, and ZIP code."
   },
   "recruitmentPage": {
     "title": "Recruitment",
     "description": "Manage openings and follow candidates from application through hire.",
     "overview": "Recruitment overview",
+    "loading": "Loading recruitment records…",
+    "minutes": "min",
+    "tabs": {
+      "label": "Recruitment sections",
+      "openings": "Openings",
+      "candidates": "Candidates",
+      "interviews": "Interviews"
+    },
+    "actions": {
+      "addOpening": "Add opening",
+      "editOpening": "Edit opening",
+      "addCandidate": "Add candidate",
+      "editCandidate": "Edit candidate",
+      "scheduleInterview": "Schedule interview",
+      "editInterview": "Edit interview",
+      "edit": "Edit",
+      "save": "Save",
+      "saving": "Saving…"
+    },
     "stats": {
       "openings": "Open positions",
       "candidates": "Candidates",
@@ -1542,25 +1609,89 @@
     "pipeline": {
       "title": "Hiring pipeline",
       "description": "Follow candidates from their first application through hiring.",
-      "notConnected": "Recruitment records are not connected yet.",
       "stages": {
         "applied": "Applied",
         "screening": "Screening",
         "interview": "Interview",
         "offer": "Offer",
-        "hired": "Hired"
+        "hired": "Hired",
+        "rejected": "Rejected"
       }
     },
     "positions": {
-      "description": "Approved roles that are currently accepting applications.",
-      "emptyTitle": "No open positions yet",
-      "emptyDescription": "Open positions will appear here when recruitment data is connected."
+      "description": "Create and manage job openings, including the roles accepting applications.",
+      "emptyTitle": "No openings yet",
+      "emptyDescription": "Add an opening to start building your hiring pipeline."
+    },
+    "candidates": {
+      "emptyTitle": "No candidates yet",
+      "emptyDescription": "Add a candidate to an open position to start tracking their progress.",
+      "noOpenings": "Open a job position before adding candidates.",
+      "emptyStage": "No candidates in this stage."
     },
     "interviewSchedule": {
       "title": "Upcoming interviews",
       "description": "Keep upcoming conversations with candidates in view.",
       "emptyTitle": "No interviews scheduled",
-      "emptyDescription": "Scheduled interviews will appear here when recruitment data is connected."
+      "emptyDescription": "Schedule an interview from a candidate in the hiring pipeline."
+    },
+    "table": {
+      "opening": "Opening",
+      "department": "Department",
+      "applicants": "Applicants",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "form": {
+      "title": "Job title",
+      "position": "Organization position",
+      "noLinkedPosition": "No linked position",
+      "department": "Department",
+      "location": "Location",
+      "employmentType": "Employment type",
+      "headcount": "Number of hires",
+      "openingStatus": "Opening status",
+      "description": "Description",
+      "opening": "Opening",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "source": "Source",
+      "stage": "Hiring stage",
+      "notes": "Notes",
+      "candidate": "Candidate",
+      "scheduledAt": "Date and time",
+      "durationMinutes": "Duration (minutes)",
+      "interviewType": "Interview type",
+      "interviewer": "Interviewer",
+      "unassigned": "Not assigned",
+      "interviewStatus": "Interview status"
+    },
+    "employmentTypes": {
+      "full_time": "Full time",
+      "part_time": "Part time",
+      "contractor": "Contractor",
+      "temporary": "Temporary",
+      "intern": "Internship"
+    },
+    "openingStatuses": {
+      "draft": "Draft",
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "interviewStatuses": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "errors": {
+      "loadFailed": "Recruitment records could not be loaded. Try again later.",
+      "saveFailed": "The recruitment record could not be saved. Check the details and try again.",
+      "accessDenied": "You do not have permission to manage recruitment records.",
+      "duplicateCandidate": "This email is already registered for the selected opening.",
+      "openingNotOpen": "Candidates can only be added to open positions.",
+      "invalidPosition": "Choose a position from the organization structure."
     }
   },
   "performancePage": {
@@ -1602,6 +1733,90 @@
     "empty": {
       "title": "No performance reviews yet",
       "description": "Performance cycle and review records are not stored in ERIS yet."
+    },
+    "loading": "Loading performance data…",
+    "saving": "Saving…",
+    "stats": {
+      "activeGoals": "Active goals",
+      "completedGoals": "Completed goals",
+      "feedbackNotes": "Feedback notes",
+      "averageRating": "Average rating"
+    },
+    "employees": {
+      "title": "Employees",
+      "description": "Choose an employee to review their goals, feedback, and ratings.",
+      "search": "Search employees",
+      "noMatches": "No employees match your search.",
+      "emptyTitle": "No employees available",
+      "emptyDescription": "Active employee records will appear here."
+    },
+    "details": {
+      "title": "Performance details",
+      "description": "Review goals, feedback, and ratings for this employee."
+    },
+    "tabs": {
+      "label": "Performance sections",
+      "goals": "Goals",
+      "feedback": "Feedback",
+      "ratings": "Ratings"
+    },
+    "statuses": {
+      "notStarted": "Not started",
+      "inProgress": "In progress",
+      "completed": "Completed"
+    },
+    "ratingChoice": "{{rating}} out of 5",
+    "goals": {
+      "title": "Goals",
+      "description": "Set clear objectives and update progress as work advances.",
+      "addGoal": "Add goal",
+      "saveGoal": "Save goal",
+      "updateGoal": "Save progress",
+      "emptyTitle": "No goals recorded",
+      "emptyDescription": "Add a goal to track this employee’s development.",
+      "dueDate": "Due {{date}}",
+      "progress": "Progress",
+      "fields": {
+        "title": "Goal title",
+        "description": "Description",
+        "dueDate": "Due date",
+        "status": "Status",
+        "progress": "Progress (%)"
+      }
+    },
+    "feedback": {
+      "title": "Feedback",
+      "description": "Record specific, work-related feedback for this employee.",
+      "writeLabel": "Feedback note",
+      "placeholder": "Describe an observed strength, contribution, or area to improve…",
+      "saveFeedback": "Add feedback",
+      "emptyTitle": "No feedback recorded",
+      "emptyDescription": "Feedback notes will appear here as they are added.",
+      "authorFallback": "HR team"
+    },
+    "ratings": {
+      "title": "Yearly rating",
+      "description": "Save one rating per employee for each review year. Saving the same year updates its rating.",
+      "reviewYear": "Review year",
+      "rating": "Rating",
+      "selectRating": "Select a rating",
+      "summary": "Review summary",
+      "saveRating": "Save rating",
+      "emptyTitle": "No ratings recorded",
+      "emptyDescription": "Yearly ratings will appear here after a review is saved.",
+      "reviewerFallback": "HR reviewer"
+    },
+    "messages": {
+      "goalSaved": "Goal saved.",
+      "goalUpdated": "Goal progress updated.",
+      "feedbackSaved": "Feedback added.",
+      "ratingSaved": "Rating saved."
+    },
+    "errors": {
+      "loadFailed": "Performance data could not be loaded. Try again.",
+      "saveFailed": "The performance update could not be saved. Check the details and try again.",
+      "employeeNotFound": "The selected employee is no longer active.",
+      "goalNotFound": "This goal no longer exists. Refresh the page and try again."
     }
   },
   "payrollPage": {
@@ -1623,7 +1838,9 @@
       "department": "Department",
       "baseSalary": "Base salary",
       "frequency": "Pay frequency",
-      "grade": "Pay grade"
+      "grade": "Pay grade",
+      "action": "Action",
+      "manageProfile": "Manage profile"
     },
     "notProvided": "Not provided",
     "frequencies": {
@@ -1641,7 +1858,7 @@
     "pagination": "Showing {{from}}–{{to}} of {{total}} employees",
     "previous": "Previous",
     "next": "Next",
-    "scopeNote": "This page shows employee compensation profiles. Payroll runs, payslips, and payment processing are not configured in ERIS yet."
+    "scopeNote": "HR maintains employee compensation profiles and prepares payroll inputs. Accounting handles payroll calculations and payments."
   },
   "reportsAnalyticsPage": {
     "title": "Reports & analytics",

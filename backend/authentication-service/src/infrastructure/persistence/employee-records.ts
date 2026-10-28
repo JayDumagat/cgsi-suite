@@ -26,6 +26,7 @@ import {
 
 interface EmployeeMasterRow {
   id: string;
+  position_id: string | null;
   employee_number: string | null;
   display_name: string;
   first_name: string | null;
@@ -40,12 +41,15 @@ interface EmployeeMasterRow {
   marital_status: EmployeeMasterRecord["maritalStatus"];
   permanent_address: string | null;
   current_address: string | null;
+  nationality: string | null;
+  religion: string | null;
   personal_email: string | null;
   personal_phone: string | null;
   emergency_contact_name: string | null;
   emergency_contact_relationship: string | null;
   emergency_contact_phone: string | null;
   emergency_contact_email: string | null;
+  emergency_contact_address: string | null;
   education_level: string | null;
   education_institution: string | null;
   education_field: string | null;
@@ -81,6 +85,17 @@ interface EmployeeActivityRow {
   actor_name: string | null;
   action: EmployeeActivityEntry["action"];
   changed_fields: unknown;
+}
+
+interface EmployeeFamilyMemberRow {
+  relationship: "spouse" | "mother" | "father" | "child";
+  child_number: number | null;
+  first_name: string | null;
+  middle_initial: string | null;
+  last_name: string | null;
+  gender: "female" | "male" | null;
+  birth_date: string | null;
+  nationality: string | null;
 }
 
 interface EmployeeAttendanceRow {
@@ -151,18 +166,22 @@ const employeeMasterSelect = [
   "       employee.preferred_name, employee.gender, employee.date_of_birth::text AS date_of_birth,",
   "       employee.place_of_birth, employee.blood_type, employee.marital_status,",
   "       employee.permanent_address, employee.current_address,",
+  "       employee.nationality, employee.religion,",
   "       employee.personal_email, employee.personal_phone,",
   "       employee.emergency_contact_name, employee.emergency_contact_relationship,",
-  "       employee.emergency_contact_phone, employee.emergency_contact_email,",
+  "       employee.emergency_contact_phone, employee.emergency_contact_email, employee.emergency_contact_address,",
   "       employee.education_level, employee.education_institution, employee.education_field,",
-  "       employee.graduation_year, employee.work_email, employee.department,",
+  "       employee.graduation_year, employee.work_email, COALESCE(role_department.display_name, employee.department) AS department,",
   "       manager.display_name AS manager_name, manager.work_email AS manager_work_email,",
-  "       employee.job_title, employee.employment_type, employee.employment_status,",
+  "       COALESCE(role_position.display_name, employee.job_title) AS job_title, employee.position_id::text AS position_id,",
+  "       employee.employment_type, employee.employment_status,",
   "       employee.is_probationary, employee.regularization_date::text AS regularization_date,",
   "       employee.hire_date::text, employee.termination_date::text,",
   "       employee.work_phone, employee.work_location, employee.updated_at",
   "  FROM huma.employees AS employee",
   "  LEFT JOIN huma.employees AS manager ON manager.id = employee.manager_employee_id",
+  "  LEFT JOIN directory.org_units AS role_position ON role_position.id = employee.position_id AND role_position.source = 'eris' AND role_position.unit_type = 'position'",
+  "  LEFT JOIN directory.org_units AS role_department ON role_department.id = role_position.parent_id",
 ].join("\n");
 
 const employeeLeaveRequestSelect = [
@@ -945,6 +964,7 @@ export class EmployeeMasterRepository {
           requestedByEmployeeId,
         ],
       );
+      await replaceEmployeeFamilyMembers(client, employeeId, details.family);
       await auditEmployeeChange(client, requestedByEmployeeId, employeeId, "eris.employee_hr_details.update", [
         "workSchedule",
         "weeklyHours",
@@ -963,6 +983,7 @@ export class EmployeeMasterRepository {
         "currentMedications",
         "healthInsuranceProvider",
         "healthInsurancePolicyNumber",
+        "familyDetails",
       ]);
 
       const updated = await loadEmployeeHrDetails(client, employeeId);
@@ -988,6 +1009,9 @@ export class EmployeeMasterRepository {
       await ensureUniqueEmployeeEmail(client, input.workEmail);
       await ensureUniqueEmployeeNumber(client, input.employeeNumber);
       const managerId = await resolveManager(client, input.managerWorkEmail, null);
+      const organizationPosition = await resolveOrganizationPosition(client, input.positionId);
+      const department = organizationPosition?.departmentName ?? input.department;
+      const jobTitle = organizationPosition?.name ?? input.jobTitle;
       const displayName = composeDisplayName(input);
       const inserted = await client.query<{ id: string }>(
         [
@@ -998,8 +1022,9 @@ export class EmployeeMasterRepository {
           "   employment_status, hire_date, termination_date, is_probationary, regularization_date, work_phone, work_location,",
           "   gender, date_of_birth, place_of_birth, blood_type, marital_status, permanent_address, current_address,",
           "   emergency_contact_name, emergency_contact_relationship, emergency_contact_phone, emergency_contact_email,",
+          "   nationality, religion, emergency_contact_address, position_id,",
           "   created_by_employee_id, updated_by_employee_id)",
-          "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $37)",
+          "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $41)",
           "RETURNING id::text AS id",
         ].join("\n"),
         [
@@ -1017,9 +1042,9 @@ export class EmployeeMasterRepository {
           input.educationField,
           input.graduationYear,
           input.workEmail.toLowerCase(),
-          input.department,
+          department,
           managerId,
-          input.jobTitle,
+          jobTitle,
           input.employmentType,
           input.employmentStatus,
           input.hireDate,
@@ -1039,6 +1064,10 @@ export class EmployeeMasterRepository {
           input.emergencyContactRelationship,
           input.emergencyContactPhone,
           input.emergencyContactEmail,
+          input.nationality,
+          input.religion,
+          input.emergencyContactAddress,
+          input.positionId,
           requestedByEmployeeId,
         ],
       );
@@ -1083,6 +1112,9 @@ export class EmployeeMasterRepository {
       await ensureUniqueEmployeeEmail(client, input.workEmail, employeeId);
       await ensureUniqueEmployeeNumber(client, input.employeeNumber, employeeId);
       const managerId = await resolveManager(client, input.managerWorkEmail, employeeId);
+      const organizationPosition = await resolveOrganizationPosition(client, input.positionId);
+      const department = organizationPosition?.departmentName ?? input.department;
+      const jobTitle = organizationPosition?.name ?? input.jobTitle;
       const displayName = composeDisplayName(input);
       await client.query(
         [
@@ -1096,8 +1128,9 @@ export class EmployeeMasterRepository {
           "       gender = $26, date_of_birth = $27, place_of_birth = $28, blood_type = $29, marital_status = $30,",
           "       permanent_address = $31, current_address = $32, emergency_contact_name = $33,",
           "       emergency_contact_relationship = $34, emergency_contact_phone = $35, emergency_contact_email = $36,",
-          "       updated_by_employee_id = $37, updated_at = now()",
-          " WHERE id = $38",
+          "       nationality = $37, religion = $38, emergency_contact_address = $39, position_id = $40,",
+          "       updated_by_employee_id = $41, updated_at = now()",
+          " WHERE id = $42",
         ].join("\n"),
         [
           input.employeeNumber,
@@ -1114,9 +1147,9 @@ export class EmployeeMasterRepository {
           input.educationField,
           input.graduationYear,
           input.workEmail.toLowerCase(),
-          input.department,
+          department,
           managerId,
-          input.jobTitle,
+          jobTitle,
           input.employmentType,
           input.employmentStatus,
           input.hireDate,
@@ -1136,6 +1169,10 @@ export class EmployeeMasterRepository {
           input.emergencyContactRelationship,
           input.emergencyContactPhone,
           input.emergencyContactEmail,
+          input.nationality,
+          input.religion,
+          input.emergencyContactAddress,
+          input.positionId,
           requestedByEmployeeId,
           employeeId,
         ],
@@ -1256,9 +1293,30 @@ async function loadEmployeeHrDetails(
     ].join("\n"),
     [employeeId],
   );
+  const family = await client.query<EmployeeFamilyMemberRow>(
+    [
+      "SELECT relationship, child_number::int, first_name, middle_initial, last_name, gender,",
+      "       birth_date::text AS birth_date, nationality",
+      "  FROM huma.employee_family_members WHERE employee_id = $1",
+      " ORDER BY relationship, child_number NULLS FIRST",
+    ].join("\n"),
+    [employeeId],
+  );
   const attendanceRow = attendance.rows[0];
   const payrollRow = payroll.rows[0];
   const medicalRow = medical.rows[0];
+  const familyPersonFor = (relationship: EmployeeFamilyMemberRow["relationship"], childNumber?: number) => {
+    const member = family.rows.find((row) =>
+      row.relationship === relationship && (relationship !== "child" || row.child_number === childNumber),
+    );
+    return {
+      firstName: member?.first_name ?? null,
+      middleInitial: member?.middle_initial ?? null,
+      lastName: member?.last_name ?? null,
+      birthDate: member?.birth_date ?? null,
+      nationality: member?.nationality ?? null,
+    };
+  };
 
   return {
     attendanceAndLeave: {
@@ -1290,7 +1348,74 @@ async function loadEmployeeHrDetails(
       healthInsuranceProvider: medicalRow?.health_insurance_provider ?? null,
       healthInsurancePolicyNumber: medicalRow?.health_insurance_policy_number ?? null,
     },
+    family: {
+      spouse: familyPersonFor("spouse"),
+      mother: familyPersonFor("mother"),
+      father: familyPersonFor("father"),
+      children: Array.from({ length: 4 }, (_, index) => ({
+        ...familyPersonFor("child", index + 1),
+        gender: family.rows.find((row) => row.relationship === "child" && row.child_number === index + 1)?.gender ?? null,
+      })),
+    },
   };
+}
+
+async function replaceEmployeeFamilyMembers(
+  client: PoolClient,
+  employeeId: string,
+  family: EmployeeHrDetails["family"],
+): Promise<void> {
+  await client.query("DELETE FROM huma.employee_family_members WHERE employee_id = $1", [employeeId]);
+
+  const members: Array<{
+    relationship: EmployeeFamilyMemberRow["relationship"];
+    childNumber: number | null;
+    firstName: string | null;
+    middleInitial: string | null;
+    lastName: string | null;
+    gender: "female" | "male" | null;
+    birthDate: string | null;
+    nationality: string | null;
+  }> = [
+    { relationship: "spouse", childNumber: null, ...family.spouse, gender: null },
+    { relationship: "mother", childNumber: null, ...family.mother, gender: null },
+    { relationship: "father", childNumber: null, ...family.father, gender: null },
+    ...family.children.map((child, index) => ({
+      relationship: "child" as const,
+      childNumber: index + 1,
+      ...child,
+    })),
+  ];
+
+  for (const member of members) {
+    if (![
+      member.firstName,
+      member.middleInitial,
+      member.lastName,
+      member.gender,
+      member.birthDate,
+      member.nationality,
+    ].some((value) => value !== null && value !== "")) continue;
+
+    await client.query(
+      [
+        "INSERT INTO huma.employee_family_members",
+        "  (employee_id, relationship, child_number, first_name, middle_initial, last_name, gender, birth_date, nationality, updated_at)",
+        "VALUES ($1, $2, $3, $4, $5, $6, $7, $8::date, $9, now())",
+      ].join("\n"),
+      [
+        employeeId,
+        member.relationship,
+        member.childNumber,
+        member.firstName,
+        member.middleInitial,
+        member.lastName,
+        member.gender,
+        member.birthDate,
+        member.nationality,
+      ],
+    );
+  }
 }
 
 async function lockEmployeeIdentifiers(client: PoolClient, input: EmployeeMasterInput): Promise<void> {
@@ -1357,6 +1482,28 @@ async function resolveManager(
   );
   if (!manager.rows[0]) throw new EmployeeRecordError("invalid_manager");
   return manager.rows[0].id;
+}
+
+async function resolveOrganizationPosition(
+  client: PoolClient,
+  positionId: string | null,
+): Promise<{ name: string; departmentName: string } | null> {
+  if (!positionId) return null;
+  const result = await client.query<{ name: string; department_name: string }>(
+    [
+      "SELECT job_position.display_name AS name, department.display_name AS department_name",
+      "  FROM directory.org_units AS job_position",
+      "  JOIN directory.org_units AS department ON department.id = job_position.parent_id",
+      "  JOIN directory.org_units AS organization ON organization.id = department.parent_id",
+      " WHERE job_position.id = $1 AND job_position.source = 'eris' AND job_position.unit_type = 'position'",
+      "   AND department.source = 'eris' AND department.unit_type = 'department'",
+      "   AND organization.source = 'eris' AND organization.unit_type = 'organization'",
+    ].join("\n"),
+    [positionId],
+  );
+  const position = result.rows[0];
+  if (!position) throw new EmployeeRecordError("invalid_position");
+  return { name: position.name, departmentName: position.department_name };
 }
 
 async function auditEmployeeChange(
@@ -1555,6 +1702,7 @@ function toEmployeeMaster(
 ): EmployeeMasterRecord {
   return {
     id: row.id,
+    positionId: row.position_id,
     employeeNumber: row.employee_number,
     displayName: row.display_name,
     firstName: row.first_name,
@@ -1569,12 +1717,15 @@ function toEmployeeMaster(
     maritalStatus: row.marital_status,
     permanentAddress: row.permanent_address,
     currentAddress: row.current_address,
+    nationality: row.nationality,
+    religion: row.religion,
     personalEmail: row.personal_email,
     personalPhone: row.personal_phone,
     emergencyContactName: row.emergency_contact_name,
     emergencyContactRelationship: row.emergency_contact_relationship,
     emergencyContactPhone: row.emergency_contact_phone,
     emergencyContactEmail: row.emergency_contact_email,
+    emergencyContactAddress: row.emergency_contact_address,
     educationLevel: row.education_level,
     educationInstitution: row.education_institution,
     educationField: row.education_field,

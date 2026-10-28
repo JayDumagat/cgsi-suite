@@ -6,7 +6,9 @@ import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { Card } from "@/components/ui/card";
-import OrganizationChartCanvas from "@/components/organization/OrganizationChartCanvas";
+import OrganizationChartCanvas, {
+  getHighestPositionEmployeeId,
+} from "@/components/organization/OrganizationChartCanvas";
 import {
   Table,
   TableBody,
@@ -20,13 +22,20 @@ import {
   createOrganization,
   createPosition,
   getOrganizationStructure,
+  getEmployee,
+  updateBranch,
+  updateDepartment,
+  updatePosition,
+  updateEmployee,
   EmployeeDirectoryRequestError,
   listEmployees,
   type EmployeeDirectoryItem,
+  type EmployeeMasterInput,
+  type EmployeeMasterRecord,
   type EmployeeDirectoryResponse,
   type OrganizationStructureResponse,
 } from "@/components/employee-directory/employeeDirectoryApi";
-import { GridIcon, GroupIcon, MapIcon, SearchIcon, UserCircleIcon } from "@/icons";
+import { GridIcon, GroupIcon, MapIcon, PencilIcon, SearchIcon, UserCircleIcon } from "@/icons";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -36,6 +45,11 @@ const pageSize = 100;
 const unassignedKey = "__unassigned__";
 type OrganizationTab = "branches" | "departments" | "positions" | "orgChart";
 type OrganizationForm = "organization" | "branch" | "department" | "position" | null;
+type OrganizationEditingRecord =
+  | { kind: "branch"; id: string }
+  | { kind: "department"; id: string }
+  | { kind: "position"; id: string; departmentId: string }
+  | null;
 
 function loadErrorKey(error: unknown) {
   if (error instanceof EmployeeDirectoryRequestError) {
@@ -58,8 +72,71 @@ function organizationSaveErrorKey(error: unknown) {
     if (error.code === "employee_not_assignable") {
       return "organizationPage.management.errors.invalidAssignee";
     }
+    if (error.code === "invalid_organization_position") {
+      return "employeeDirectory.errors.invalidPosition";
+    }
   }
   return "organizationPage.management.errors.saveFailed";
+}
+
+function employeeInputForPositionAssignment(
+  record: EmployeeMasterRecord,
+  positionId: string | null,
+): EmployeeMasterInput {
+  const educationHistory = record.educationHistory.length > 0
+    ? record.educationHistory.map(({ id: _id, ...entry }) => entry)
+    : record.educationLevel || record.educationInstitution || record.educationField || record.graduationYear
+      ? [{
+          educationLevel: record.educationLevel,
+          institution: record.educationInstitution,
+          fieldOfStudy: record.educationField,
+          startYear: null,
+          graduationYear: record.graduationYear,
+        }]
+      : [];
+
+  return {
+    positionId,
+    employeeNumber: record.employeeNumber,
+    firstName: record.firstName ?? "",
+    middleName: record.middleName,
+    lastName: record.lastName ?? "",
+    suffix: record.suffix,
+    preferredName: record.preferredName,
+    gender: record.gender?.toLowerCase() ?? null,
+    dateOfBirth: record.dateOfBirth,
+    placeOfBirth: record.placeOfBirth,
+    bloodType: record.bloodType,
+    maritalStatus: record.maritalStatus,
+    permanentAddress: record.permanentAddress,
+    currentAddress: record.currentAddress,
+    nationality: record.nationality,
+    religion: record.religion,
+    personalEmail: record.personalEmail,
+    personalPhone: record.personalPhone,
+    emergencyContactName: record.emergencyContactName,
+    emergencyContactRelationship: record.emergencyContactRelationship,
+    emergencyContactPhone: record.emergencyContactPhone,
+    emergencyContactEmail: record.emergencyContactEmail,
+    emergencyContactAddress: record.emergencyContactAddress,
+    educationLevel: record.educationLevel,
+    educationInstitution: record.educationInstitution,
+    educationField: record.educationField,
+    graduationYear: record.graduationYear,
+    educationHistory,
+    workEmail: record.workEmail,
+    department: positionId ? record.department : null,
+    managerWorkEmail: record.managerWorkEmail,
+    jobTitle: positionId ? record.jobTitle : null,
+    employmentType: record.employmentType,
+    employmentStatus: record.employmentStatus,
+    isProbationary: record.isProbationary,
+    regularizationDate: record.regularizationDate,
+    hireDate: record.hireDate,
+    terminationDate: record.terminationDate,
+    workPhone: record.workPhone,
+    workLocation: record.workLocation,
+  };
 }
 
 export default function OrganizationPage() {
@@ -75,6 +152,7 @@ export default function OrganizationPage() {
     useState<OrganizationStructureResponse | null>(null);
   const [activeTab, setActiveTab] = useState<OrganizationTab>("branches");
   const [activeForm, setActiveForm] = useState<OrganizationForm>(null);
+  const [editingRecord, setEditingRecord] = useState<OrganizationEditingRecord>(null);
   const [chartSearch, setChartSearch] = useState("");
   const [selectedChartEmployeeId, setSelectedChartEmployeeId] = useState("");
   const [collapsedChartNodes, setCollapsedChartNodes] = useState<Set<string>>(
@@ -234,31 +312,71 @@ export default function OrganizationPage() {
     },
   ];
   function openForm(form: Exclude<OrganizationForm, null>) {
+    setEditingRecord(null);
+    if (form === "branch") {
+      setBranchName("");
+      setBranchCode("");
+      setBranchAddress("");
+      setBranchManagerId("");
+    } else if (form === "department") {
+      setDepartmentName("");
+      setDepartmentCode("");
+      setDepartmentHeadId("");
+    } else if (form === "position") {
+      setPositionName("");
+      setPositionCode("");
+      setPositionDescription("");
+      setPositionJobLevel("");
+    }
     setActiveForm(form);
     setFormErrorKey(null);
     setFormSuccessKey(null);
   }
 
-  function openManagementForm(
-    tab: Exclude<OrganizationTab, "orgChart">,
-    form: Exclude<OrganizationForm, "organization" | null>,
-  ) {
-    if (form === "position") {
-      setSelectedDepartmentId((current) =>
-        departments.some((department) => department.id === current)
-          ? current
-          : departments[0]?.id ?? "",
-      );
-    }
-    setActiveTab(tab);
-    openForm(form);
+  function closeForm() {
+    setActiveForm(null);
+    setEditingRecord(null);
+    setFormErrorKey(null);
+  }
+
+  function openBranchEdit(branch: (typeof branches)[number]) {
+    setBranchName(branch.name);
+    setBranchCode(branch.code ?? "");
+    setBranchAddress(branch.address ?? "");
+    setBranchManagerId(branch.managerEmployeeId ?? unassignedKey);
+    setEditingRecord({ kind: "branch", id: branch.id });
+    setActiveForm("branch");
+    setFormErrorKey(null);
+    setFormSuccessKey(null);
+  }
+
+  function openDepartmentEdit(department: (typeof departments)[number]) {
+    setDepartmentName(department.name);
+    setDepartmentCode(department.code ?? "");
+    setDepartmentHeadId(department.headEmployeeId ?? unassignedKey);
+    setEditingRecord({ kind: "department", id: department.id });
+    setActiveForm("department");
+    setFormErrorKey(null);
+    setFormSuccessKey(null);
+  }
+
+  function openPositionEdit(position: (typeof positions)[number]) {
+    setPositionName(position.name);
+    setPositionCode(position.code ?? "");
+    setPositionDescription(position.description ?? "");
+    setPositionJobLevel(position.jobLevel ?? "");
+    setSelectedDepartmentId(position.departmentId);
+    setEditingRecord({ kind: "position", id: position.id, departmentId: position.departmentId });
+    setActiveForm("position");
+    setFormErrorKey(null);
+    setFormSuccessKey(null);
   }
 
   function changeOrganization(value: string) {
     setSelectedOrganizationId(value);
     const nextOrganization = organizations.find((item) => item.id === value);
     setSelectedDepartmentId(nextOrganization?.departments[0]?.id ?? "");
-    setActiveForm(null);
+    closeForm();
   }
 
   async function submitOrganization(event: FormEvent<HTMLFormElement>) {
@@ -295,7 +413,8 @@ export default function OrganizationPage() {
     setFormErrorKey(null);
     setFormSuccessKey(null);
     try {
-      const created = await createBranch(organization.id, {
+      const editId = editingRecord?.kind === "branch" ? editingRecord.id : null;
+      const input = {
         name: branchName.trim(),
         code: branchCode.trim() || null,
         address: branchAddress.trim() || null,
@@ -303,14 +422,23 @@ export default function OrganizationPage() {
           branchManagerId && branchManagerId !== unassignedKey
             ? branchManagerId
             : null,
-      });
+      };
+      const saved = editId
+        ? await updateBranch(organization.id, editId, input)
+        : await createBranch(organization.id, input);
       setOrganizationStructure((current) =>
         current
           ? {
               ...current,
               organizations: current.organizations.map((item) =>
                 item.id === organization.id
-                  ? { ...item, branches: [...item.branches, created].sort((a, b) => a.name.localeCompare(b.name)) }
+                  ? {
+                      ...item,
+                      branches: (editId
+                        ? item.branches.map((branch) => branch.id === saved.id ? saved : branch)
+                        : [...item.branches, saved]
+                      ).sort((a, b) => a.name.localeCompare(b.name)),
+                    }
                   : item,
               ),
             }
@@ -320,8 +448,10 @@ export default function OrganizationPage() {
       setBranchCode("");
       setBranchAddress("");
       setBranchManagerId("");
-      setActiveForm(null);
-      setFormSuccessKey("organizationPage.management.branchCreated");
+      closeForm();
+      setFormSuccessKey(editId
+        ? "organizationPage.management.branchUpdated"
+        : "organizationPage.management.branchCreated");
     } catch (error) {
       setFormErrorKey(organizationSaveErrorKey(error));
     } finally {
@@ -336,21 +466,31 @@ export default function OrganizationPage() {
     setFormErrorKey(null);
     setFormSuccessKey(null);
     try {
-      const created = await createDepartment(organization.id, {
+      const editId = editingRecord?.kind === "department" ? editingRecord.id : null;
+      const input = {
         name: departmentName.trim(),
         code: departmentCode.trim() || null,
         headEmployeeId:
           departmentHeadId && departmentHeadId !== unassignedKey
             ? departmentHeadId
             : null,
-      });
+      };
+      const saved = editId
+        ? await updateDepartment(organization.id, editId, input)
+        : await createDepartment(organization.id, input);
       setOrganizationStructure((current) =>
         current
           ? {
               ...current,
               organizations: current.organizations.map((item) =>
                 item.id === organization.id
-                  ? { ...item, departments: [...item.departments, created].sort((a, b) => a.name.localeCompare(b.name)) }
+                  ? {
+                      ...item,
+                      departments: (editId
+                        ? item.departments.map((department) => department.id === saved.id ? saved : department)
+                        : [...item.departments, saved]
+                      ).sort((a, b) => a.name.localeCompare(b.name)),
+                    }
                   : item,
               ),
             }
@@ -359,8 +499,10 @@ export default function OrganizationPage() {
       setDepartmentName("");
       setDepartmentCode("");
       setDepartmentHeadId("");
-      setActiveForm(null);
-      setFormSuccessKey("organizationPage.management.departmentCreated");
+      closeForm();
+      setFormSuccessKey(editId
+        ? "organizationPage.management.departmentUpdated"
+        : "organizationPage.management.departmentCreated");
     } catch (error) {
       setFormErrorKey(organizationSaveErrorKey(error));
     } finally {
@@ -375,16 +517,19 @@ export default function OrganizationPage() {
     setFormErrorKey(null);
     setFormSuccessKey(null);
     try {
-      const created = await createPosition(
-        organization.id,
-        selectedDepartmentId,
-        {
-          name: positionName.trim(),
-          code: positionCode.trim() || null,
-          description: positionDescription.trim() || null,
-          jobLevel: positionJobLevel.trim() || null,
-        },
-      );
+      const editRecord = editingRecord?.kind === "position" ? editingRecord : null;
+      const input = {
+        name: positionName.trim(),
+        code: positionCode.trim() || null,
+        description: positionDescription.trim() || null,
+        jobLevel: positionJobLevel.trim() || null,
+      };
+      const saved = editRecord
+        ? await updatePosition(organization.id, editRecord.departmentId, editRecord.id, {
+            ...input,
+            targetDepartmentId: selectedDepartmentId,
+          })
+        : await createPosition(organization.id, selectedDepartmentId, input);
       setOrganizationStructure((current) =>
         current
           ? {
@@ -394,8 +539,14 @@ export default function OrganizationPage() {
                   ? {
                       ...item,
                       departments: item.departments.map((department) =>
-                        department.id === selectedDepartmentId
-                          ? { ...department, positions: [...department.positions, created].sort((a, b) => a.name.localeCompare(b.name)) }
+                        department.id === selectedDepartmentId || department.positions.some((position) => position.id === saved.id)
+                          ? {
+                              ...department,
+                              positions: [
+                                ...department.positions.filter((position) => position.id !== saved.id),
+                                ...(department.id === selectedDepartmentId ? [saved] : []),
+                              ].sort((a, b) => a.name.localeCompare(b.name)),
+                            }
                           : department,
                       ),
                     }
@@ -408,12 +559,53 @@ export default function OrganizationPage() {
       setPositionCode("");
       setPositionDescription("");
       setPositionJobLevel("");
-      setActiveForm(null);
-      setFormSuccessKey("organizationPage.management.positionCreated");
+      closeForm();
+      setFormSuccessKey(editRecord
+        ? "organizationPage.management.positionUpdated"
+        : "organizationPage.management.positionCreated");
     } catch (error) {
       setFormErrorKey(organizationSaveErrorKey(error));
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  function createPositionForDepartment(departmentId: string) {
+    setSelectedDepartmentId(departmentId);
+    openForm("position");
+  }
+
+  function editDepartmentFromChart(departmentId: string) {
+    const department = departments.find((item) => item.id === departmentId);
+    if (department) openDepartmentEdit(department);
+  }
+
+  function editPositionFromChart(positionId: string) {
+    const position = positions.find((item) => item.id === positionId);
+    if (position) openPositionEdit(position);
+  }
+
+  async function assignEmployeePosition(employeeId: string, positionId: string | null) {
+    setFormErrorKey(null);
+    setFormSuccessKey(null);
+    try {
+      const record = await getEmployee(employeeId);
+      const updated = await updateEmployee(
+        employeeId,
+        employeeInputForPositionAssignment(record, positionId),
+      );
+      setEmployees((current) => current.map((employee) => employee.id === updated.id
+        ? {
+            ...employee,
+            positionId: updated.positionId,
+            department: updated.department,
+            jobTitle: updated.jobTitle,
+          }
+        : employee));
+      setFormSuccessKey("organizationPage.management.positionAssigned");
+    } catch (error) {
+      setFormErrorKey(organizationSaveErrorKey(error));
+      throw error;
     }
   }
 
@@ -432,6 +624,17 @@ export default function OrganizationPage() {
       }),
     );
   const chartEmployeeIds = new Set(chartEmployees.map((employee) => employee.id));
+  const branchManagerIds = new Set(
+    branches.flatMap((branch) => branch.managerEmployeeId ? [branch.managerEmployeeId] : []),
+  );
+  const departmentHeadIds = new Set(
+    departments.flatMap((department) => department.headEmployeeId ? [department.headEmployeeId] : []),
+  );
+  const highestPositionEmployeeId = getHighestPositionEmployeeId(
+    chartEmployees,
+    departmentHeadIds,
+    branchManagerIds,
+  );
   const normalizedChartSearch = chartSearch.trim().toLocaleLowerCase(language);
   const matchingChartEmployees = normalizedChartSearch
     ? chartEmployees.filter((employee) =>
@@ -452,6 +655,9 @@ export default function OrganizationPage() {
       managerId = employeeById.get(managerId)?.managerEmployeeId ?? null;
     }
   }
+  if (matchingChartEmployees.length > 0 && highestPositionEmployeeId) {
+    visibleChartEmployeeIds.add(highestPositionEmployeeId);
+  }
   const visibleChartEmployees = normalizedChartSearch
     ? chartEmployees.filter((employee) => visibleChartEmployeeIds.has(employee.id))
     : chartEmployees;
@@ -459,12 +665,6 @@ export default function OrganizationPage() {
     (employee) => employee.id === selectedChartEmployeeId,
   ) ?? null;
   const matchingChartEmployeeIds = new Set(matchingChartEmployees.map((employee) => employee.id));
-  const branchManagerIds = new Set(
-    branches.flatMap((branch) => branch.managerEmployeeId ? [branch.managerEmployeeId] : []),
-  );
-  const departmentHeadIds = new Set(
-    departments.flatMap((department) => department.headEmployeeId ? [department.headEmployeeId] : []),
-  );
 
   function toggleChartEmployee(employeeId: string) {
     setCollapsedChartNodes((current) => {
@@ -508,11 +708,21 @@ export default function OrganizationPage() {
       </label>
       <label className="space-y-1.5 text-theme-sm font-medium text-gray-700 dark:text-gray-300 md:col-span-2">
         <span>{t("organizationPage.management.branchManager")}</span>
-        <Select id="branch-manager" key={`branch-manager-${branchManagerId}`} options={branchManagerOptions} defaultValue={branchManagerId} onChange={setBranchManagerId} placeholder={t("organizationPage.management.selectBranchManager")} />
+        <select
+          id="branch-manager"
+          name="branchManagerId"
+          value={branchManagerId || unassignedKey}
+          onChange={(event) => setBranchManagerId(event.target.value)}
+          className="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 shadow-theme-xs outline-none focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+        >
+          {branchManagerOptions.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
       </label>
       <div className="flex justify-end gap-2 md:col-span-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => setActiveForm(null)} disabled={isSaving}>{t("organizationPage.management.cancel")}</Button>
-        <Button type="submit" size="sm" disabled={isSaving}>{t("organizationPage.management.saveBranch")}</Button>
+        <Button type="button" variant="outline" size="sm" onClick={closeForm} disabled={isSaving}>{t("organizationPage.management.cancel")}</Button>
+        <Button type="submit" size="sm" disabled={isSaving}>{editingRecord?.kind === "branch" ? t("common.saveChanges") : t("organizationPage.management.saveBranch")}</Button>
       </div>
     </form>
   );
@@ -529,11 +739,21 @@ export default function OrganizationPage() {
       </label>
       <label className="space-y-1.5 text-theme-sm font-medium text-gray-700 dark:text-gray-300 md:col-span-2">
         <span>{t("organizationPage.management.departmentHead")}</span>
-        <Select id="department-head" key={`department-head-${departmentHeadId}`} options={departmentHeadOptions} defaultValue={departmentHeadId} onChange={setDepartmentHeadId} placeholder={t("organizationPage.management.selectDepartmentHead")} />
+        <select
+          id="department-head"
+          name="departmentHeadId"
+          value={departmentHeadId || unassignedKey}
+          onChange={(event) => setDepartmentHeadId(event.target.value)}
+          className="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 shadow-theme-xs outline-none focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+        >
+          {departmentHeadOptions.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
       </label>
       <div className="flex justify-end gap-2 md:col-span-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => setActiveForm(null)} disabled={isSaving}>{t("organizationPage.management.cancel")}</Button>
-        <Button type="submit" size="sm" disabled={isSaving}>{t("organizationPage.management.saveDepartment")}</Button>
+        <Button type="button" variant="outline" size="sm" onClick={closeForm} disabled={isSaving}>{t("organizationPage.management.cancel")}</Button>
+        <Button type="submit" size="sm" disabled={isSaving}>{editingRecord?.kind === "department" ? t("common.saveChanges") : t("organizationPage.management.saveDepartment")}</Button>
       </div>
     </form>
   );
@@ -561,8 +781,8 @@ export default function OrganizationPage() {
         <TextArea value={positionDescription} onChange={setPositionDescription} rows={4} maxLength={2000} placeholder={t("organizationPage.management.positionDescriptionPlaceholder")} />
       </label>
       <div className="flex justify-end gap-2 md:col-span-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => setActiveForm(null)} disabled={isSaving}>{t("organizationPage.management.cancel")}</Button>
-        <Button type="submit" size="sm" disabled={isSaving || !selectedDepartmentId}>{t("organizationPage.management.savePosition")}</Button>
+        <Button type="button" variant="outline" size="sm" onClick={closeForm} disabled={isSaving}>{t("organizationPage.management.cancel")}</Button>
+        <Button type="submit" size="sm" disabled={isSaving || !selectedDepartmentId}>{editingRecord?.kind === "position" ? t("common.saveChanges") : t("organizationPage.management.savePosition")}</Button>
       </div>
     </form>
   );
@@ -607,7 +827,7 @@ export default function OrganizationPage() {
               className="shrink-0 px-4 py-3"
               onClick={() => {
                 setActiveTab(tab.id);
-                setActiveForm(null);
+                closeForm();
                 setFormErrorKey(null);
                 setFormSuccessKey(null);
               }}
@@ -643,53 +863,73 @@ export default function OrganizationPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t("organizationPage.tabDescriptions.branches")}</p>
                 {canManageOrganization && (
-                  <Button size="sm" onClick={() => activeForm === "branch" ? setActiveForm(null) : openForm("branch")}>
+                <Button size="sm" onClick={() => activeForm === "branch" ? closeForm() : openForm("branch")}>
                     {t("organizationPage.management.createBranch")}
                   </Button>
                 )}
               </div>
               {branchForm}
-              <div className="max-w-full overflow-x-auto">
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
+                <div className="max-w-full overflow-x-auto">
                 <Table className="min-w-[680px]">
-                  <TableHeader className="border-y border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                  <TableHeader className="border-b border-gray-100 dark:border-white/5">
                     <TableRow>
-                      <TableCell isHeader className="px-6 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {t("organizationPage.management.branchName")}
                       </TableCell>
-                      <TableCell isHeader className="px-6 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {t("organizationPage.management.address")}
                       </TableCell>
-                      <TableCell isHeader className="px-6 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {t("organizationPage.management.branchManager")}
                       </TableCell>
+                      {canManageOrganization && (
+                        <TableCell isHeader className="px-5 py-3 text-end text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
+                          {t("organizationPage.management.actions")}
+                        </TableCell>
+                      )}
                     </TableRow>
                   </TableHeader>
-                  <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                  <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
                     {branches.length ? branches.map((branch) => {
                       const manager = branch.managerEmployeeId ? employeeById.get(branch.managerEmployeeId) : null;
                       return (
-                        <TableRow key={branch.id} className="text-theme-sm hover:bg-gray-50 dark:hover:bg-white/[0.02]">
-                          <TableCell className="px-6 py-4 text-start whitespace-nowrap font-medium text-gray-800 dark:text-white/90">
-                            <span className="block">{branch.name}</span>
-                            {branch.code && <span className="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">{branch.code}</span>}
+                        <TableRow key={branch.id}>
+                          <TableCell className="px-4 py-4 text-start whitespace-nowrap text-theme-sm sm:px-6">
+                            <span className="block font-medium text-gray-800 dark:text-white/90">{branch.name}</span>
+                            {branch.code && <span className="mt-1 block text-theme-xs text-gray-500 dark:text-gray-400">{branch.code}</span>}
                           </TableCell>
-                          <TableCell className="max-w-md px-6 py-4 text-start text-gray-600 dark:text-gray-300">
+                          <TableCell className="max-w-md px-4 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400 sm:px-6">
                             {branch.address || t("organizationPage.management.addressNotProvided")}
                           </TableCell>
-                          <TableCell className="px-6 py-4 text-start whitespace-nowrap text-gray-600 dark:text-gray-300">
+                          <TableCell className="px-4 py-4 text-start text-theme-sm whitespace-nowrap text-gray-500 dark:text-gray-400 sm:px-6">
                             {manager?.displayName ?? t("organizationPage.management.noBranchManager")}
                           </TableCell>
+                          {canManageOrganization && (
+                            <TableCell className="px-4 py-4 text-end sm:px-6">
+                              <button
+                                type="button"
+                                onClick={() => openBranchEdit(branch)}
+                                aria-label={`${t("common.edit")} ${branch.name}`}
+                                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-theme-xs font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5"
+                              >
+                                <PencilIcon className="size-3.5" aria-hidden="true" />
+                                {t("common.edit")}
+                              </button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     }) : (
                       <TableRow>
-                        <TableCell colSpan={3} className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <TableCell colSpan={canManageOrganization ? 4 : 3} className="px-6 py-12 text-center text-theme-sm text-gray-500 dark:text-gray-400">
                           {t("organizationPage.management.noBranches")}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             </div>
           ) : activeTab === "departments" ? (
@@ -697,40 +937,46 @@ export default function OrganizationPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t("organizationPage.tabDescriptions.departments")}</p>
                 {canManageOrganization && (
-                  <Button size="sm" onClick={() => activeForm === "department" ? setActiveForm(null) : openForm("department")}>
+                <Button size="sm" onClick={() => activeForm === "department" ? closeForm() : openForm("department")}>
                     {t("organizationPage.management.createDepartment")}
                   </Button>
                 )}
               </div>
               {departmentForm}
-              <div className="max-w-full overflow-x-auto">
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
+                <div className="max-w-full overflow-x-auto">
                 <Table className="min-w-[760px]">
-                  <TableHeader className="border-y border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                  <TableHeader className="border-b border-gray-100 dark:border-white/5">
                     <TableRow>
-                      <TableCell isHeader className="px-6 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {t("organizationPage.management.departmentName")}
                       </TableCell>
-                      <TableCell isHeader className="px-6 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {t("organizationPage.management.departmentHead")}
                       </TableCell>
-                      <TableCell isHeader className="px-6 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {t("organizationPage.management.positions")}
                       </TableCell>
+                      {canManageOrganization && (
+                        <TableCell isHeader className="px-5 py-3 text-end text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
+                          {t("organizationPage.management.actions")}
+                        </TableCell>
+                      )}
                     </TableRow>
                   </TableHeader>
-                  <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                  <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
                     {departments.length ? departments.map((department) => {
                       const head = department.headEmployeeId ? employeeById.get(department.headEmployeeId) : null;
                       return (
-                        <TableRow key={department.id} className="text-theme-sm hover:bg-gray-50 dark:hover:bg-white/[0.02]">
-                          <TableCell className="px-6 py-4 text-start whitespace-nowrap font-medium text-gray-800 dark:text-white/90">
-                            <span className="block">{department.name}</span>
-                            {department.code && <span className="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">{department.code}</span>}
+                        <TableRow key={department.id}>
+                          <TableCell className="px-4 py-4 text-start text-theme-sm whitespace-nowrap sm:px-6">
+                            <span className="block font-medium text-gray-800 dark:text-white/90">{department.name}</span>
+                            {department.code && <span className="mt-1 block text-theme-xs text-gray-500 dark:text-gray-400">{department.code}</span>}
                           </TableCell>
-                          <TableCell className="px-6 py-4 text-start whitespace-nowrap text-gray-600 dark:text-gray-300">
+                          <TableCell className="px-4 py-4 text-start text-theme-sm whitespace-nowrap text-gray-500 dark:text-gray-400 sm:px-6">
                             {head?.displayName ?? t("organizationPage.management.noDepartmentHead")}
                           </TableCell>
-                          <TableCell className="px-6 py-4 text-start">
+                          <TableCell className="px-4 py-4 text-start sm:px-6">
                             {department.positions.length ? (
                               <div className="flex flex-wrap gap-1.5">
                                 {department.positions.map((position) => <Badge key={position.id} size="sm" color="light">{position.name}</Badge>)}
@@ -739,17 +985,31 @@ export default function OrganizationPage() {
                               <span className="text-sm text-gray-500 dark:text-gray-400">{t("organizationPage.management.noPositions")}</span>
                             )}
                           </TableCell>
+                          {canManageOrganization && (
+                            <TableCell className="px-4 py-4 text-end sm:px-6">
+                              <button
+                                type="button"
+                                onClick={() => openDepartmentEdit(department)}
+                                aria-label={`${t("common.edit")} ${department.name}`}
+                                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-theme-xs font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5"
+                              >
+                                <PencilIcon className="size-3.5" aria-hidden="true" />
+                                {t("common.edit")}
+                              </button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     }) : (
                       <TableRow>
-                        <TableCell colSpan={3} className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <TableCell colSpan={canManageOrganization ? 4 : 3} className="px-6 py-12 text-center text-theme-sm text-gray-500 dark:text-gray-400">
                           {t("organizationPage.management.noDepartments")}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             </div>
           ) : activeTab === "positions" ? (
@@ -759,57 +1019,77 @@ export default function OrganizationPage() {
                 {canManageOrganization && (
                   <Button size="sm" disabled={departments.length === 0} onClick={() => {
                     setSelectedDepartmentId((current) => departments.some((department) => department.id === current) ? current : departments[0]?.id ?? "");
-                    activeForm === "position" ? setActiveForm(null) : openForm("position");
+                    activeForm === "position" ? closeForm() : openForm("position");
                   }}>
                     {t("organizationPage.management.createPosition")}
                   </Button>
                 )}
               </div>
               {positionForm}
-              <div className="max-w-full overflow-x-auto">
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
+                <div className="max-w-full overflow-x-auto">
                 <Table className="min-w-[840px]">
-                  <TableHeader className="border-y border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                  <TableHeader className="border-b border-gray-100 dark:border-white/5">
                     <TableRow>
-                      <TableCell isHeader className="px-6 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {t("organizationPage.management.positionName")}
                       </TableCell>
-                      <TableCell isHeader className="px-6 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {t("organizationPage.management.department")}
                       </TableCell>
-                      <TableCell isHeader className="px-6 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {t("organizationPage.management.jobLevel")}
                       </TableCell>
-                      <TableCell isHeader className="px-6 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
                         {t("organizationPage.management.positionDescription")}
                       </TableCell>
+                      {canManageOrganization && (
+                        <TableCell isHeader className="px-5 py-3 text-end text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400">
+                          {t("organizationPage.management.actions")}
+                        </TableCell>
+                      )}
                     </TableRow>
                   </TableHeader>
-                  <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                  <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
                     {positions.length ? positions.map((position) => (
-                      <TableRow key={position.id} className="text-theme-sm hover:bg-gray-50 dark:hover:bg-white/[0.02]">
-                        <TableCell className="px-6 py-4 text-start whitespace-nowrap font-medium text-gray-800 dark:text-white/90">
-                          <span className="block">{position.name}</span>
-                          {position.code && <span className="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">{position.code}</span>}
+                      <TableRow key={position.id}>
+                        <TableCell className="px-4 py-4 text-start text-theme-sm whitespace-nowrap sm:px-6">
+                          <span className="block font-medium text-gray-800 dark:text-white/90">{position.name}</span>
+                          {position.code && <span className="mt-1 block text-theme-xs text-gray-500 dark:text-gray-400">{position.code}</span>}
                         </TableCell>
-                        <TableCell className="px-6 py-4 text-start whitespace-nowrap text-gray-600 dark:text-gray-300">
+                        <TableCell className="px-4 py-4 text-start text-theme-sm whitespace-nowrap text-gray-500 dark:text-gray-400 sm:px-6">
                           {position.departmentName}
                         </TableCell>
-                        <TableCell className="px-6 py-4 text-start whitespace-nowrap text-gray-600 dark:text-gray-300">
+                        <TableCell className="px-4 py-4 text-start text-theme-sm whitespace-nowrap text-gray-500 dark:text-gray-400 sm:px-6">
                           {position.jobLevel || "—"}
                         </TableCell>
-                        <TableCell className="max-w-lg px-6 py-4 text-start text-gray-600 dark:text-gray-300">
+                        <TableCell className="max-w-lg px-4 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400 sm:px-6">
                           {position.description || t("organizationPage.management.noPositionDescription")}
                         </TableCell>
+                        {canManageOrganization && (
+                          <TableCell className="px-4 py-4 text-end sm:px-6">
+                            <button
+                              type="button"
+                              onClick={() => openPositionEdit(position)}
+                              aria-label={`${t("common.edit")} ${position.name}`}
+                              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-theme-xs font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5"
+                            >
+                              <PencilIcon className="size-3.5" aria-hidden="true" />
+                              {t("common.edit")}
+                            </button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     )) : (
                       <TableRow>
-                        <TableCell colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <TableCell colSpan={canManageOrganization ? 5 : 4} className="px-6 py-12 text-center text-theme-sm text-gray-500 dark:text-gray-400">
                           {departments.length ? t("organizationPage.management.noPositions") : t("organizationPage.management.createDepartmentFirst")}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             </div>
           ) : (
@@ -838,24 +1118,12 @@ export default function OrganizationPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => openManagementForm("branches", "branch")}
+                          onClick={() => {
+                            setActiveTab("branches");
+                            openForm("branch");
+                          }}
                         >
                           {t("organizationPage.management.createBranch")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openManagementForm("departments", "department")}
-                        >
-                          {t("organizationPage.management.createDepartment")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={departments.length === 0}
-                          onClick={() => openManagementForm("positions", "position")}
-                        >
-                          {t("organizationPage.management.createPosition")}
                         </Button>
                       </>
                     )}
@@ -864,6 +1132,13 @@ export default function OrganizationPage() {
                     </Button>
                   </div>
                 </div>
+
+                {canManageOrganization && (
+                  <div className="space-y-3">
+                    {departmentForm}
+                    {positionForm}
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -902,9 +1177,10 @@ export default function OrganizationPage() {
                   </div>
                 ) : organization ? (
                   <OrganizationChartCanvas
-                    organizationName={organization.name}
-                    totalEmployeeCount={chartEmployees.length}
                     employees={visibleChartEmployees}
+                    departments={departments}
+                    positions={positions}
+                    canManageOrganization={canManageOrganization}
                     matchedEmployeeIds={matchingChartEmployeeIds}
                     selectedEmployeeId={selectedChartEmployeeId}
                     selectedEmployee={selectedChartEmployee}
@@ -913,9 +1189,19 @@ export default function OrganizationPage() {
                     collapsedEmployeeIds={collapsedChartNodes}
                     searchActive={Boolean(normalizedChartSearch)}
                     labels={{
-                      organization: t("organizationPage.management.organization"),
-                      employees: t("organizationPage.totalEmployees").toLocaleLowerCase(language),
                       employee: t("organizationPage.management.employee"),
+                      reportsTo: t("organizationPage.orgChartControls.reportsTo"),
+                      structure: t("organizationPage.orgChartControls.structure"),
+                      departments: t("organizationPage.tabs.departments").toLocaleLowerCase(language),
+                      addDepartment: t("organizationPage.management.createDepartment"),
+                      addPosition: t("organizationPage.management.createPosition"),
+                      edit: t("common.edit"),
+                      emptyDepartments: t("organizationPage.management.noDepartments"),
+                      emptyPositions: t("organizationPage.management.noPositions"),
+                      assignPosition: t("organizationPage.orgChartControls.assignPosition"),
+                      selectPosition: t("employeeDirectory.fields.selectJobPosition"),
+                      noPosition: t("employeeDirectory.fields.noJobPosition"),
+                      saveAssignment: t("organizationPage.orgChartControls.saveAssignment"),
                       branchManager: t("organizationPage.orgChartControls.branchManager"),
                       departmentHead: t("organizationPage.orgChartControls.departmentHead"),
                       expandReports: (count) => t("organizationPage.orgChartControls.expandReports", { count }),
@@ -927,6 +1213,11 @@ export default function OrganizationPage() {
                     }}
                     onSelectEmployee={setSelectedChartEmployeeId}
                     onToggleCollapse={toggleChartEmployee}
+                    onCreateDepartment={() => openForm("department")}
+                    onEditDepartment={editDepartmentFromChart}
+                    onCreatePosition={createPositionForDepartment}
+                    onEditPosition={editPositionFromChart}
+                    onAssignPosition={assignEmployeePosition}
                   />
                 ) : null}
               </div>
