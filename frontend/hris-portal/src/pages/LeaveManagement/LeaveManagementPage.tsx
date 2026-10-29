@@ -4,13 +4,9 @@ import { Card } from "@/components/ui/card";
 import Input from "@/components/form/input/InputField";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import DataTableThree, {
+  type DataTableThreeColumn,
+} from "@/components/tables/DataTables/TableThree/DataTableThree";
 import { TabButton } from "@/components/ui/tabs/TabWithUnderline";
 import {
   createLeaveRequest,
@@ -110,6 +106,11 @@ export default function LeaveManagementPage() {
   const [successKey, setSuccessKey] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<RequestFilter>("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [draft, setDraft] = useState<LeaveRequestDraft>(() => makeBlankDraft());
   const [isCreating, setIsCreating] = useState(false);
@@ -193,6 +194,20 @@ export default function LeaveManagementPage() {
     });
   }, [filter, report, search, t]);
 
+  const pageCount = Math.max(1, Math.ceil(visibleRequests.length / pageSize));
+  const firstVisibleIndex = visibleRequests.length === 0
+    ? 0
+    : (page - 1) * pageSize + 1;
+  const lastVisibleIndex = Math.min(page * pageSize, visibleRequests.length);
+  const pageRequests = visibleRequests.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
   const summaryCards = [
     {
       label: t("leaveManagementPage.summary.pending"),
@@ -240,6 +255,7 @@ export default function LeaveManagementPage() {
       });
       setIsCreateOpen(false);
       setDraft(makeBlankDraft(employees[0]?.id ?? ""));
+      setPage(1);
       setSuccessKey("leaveManagementPage.messages.created");
       setRefreshVersion((current) => current + 1);
     } catch (error) {
@@ -260,6 +276,11 @@ export default function LeaveManagementPage() {
     setSuccessKey(null);
     try {
       await decideLeaveRequest(request.id, { status, decisionNote: null });
+      setSelectedRequestIds((current) => {
+        const next = new Set(current);
+        next.delete(request.id);
+        return next;
+      });
       setSuccessKey(
         status === "approved"
           ? "leaveManagementPage.messages.approved"
@@ -276,6 +297,101 @@ export default function LeaveManagementPage() {
   };
 
   const filters: RequestFilter[] = ["all", "pending", "approved", "rejected"];
+  const requestColumns = useMemo<DataTableThreeColumn<EmployeeLeaveRequest>[]>(
+    () => [
+      {
+        key: "employee",
+        label: t("leaveManagementPage.columns.employee"),
+        className: "min-w-56",
+        render: (request) => (
+          <Link to={`/employees/${request.employeeId}`} className="block min-w-0">
+            <span className="block truncate text-sm font-medium text-gray-800 hover:text-brand-600 dark:text-white/90 dark:hover:text-brand-300">
+              {request.employeeName}
+            </span>
+            <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400">
+              {request.employeeNumber || request.department || "—"}
+            </span>
+          </Link>
+        ),
+      },
+      {
+        key: "leaveType",
+        label: t("leaveManagementPage.columns.leaveType"),
+        className: "min-w-32",
+        render: (request) => t(`leaveManagementPage.leaveTypes.${request.leaveType}`),
+      },
+      {
+        key: "dates",
+        label: t("leaveManagementPage.columns.dates"),
+        className: "min-w-52",
+        render: (request) => (
+          <span className="whitespace-nowrap">
+            {formatDate(request.startDate, i18n.language)} – {formatDate(request.endDate, i18n.language)}
+          </span>
+        ),
+      },
+      {
+        key: "days",
+        label: t("leaveManagementPage.columns.days"),
+        className: "min-w-20",
+        render: (request) => numberFormat.format(request.requestedDays),
+      },
+      {
+        key: "reason",
+        label: t("leaveManagementPage.columns.reason"),
+        className: "max-w-64 min-w-48",
+        render: (request) => <span className="line-clamp-2">{request.reason}</span>,
+      },
+      {
+        key: "status",
+        label: t("leaveManagementPage.columns.status"),
+        className: "min-w-28",
+        render: (request) => (
+          <Badge size="sm" color={requestStatusBadgeColor(request.status)}>
+            {t(`leaveManagementPage.statuses.${request.status}`)}
+          </Badge>
+        ),
+      },
+      {
+        key: "actions",
+        label: t("leaveManagementPage.columns.actions"),
+        className: "min-w-52",
+        render: (request) => {
+          const isSaving = savingRequestId === request.id;
+          if (request.status !== "pending") {
+            return request.decidedByName ? (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {request.decidedByName}
+              </span>
+            ) : <span className="text-sm text-gray-400">—</span>;
+          }
+          return (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleDecision(request, "approved")}
+                disabled={isSaving}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-success-200 px-3 py-2 text-xs font-medium text-success-700 transition hover:bg-success-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-success-500/30 dark:text-success-400 dark:hover:bg-success-500/10"
+              >
+                <CheckLineIcon className="size-4" aria-hidden="true" />
+                {t("leaveManagementPage.actions.approve")}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDecision(request, "rejected")}
+                disabled={isSaving}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-error-200 px-3 py-2 text-xs font-medium text-error-700 transition hover:bg-error-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-error-500/30 dark:text-error-400 dark:hover:bg-error-500/10"
+              >
+                <CloseLineIcon className="size-4" aria-hidden="true" />
+                {t("leaveManagementPage.actions.reject")}
+              </button>
+            </div>
+          );
+        },
+      },
+    ],
+    [handleDecision, i18n.language, numberFormat, savingRequestId, t],
+  );
 
   return (
     <>
@@ -495,12 +611,11 @@ export default function LeaveManagementPage() {
               ))}
             </section>
 
-            <Card>
-              <section
-                aria-labelledby="leave-requests-heading"
-                className="space-y-4"
-              >
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <section
+              aria-labelledby="leave-requests-heading"
+              className="space-y-4"
+            >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <h2
                       id="leave-requests-heading"
@@ -513,36 +628,6 @@ export default function LeaveManagementPage() {
                         count: numberFormat.format(visibleRequests.length),
                       })}
                     </p>
-                  </div>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <label className="sr-only" htmlFor="leave-request-search">
-                      {t("leaveManagementPage.search")}
-                    </label>
-                    <Input
-                      id="leave-request-search"
-                      type="search"
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder={t("leaveManagementPage.search")}
-                      className="sm:w-64"
-                    />
-                    <nav
-                      className="flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-800"
-                      role="tablist"
-                      aria-label={t("leaveManagementPage.filterLabel")}
-                    >
-                      {filters.map((status) => (
-                        <TabButton
-                          key={status}
-                          id={`leave-filter-${status}`}
-                          role="tab"
-                          tabIndex={filter === status ? 0 : -1}
-                          label={t(`leaveManagementPage.filters.${status}`)}
-                          isActive={filter === status}
-                          onClick={() => setFilter(status)}
-                        />
-                      ))}
-                    </nav>
                   </div>
                 </div>
 
@@ -562,162 +647,67 @@ export default function LeaveManagementPage() {
                     {t(successKey)}
                   </p>
                 )}
-                {isLoading ? (
-                  <p className="py-8 text-sm text-gray-500 dark:text-gray-400">
-                    {t("leaveManagementPage.loading")}
-                  </p>
-                ) : visibleRequests.length === 0 ? (
-                  <div className="border-y border-gray-200 py-10 text-center dark:border-gray-800">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {t("leaveManagementPage.empty")}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-white/5">
-                    <Table className="min-w-[1050px] text-left rtl:text-right">
-                      <TableHeader className="border-b border-gray-100 dark:border-white/5">
-                        <TableRow>
-                          <TableCell
-                            isHeader
-                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
-                          >
-                            {t("leaveManagementPage.columns.employee")}
-                          </TableCell>
-                          <TableCell
-                            isHeader
-                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
-                          >
-                            {t("leaveManagementPage.columns.leaveType")}
-                          </TableCell>
-                          <TableCell
-                            isHeader
-                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
-                          >
-                            {t("leaveManagementPage.columns.dates")}
-                          </TableCell>
-                          <TableCell
-                            isHeader
-                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
-                          >
-                            {t("leaveManagementPage.columns.days")}
-                          </TableCell>
-                          <TableCell
-                            isHeader
-                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
-                          >
-                            {t("leaveManagementPage.columns.reason")}
-                          </TableCell>
-                          <TableCell
-                            isHeader
-                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
-                          >
-                            {t("leaveManagementPage.columns.status")}
-                          </TableCell>
-                          <TableCell
-                            isHeader
-                            className="px-5 py-3 text-start text-theme-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
-                          >
-                            {t("leaveManagementPage.columns.actions")}
-                          </TableCell>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
-                        {visibleRequests.map((request) => {
-                          const isSaving = savingRequestId === request.id;
-                          return (
-                            <TableRow
-                              key={request.id}
-                              className="transition-colors hover:bg-gray-50 dark:hover:bg-white/3"
-                            >
-                              <TableCell className="px-5 py-4 text-start">
-                                <Link
-                                  to={`/employees/${request.employeeId}`}
-                                  className="min-w-0"
-                                >
-                                  <span className="block truncate text-sm font-medium text-gray-800 hover:text-brand-600 dark:text-white/90 dark:hover:text-brand-300">
-                                    {request.employeeName}
-                                  </span>
-                                  <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400">
-                                    {request.employeeNumber ||
-                                      request.department ||
-                                      "—"}
-                                  </span>
-                                </Link>
-                              </TableCell>
-                              <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
-                                {t(
-                                  `leaveManagementPage.leaveTypes.${request.leaveType}`,
-                                )}
-                              </TableCell>
-                              <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
-                                {formatDate(request.startDate, i18n.language)} –{" "}
-                                {formatDate(request.endDate, i18n.language)}
-                              </TableCell>
-                              <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
-                                {numberFormat.format(request.requestedDays)}
-                              </TableCell>
-                              <TableCell className="max-w-64 px-5 py-4 text-start text-theme-sm text-gray-500 dark:text-gray-400">
-                                <span className="line-clamp-2">
-                                  {request.reason}
-                                </span>
-                              </TableCell>
-                              <TableCell className="px-5 py-4 text-start">
-                                <Badge
-                                  size="sm"
-                                  color={requestStatusBadgeColor(
-                                    request.status,
-                                  )}
-                                >
-                                  {t(
-                                    `leaveManagementPage.statuses.${request.status}`,
-                                  )}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="px-5 py-4 text-start">
-                                {request.status === "pending" ? (
-                                  <div className="flex items-center gap-2">
-                                    <Button
-                                      type="button"
-                                      onClick={() =>
-                                        void handleDecision(request, "approved")
-                                      }
-                                      disabled={isSaving}
-                                      variant="outline"
-                                      size="sm"
-                                    >
-                                      {t("leaveManagementPage.actions.approve")}
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      onClick={() =>
-                                        void handleDecision(request, "rejected")
-                                      }
-                                      disabled={isSaving}
-                                      variant="outline"
-                                      size="sm"
-                                    >
-                                      {t("leaveManagementPage.actions.reject")}
-                                    </Button>
-                                  </div>
-                                ) : request.decidedByName ? (
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {request.decidedByName}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm text-gray-400">
-                                    —
-                                  </span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </section>
-            </Card>
+                <DataTableThree
+                  rows={pageRequests}
+                  columns={requestColumns}
+                  getRowKey={(request) => request.id}
+                  getRowLabel={(request) => t("leaveManagementPage.table.selectRequest", { employee: request.employeeName })}
+                  page={page}
+                  pageSize={pageSize}
+                  totalItems={visibleRequests.length}
+                  pageSizeOptions={[5, 10, 25]}
+                  onPageChange={setPage}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setPage(1);
+                  }}
+                  searchTerm={search}
+                  onSearchTermChange={(value) => {
+                    setSearch(value);
+                    setPage(1);
+                    setSelectedRequestIds(new Set());
+                  }}
+                  selectedRowIds={selectedRequestIds}
+                  onSelectedRowIdsChange={setSelectedRequestIds}
+                  selectAllLabel={t("leaveManagementPage.table.selectAll")}
+                  searchPlaceholder={t("leaveManagementPage.search")}
+                  showLabel={t("leaveManagementPage.table.show")}
+                  entriesLabel={t("leaveManagementPage.table.entries")}
+                  emptyMessage={t("leaveManagementPage.empty")}
+                  loadingMessage={t("leaveManagementPage.loading")}
+                  showingMessage={t("leaveManagementPage.table.showing", {
+                    start: numberFormat.format(firstVisibleIndex),
+                    end: numberFormat.format(lastVisibleIndex),
+                    total: numberFormat.format(visibleRequests.length),
+                  })}
+                  previousLabel={t("leaveManagementPage.table.previous")}
+                  nextLabel={t("leaveManagementPage.table.next")}
+                  toolbarActions={(
+                    <nav
+                      className="flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-800"
+                      role="tablist"
+                      aria-label={t("leaveManagementPage.filterLabel")}
+                    >
+                      {filters.map((status) => (
+                        <TabButton
+                          key={status}
+                          id={`leave-filter-${status}`}
+                          role="tab"
+                          tabIndex={filter === status ? 0 : -1}
+                          label={t(`leaveManagementPage.filters.${status}`)}
+                          isActive={filter === status}
+                          onClick={() => {
+                            setFilter(status);
+                            setPage(1);
+                            setSelectedRequestIds(new Set());
+                          }}
+                        />
+                      ))}
+                    </nav>
+                  )}
+                  isLoading={isLoading}
+                />
+            </section>
           </>
         )}
       </div>

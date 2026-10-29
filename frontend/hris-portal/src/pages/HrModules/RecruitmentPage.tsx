@@ -1,8 +1,8 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import PageMeta from "@/components/common/PageMeta";
-import BasicTableFive, {
-  type BasicTableFiveColumn,
-} from "@/components/tables/BasicTables/BasicTableFive";
+import BasicTableFour, {
+  type BasicTableFourColumn,
+} from "@/components/tables/BasicTables/BasicTableFour";
 import {
   createRecruitmentCandidate,
   createRecruitmentInterview,
@@ -229,7 +229,7 @@ export default function RecruitmentPage() {
     () => Object.fromEntries(pipelineStages.map((stage) => [stage, candidates.filter((candidate) => candidate.stage === stage).length])) as Record<RecruitmentCandidateInput["stage"], number>,
     [candidates],
   );
-  const candidateColumns: BasicTableFiveColumn<RecruitmentCandidate>[] = [
+  const candidateColumns: BasicTableFourColumn<RecruitmentCandidate>[] = [
       {
         key: "candidate",
         label: t("recruitmentPage.tabs.candidates"),
@@ -396,7 +396,7 @@ export default function RecruitmentPage() {
         )}
 
         {activeTab === "candidates" && (
-          <BasicTableFive
+          <BasicTableFour
             title={t("recruitmentPage.pipeline.title")}
             description={t("recruitmentPage.pipeline.description")}
             data={candidates}

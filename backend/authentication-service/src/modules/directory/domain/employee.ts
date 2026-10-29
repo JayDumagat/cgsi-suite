@@ -73,6 +73,63 @@ export interface EmployeeHrDetails {
   family: EmployeeFamilyDetails;
 }
 
+export interface PayrollRunComponent {
+  name: string;
+  amount: number;
+  hours?: number | null;
+}
+
+export interface PayrollRunInput {
+  periodStart: string;
+  periodEnd: string;
+  payDate: string;
+}
+
+export interface PayrollRunItemInput {
+  basePay: number;
+  earnings: PayrollRunComponent[];
+  deductions: PayrollRunComponent[];
+  contributions: PayrollRunComponent[];
+  notes: string | null;
+}
+
+export interface PayrollRunItem extends PayrollRunItemInput {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string | null;
+  department: string | null;
+  payFrequency: PayrollFrequency | null;
+  overtimeHours: number;
+  earningTotal: number;
+  deductionTotal: number;
+  contributionTotal: number;
+  grossPay: number;
+  netPay: number;
+}
+
+export interface PayrollRun {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  payDate: string;
+  currency: string;
+  status: "draft" | "processed";
+  employeeCount: number;
+  excludedEmployeeCount: number;
+  grossTotal: number;
+  deductionTotal: number;
+  contributionTotal: number;
+  netTotal: number;
+  createdAt: string;
+  processedAt: string | null;
+  items: PayrollRunItem[];
+}
+
+export interface PayrollRunsReport {
+  runs: PayrollRun[];
+}
+
 export interface EmployeeFamilyPerson {
   firstName: string | null;
   middleInitial: string | null;
@@ -124,6 +181,9 @@ export interface EmployeeAttendanceRecord extends Omit<AttendanceRecordInput, "s
   workSchedule: string | null;
   status: AttendanceRecordStatus | null;
   hoursWorked: number | null;
+  overtimeHours: number | null;
+  regularHours: number | null;
+  timesheetEntryId: string | null;
 }
 
 export interface AttendanceDailySummary {
@@ -222,6 +282,20 @@ export class EmployeeLeaveRequestError extends Error {
   constructor(readonly code: "overlap" | "not_pending") {
     super(code);
     this.name = "EmployeeLeaveRequestError";
+  }
+}
+
+export class PayrollRunError extends Error {
+  constructor(readonly code:
+    | "duplicate_period"
+    | "not_found"
+    | "not_draft"
+    | "no_payroll_profiles"
+    | "mixed_currencies"
+    | "negative_net_pay"
+  ) {
+    super(code);
+    this.name = "PayrollRunError";
   }
 }
 

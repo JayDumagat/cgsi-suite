@@ -7,6 +7,7 @@ import { telemetryLog } from "../../../platform/telemetry.js";
 import {
   EmployeeRecordError,
   EmployeeLeaveRequestError,
+  PayrollRunError,
 } from "../domain/employee.js";
 import { OrganizationManagementError } from "../domain/organization.js";
 
@@ -120,6 +121,32 @@ const leaveRequestSchema = z.object({
 const leaveDecisionSchema = z.object({
   status: z.enum(["approved", "rejected"]),
   decisionNote: nullableText(1000),
+});
+const payrollRunInputSchema = z.object({
+  periodStart: z.string().refine(isCalendarDate),
+  periodEnd: z.string().refine(isCalendarDate),
+  payDate: z.string().refine(isCalendarDate),
+}).superRefine((run, context) => {
+  if (run.periodEnd < run.periodStart) {
+    context.addIssue({ code: "custom", path: ["periodEnd"], message: "Pay period end must be on or after its start." });
+  }
+  if (run.payDate < run.periodEnd) {
+    context.addIssue({ code: "custom", path: ["payDate"], message: "Pay date must be on or after the pay period end." });
+  }
+});
+const payrollComponentSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  amount: z.number().min(0).max(999_999_999_999.99)
+    .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-6),
+  hours: z.number().min(0).max(1000).nullable().optional().transform((value) => value ?? null),
+});
+const payrollRunItemSchema = z.object({
+  basePay: z.number().min(0).max(999_999_999_999.99)
+    .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-6),
+  earnings: z.array(payrollComponentSchema).max(30),
+  deductions: z.array(payrollComponentSchema).max(30),
+  contributions: z.array(payrollComponentSchema).max(30),
+  notes: nullableText(1000),
 });
 const organizationInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -624,6 +651,31 @@ export class ErisDirectoryController {
     }
   };
 
+  deleteAttendanceRecord = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const employeeId = z.string().uuid().safeParse(request.params.employeeId);
+    const date = z.string().refine(isCalendarDate).safeParse(request.params.attendanceDate);
+    if (!employeeId.success || !date.success) {
+      response.status(400).json({ error: "invalid_attendance_target" });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      await this.directory.deleteAttendanceRecord(
+        employeeId.data,
+        date.data,
+        user.employeeId!,
+      );
+      response.status(200).json({ deleted: true });
+    } catch (error) {
+      writeDirectoryError(response, error, "eris_attendance_delete_failed");
+    }
+  };
+
   saveTimesheetEntry = async (request: Request, response: Response): Promise<void> => {
     const user = this.authenticate(request, response);
     if (!user) return;
@@ -712,6 +764,87 @@ export class ErisDirectoryController {
       response.status(200).json(decided);
     } catch (error) {
       writeLeaveManagementError(response, error, "eris_leave_request_decide_failed");
+    }
+  };
+
+  getPayrollRunsReport = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const report = await this.directory.getPayrollRunsReport(user.employeeId!);
+      response.status(200).json(report);
+    } catch (error) {
+      writePayrollRunError(response, error, "eris_payroll_runs_read_failed");
+    }
+  };
+
+  createPayrollRun = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const parsed = payrollRunInputSchema.safeParse(request.body);
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_payroll_run", fields: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const run = await this.directory.createPayrollRun(parsed.data, user.employeeId!);
+      response.status(201).json(run);
+    } catch (error) {
+      writePayrollRunError(response, error, "eris_payroll_run_create_failed");
+    }
+  };
+
+  updatePayrollRunItem = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const runId = z.string().uuid().safeParse(request.params.runId);
+    const itemId = z.string().uuid().safeParse(request.params.itemId);
+    const parsed = payrollRunItemSchema.safeParse(request.body);
+    if (!runId.success || !itemId.success) {
+      response.status(400).json({ error: "invalid_payroll_run_item" });
+      return;
+    }
+    if (!parsed.success) {
+      response.status(400).json({ error: "invalid_payroll_run_item", fields: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const run = await this.directory.updatePayrollRunItem(runId.data, itemId.data, parsed.data, user.employeeId!);
+      response.status(200).json(run);
+    } catch (error) {
+      writePayrollRunError(response, error, "eris_payroll_run_item_update_failed");
+    }
+  };
+
+  processPayrollRun = async (request: Request, response: Response): Promise<void> => {
+    const user = this.authenticate(request, response);
+    if (!user) return;
+    const runId = z.string().uuid().safeParse(request.params.runId);
+    if (!runId.success) {
+      response.status(400).json({ error: "invalid_payroll_run_id" });
+      return;
+    }
+    try {
+      if (!(await this.canEditEmployeeInformation(user.oid))) {
+        response.status(403).json({ error: "forbidden" });
+        return;
+      }
+      const run = await this.directory.processPayrollRun(runId.data, user.employeeId!);
+      response.status(200).json(run);
+    } catch (error) {
+      writePayrollRunError(response, error, "eris_payroll_run_process_failed");
     }
   };
 
@@ -887,6 +1020,23 @@ function writeDirectoryError(response: Response, error: unknown, event: string):
 function writeLeaveManagementError(response: Response, error: unknown, event: string): void {
   if (error instanceof EmployeeLeaveRequestError) {
     response.status(409).json({ error: error.code === "overlap" ? "leave_request_overlap" : "leave_request_not_pending" });
+    return;
+  }
+  writeDirectoryError(response, error, event);
+}
+
+function writePayrollRunError(response: Response, error: unknown, event: string): void {
+  if (error instanceof PayrollRunError) {
+    const responseByCode: Record<PayrollRunError["code"], { status: number; message: string }> = {
+      duplicate_period: { status: 409, message: "payroll_period_already_exists" },
+      not_found: { status: 404, message: "payroll_run_not_found" },
+      not_draft: { status: 409, message: "payroll_run_not_draft" },
+      no_payroll_profiles: { status: 409, message: "payroll_profiles_required" },
+      mixed_currencies: { status: 409, message: "payroll_run_mixed_currencies" },
+      negative_net_pay: { status: 422, message: "payroll_net_pay_cannot_be_negative" },
+    };
+    const result = responseByCode[error.code];
+    response.status(result.status).json({ error: result.message });
     return;
   }
   writeDirectoryError(response, error, event);

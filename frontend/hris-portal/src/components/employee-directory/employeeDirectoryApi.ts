@@ -74,6 +74,9 @@ export interface EmployeeAttendanceRecord extends Omit<
   workSchedule: string | null;
   status: AttendanceRecordStatus | null;
   hoursWorked: number | null;
+  overtimeHours: number | null;
+  regularHours: number | null;
+  timesheetEntryId: string | null;
 }
 
 export interface AttendanceDailyReport {
@@ -279,6 +282,63 @@ export interface EmployeeHrDetails {
     healthInsurancePolicyNumber: string | null;
   };
   family: EmployeeFamilyDetails;
+}
+
+export interface PayrollRunComponent {
+  name: string;
+  amount: number;
+  hours?: number | null;
+}
+
+export interface PayrollRunInput {
+  periodStart: string;
+  periodEnd: string;
+  payDate: string;
+}
+
+export interface PayrollRunItemInput {
+  basePay: number;
+  earnings: PayrollRunComponent[];
+  deductions: PayrollRunComponent[];
+  contributions: PayrollRunComponent[];
+  notes: string | null;
+}
+
+export interface PayrollRunItem extends PayrollRunItemInput {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string | null;
+  department: string | null;
+  payFrequency: EmployeePayFrequency | null;
+  overtimeHours: number;
+  earningTotal: number;
+  deductionTotal: number;
+  contributionTotal: number;
+  grossPay: number;
+  netPay: number;
+}
+
+export interface PayrollRun {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  payDate: string;
+  currency: string;
+  status: "draft" | "processed";
+  employeeCount: number;
+  excludedEmployeeCount: number;
+  grossTotal: number;
+  deductionTotal: number;
+  contributionTotal: number;
+  netTotal: number;
+  createdAt: string;
+  processedAt: string | null;
+  items: PayrollRunItem[];
+}
+
+export interface PayrollRunsReport {
+  runs: PayrollRun[];
 }
 
 export interface EmployeeFamilyPerson {
@@ -707,6 +767,17 @@ export async function updateAttendanceRecord(
   );
 }
 
+export async function deleteAttendanceRecord(
+  employeeId: string,
+  date: string,
+): Promise<void> {
+  await requestJson<{ deleted: boolean }>(
+    `/api/eris/attendance/${encodeURIComponent(employeeId)}/${encodeURIComponent(date)}`,
+    undefined,
+    { method: "DELETE" },
+  );
+}
+
 export async function getLeaveManagementReport(
   signal?: AbortSignal,
 ): Promise<EmployeeLeaveManagementReport> {
@@ -897,6 +968,39 @@ export async function updateEmployeeHrDetails(
       method: "PUT",
       body: JSON.stringify(details),
     },
+  );
+}
+
+export async function getPayrollRunsReport(
+  signal?: AbortSignal,
+): Promise<PayrollRunsReport> {
+  return requestJson<PayrollRunsReport>("/api/eris/payroll-runs", signal);
+}
+
+export async function createPayrollRun(input: PayrollRunInput): Promise<PayrollRun> {
+  return requestJson<PayrollRun>("/api/eris/payroll-runs", undefined, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updatePayrollRunItem(
+  runId: string,
+  itemId: string,
+  input: PayrollRunItemInput,
+): Promise<PayrollRun> {
+  return requestJson<PayrollRun>(
+    `/api/eris/payroll-runs/${encodeURIComponent(runId)}/items/${encodeURIComponent(itemId)}`,
+    undefined,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+export async function processPayrollRun(runId: string): Promise<PayrollRun> {
+  return requestJson<PayrollRun>(
+    `/api/eris/payroll-runs/${encodeURIComponent(runId)}/process`,
+    undefined,
+    { method: "POST", body: JSON.stringify({}) },
   );
 }
 

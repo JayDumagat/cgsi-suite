@@ -48,6 +48,8 @@ interface DataTableTwoProps<T extends object = DemoTableRow> {
   loadingText?: ReactNode;
   pageSizeOptions?: number[];
   initialPageSize?: number;
+  surface?: "white" | "transparent";
+  headerContent?: ReactNode;
 }
 
 const demoRows: DemoTableRow[] = [
@@ -110,6 +112,8 @@ export default function DataTableTwo<T extends object = DemoTableRow>({
   loadingText = "Loading…",
   pageSizeOptions = [5, 8, 10],
   initialPageSize = 10,
+  surface = "white",
+  headerContent,
 }: DataTableTwoProps<T>) {
   const isDemo = data === undefined && columns === undefined;
   const rows = (data ?? demoRows) as T[];
@@ -191,8 +195,14 @@ export default function DataTableTwo<T extends object = DemoTableRow>({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl bg-white dark:bg-white/3">
-      <div className="flex flex-col gap-2 rounded-t-xl border border-b-0 border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/[0.05]">
+    <div className={`overflow-hidden rounded-xl ${surface === "white" ? "bg-white dark:bg-white/3" : "border border-gray-200 bg-transparent dark:border-gray-800"}`}>
+      <div className="rounded-t-xl border border-b-0 border-gray-100 dark:border-white/[0.05]">
+        {headerContent && (
+          <div className="border-b border-gray-100 px-4 py-3 dark:border-white/[0.05]">
+            {headerContent}
+          </div>
+        )}
+        <div className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <span className="text-gray-500 dark:text-gray-400">{tableLabels.show}</span>
           <div className="relative z-20 bg-transparent">
@@ -237,6 +247,7 @@ export default function DataTableTwo<T extends object = DemoTableRow>({
             aria-label={tableLabels.searchPlaceholder}
             className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 ps-11 pe-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden xl:w-[300px] dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
           />
+        </div>
         </div>
       </div>
 

@@ -50,7 +50,7 @@
       "calendar": "Kalender",
       "employeeDirectory": "Mitarbeitende",
       "organization": "Organisation",
-      "attendance": "Arbeitszeit & Anwesenheit",
+      "attendance": "Anwesenheit",
       "leaveManagement": "Urlaubsverwaltung",
       "userProfile": "Benutzerprofil",
       "task": "Aufgaben",
@@ -981,6 +981,15 @@
     },
     "loading": "Urlaubsanträge werden geladen...",
     "empty": "Keine Anträge für diese Ansicht gefunden.",
+    "table": {
+      "show": "Anzeigen",
+      "entries": "Einträge",
+      "showing": "{{start}} bis {{end}} von {{total}} Anträgen",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "selectAll": "Alle Anträge auf dieser Seite auswählen",
+      "selectRequest": "Urlaubsantrag von {{employee}} auswählen"
+    },
     "messages": {
       "created": "Der Urlaubsantrag wurde zur Prüfung eingereicht.",
       "approved": "Urlaubsantrag genehmigt.",
@@ -994,8 +1003,8 @@
     }
   },
   "attendancePage": {
-    "title": "Arbeitszeit & Anwesenheit",
-    "description": "Anwesenheit und tägliche Arbeitszeiterfassung der Mitarbeitenden in einer Tages-, Wochen- oder Monatsansicht prüfen.",
+    "title": "Anwesenheit",
+    "description": "Ein- und Ausstempelzeiten sowie Überstunden der Mitarbeitenden für ein ausgewähltes Datum anzeigen.",
     "tabs": {
       "label": "Anwesenheitsansichten",
       "attendance": "Anwesenheit",
@@ -1082,13 +1091,33 @@
     "loading": "Anwesenheit wird geladen...",
     "noEmployees": "In diesem Zeitraum wurden keine aktiven Mitarbeitenden gefunden.",
     "noMatches": "Keine Mitarbeitenden entsprechen der Suche.",
+    "noRecords": "Keine Zeiteinträge für dieses Datum.",
+    "table": {
+      "show": "Anzeigen",
+      "entries": "Einträge",
+      "showing": "Zeige {start} bis {end} von {total} Mitarbeitenden"
+    },
     "notRecorded": "Kein Anwesenheitseintrag",
     "employee": "Mitarbeiter",
+    "shift": "Schicht",
     "department": "Abteilung",
     "unassigned": "Nicht zugeordnet",
     "status": "Status",
     "clockIn": "Arbeitsbeginn",
     "clockOut": "Arbeitsende",
+    "clockTimes": "Kommen / Gehen",
+    "clockInStates": {
+      "early": "Früher Arbeitsbeginn",
+      "late": "Verspäteter Arbeitsbeginn",
+      "halfDay": "Halbtägige Anwesenheit",
+      "onTime": "Pünktlicher Arbeitsbeginn"
+    },
+    "clockOutStates": {
+      "early": "Vorzeitiges Arbeitsende",
+      "late": "Verspätetes Arbeitsende",
+      "onTime": "Pünktliches Arbeitsende"
+    },
+    "duration": "{hours} Std. {minutes} Min.",
     "netHoursShort": "Netto {{hours}} Std.",
     "totalBreakMinutesShort": "Pausen {{minutes}} Min.",
     "clockTimesLegend": "Erfasste Uhrzeiten",
@@ -1121,8 +1150,26 @@
     },
     "errors": {
       "loadFailed": "Anwesenheit konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
-      "saveFailed": "Anwesenheitsdatensatz konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
-    }
+      "saveFailed": "Anwesenheitsdatensatz konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+      "deleteFailed": "Der Anwesenheitseintrag konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+      "invalidEntry": "Geben Sie gültige, nicht negative Stunden und Pausenminuten ein."
+    },
+    "selectAll": "Alle Mitarbeitenden auf dieser Seite auswählen",
+    "selectEmployee": "{{employee}} auswählen",
+    "regularHours": "Reguläre Stunden",
+    "editRecord": "Zeiteintrag für {{employee}} bearbeiten",
+    "deleteRecord": "Zeiteintrag für {{employee}} löschen",
+    "deleteConfirmTitle": "Anwesenheitseintrag löschen?",
+    "deleteConfirm": "Die gespeicherten Anwesenheits- und Stundenzetteleinträge für {{employee}} am {{date}} löschen?",
+    "delete": "Löschen",
+    "deleting": "Wird gelöscht...",
+    "saveChanges": "Änderungen speichern",
+    "addAttendance": "Anwesenheit hinzufügen",
+    "manualEntryTitle": "Anwesenheit manuell erfassen",
+    "chooseEmployee": "Mitarbeiter auswählen",
+    "noAvailableEmployees": "Alle Mitarbeitenden haben für diesen Tag bereits Zeiteinträge.",
+    "adding": "Wird hinzugefügt...",
+    "add": "Eintrag hinzufügen"
   },
   "timesheetPage": {
     "title": "Stundenzettel",
@@ -1700,10 +1747,10 @@
     "description": "Planen Sie Beurteilungszyklen, sammeln Sie Feedback und verfolgen Sie die Entwicklung.",
     "overview": "Leistungsübersicht",
     "stats": {
-      "cycles": "Aktive Zyklen",
-      "dueReviews": "Fällige Beurteilungen",
-      "completed": "Abgeschlossene Beurteilungen",
-      "participants": "Teilnehmende"
+      "activeGoals": "Aktive Ziele",
+      "completedGoals": "Abgeschlossene Ziele",
+      "feedbackNotes": "Feedbacknotizen",
+      "averageRating": "Durchschnittliche Bewertung"
     },
     "process": {
       "title": "Beurteilungsprozess",
@@ -1737,12 +1784,6 @@
     },
     "loading": "Leistungsdaten werden geladen…",
     "saving": "Wird gespeichert…",
-    "stats": {
-      "activeGoals": "Aktive Ziele",
-      "completedGoals": "Abgeschlossene Ziele",
-      "feedbackNotes": "Feedbacknotizen",
-      "averageRating": "Durchschnittliche Bewertung"
-    },
     "employees": {
       "title": "Mitarbeitende",
       "description": "Wählen Sie eine Person aus, um Ziele, Feedback und Bewertungen anzusehen.",
@@ -1822,7 +1863,7 @@
   },
   "payrollPage": {
     "title": "Gehaltsabrechnung",
-    "description": "Prüfen Sie die in ERIS gespeicherten Vergütungsprofile der Mitarbeitenden.",
+    "description": "Bereiten Sie die Gehaltsabrechnung für einen Zeitraum vor, prüfen Sie Bezüge und Abzüge und bestätigen Sie den geplanten Auszahlungstermin.",
     "overview": "Übersicht der Gehaltsprofile",
     "manageEmployees": "Mitarbeitende verwalten",
     "stats": {
@@ -1833,11 +1874,20 @@
       "title": "Vergütungsprofile",
       "description": "Gehalt, Zahlungsrhythmus und Gehaltsstufe aus den Mitarbeiterakten."
     },
+    "monthLabel": "Abrechnungsmonat",
+    "periodOverview": "Ausgewählter Abrechnungszeitraum",
+    "salaryPeriod": "Gehaltszeitraum",
+    "payoutDate": "Auszahlungstermin",
+    "expectedPayoutDate": "Voraussichtlicher Auszahlungstermin",
+    "noRunForMonth": "Für diesen Monat gibt es noch keinen Gehaltslauf. Erstellen Sie einen, um die Monatsabrechnung vorzubereiten.",
     "searchPlaceholder": "Mitarbeitende suchen",
     "table": {
       "employee": "Mitarbeiter",
       "department": "Abteilung",
       "baseSalary": "Grundgehalt",
+      "deductions": "Abzüge",
+      "contributionsOthers": "Beiträge / Sonstiges",
+      "additionalEarnings": "Zusätzliche Einkünfte",
       "frequency": "Zahlungsrhythmus",
       "grade": "Gehaltsstufe",
       "action": "Aktion",
@@ -1862,7 +1912,7 @@
     "pagination": "{{from}}–{{to}} von {{total}} Mitarbeitenden",
     "previous": "Zurück",
     "next": "Weiter",
-    "scopeNote": "Die Personalabteilung pflegt Vergütungsprofile und bereitet Lohndaten vor. Die Buchhaltung übernimmt Berechnung und Auszahlung."
+    "scopeNote": "Die Personalabteilung kann den Gehaltslauf vorbereiten, prüfen und verarbeiten. Die Gehaltszahlung ist für den im jeweiligen Lauf angegebenen Termin vorgesehen."
   },
   "reportsAnalyticsPage": {
     "title": "Berichte & Analysen",

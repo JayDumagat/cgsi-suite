@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PencilIcon, TrashBinIcon } from "@/icons";
-import { useState } from "react";
+import { useState, type ReactElement, type ReactNode } from "react";
 import Pagination from "./Pagination";
 
 const tableRowData = [
@@ -126,7 +126,7 @@ const tableRowData = [
   },
 ];
 
-export default function DataTableThree() {
+function DefaultDataTableThree() {
   const [isChecked, setIsChecked] = useState(false);
   // const rowsPerPage = 5;
   const [rowsPerPage, setRowsPerPage] = useState(5); // Number of rows per page
@@ -572,4 +572,231 @@ export default function DataTableThree() {
       </div>
     </div>
   );
+}
+
+export interface DataTableThreeColumn<T> {
+  key: string;
+  label: string;
+  className?: string;
+  header?: ReactNode;
+  render: (row: T) => ReactNode;
+}
+
+export interface DataTableThreeProps<T> {
+  rows: T[];
+  columns: DataTableThreeColumn<T>[];
+  getRowKey: (row: T) => string;
+  getRowLabel: (row: T) => string;
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  pageSizeOptions?: number[];
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  searchTerm: string;
+  onSearchTermChange: (value: string) => void;
+  selectedRowIds: Set<string>;
+  onSelectedRowIdsChange: (ids: Set<string>) => void;
+  selectAllLabel: string;
+  searchPlaceholder: string;
+  showLabel: string;
+  entriesLabel: string;
+  emptyMessage: string;
+  loadingMessage: string;
+  showingMessage: string;
+  previousLabel: string;
+  nextLabel: string;
+  toolbarActions?: ReactNode;
+  isLoading?: boolean;
+}
+
+function ConfiguredDataTableThree<T>({
+  rows,
+  columns,
+  getRowKey,
+  getRowLabel,
+  page,
+  pageSize,
+  totalItems,
+  pageSizeOptions = [5, 10, 25],
+  onPageChange,
+  onPageSizeChange,
+  searchTerm,
+  onSearchTermChange,
+  selectedRowIds,
+  onSelectedRowIdsChange,
+  selectAllLabel,
+  searchPlaceholder,
+  showLabel,
+  entriesLabel,
+  emptyMessage,
+  loadingMessage,
+  showingMessage,
+  previousLabel,
+  nextLabel,
+  toolbarActions,
+  isLoading = false,
+}: DataTableThreeProps<T>) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const allRowsSelected = rows.length > 0 && rows.every((row) => selectedRowIds.has(getRowKey(row)));
+  const someRowsSelected = rows.some((row) => selectedRowIds.has(getRowKey(row)));
+
+  const setVisibleRowsSelected = (selected: boolean) => {
+    const next = new Set(selectedRowIds);
+    rows.forEach((row) => {
+      const rowId = getRowKey(row);
+      if (selected) next.add(rowId);
+      else next.delete(rowId);
+    });
+    onSelectedRowIdsChange(next);
+  };
+
+  const setRowSelected = (row: T, selected: boolean) => {
+    const next = new Set(selectedRowIds);
+    const rowId = getRowKey(row);
+    if (selected) next.add(rowId);
+    else next.delete(rowId);
+    onSelectedRowIdsChange(next);
+  };
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-white/[0.05] dark:bg-white/3">
+      <div className="flex flex-col gap-3 rounded-t-xl border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/[0.05]">
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500 dark:text-gray-400">{showLabel}</span>
+          <div className="relative z-20 bg-transparent">
+            <select
+              aria-label={showLabel}
+              className="h-9 appearance-none rounded-lg border border-gray-300 bg-transparent py-2 ps-3 pe-8 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+              value={pageSize}
+              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+            >
+              {pageSizeOptions.map((size) => (
+                <option key={size} value={size} className="text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+                  {size}
+                </option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3.8335 5.9165L8.00016 10.0832L12.1668 5.9165" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </div>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{entriesLabel}</span>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {toolbarActions}
+          <div className="relative">
+            <span className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" aria-hidden="true">
+              <svg className="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path fillRule="evenodd" clipRule="evenodd" d="M3.04199 9.37363C3.04199 5.87693 5.87735 3.04199 9.37533 3.04199C12.8733 3.04199 15.7087 5.87693 15.7087 9.37363C15.7087 12.8703 12.8733 15.7053 9.37533 15.7053C5.87735 15.7053 3.04199 12.8703 3.04199 9.37363ZM9.37533 1.54199C5.04926 1.54199 1.54199 5.04817 1.54199 9.37363C1.54199 13.6991 5.04926 17.2053 9.37533 17.2053C11.2676 17.2053 13.0032 16.5344 14.3572 15.4176L17.1773 18.238C17.4702 18.5309 17.945 18.5309 18.2379 18.238C18.5308 17.9451 18.5309 17.4703 18.238 17.1773L15.4182 14.3573C16.5367 13.0033 17.2087 11.2669 17.2087 9.37363C17.2087 5.04817 13.7014 1.54199 9.37533 1.54199Z" fill="currentColor" />
+              </svg>
+            </span>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => onSearchTermChange(event.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 ps-11 pe-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden sm:w-[260px] dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="custom-scrollbar max-w-full overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map((column, index) => (
+                <TableCell
+                  key={column.key}
+                  isHeader
+                  className={`border border-gray-100 px-4 py-3 text-start dark:border-white/[0.05] ${column.className ?? ""}`}
+                >
+                  {index === 0 ? (
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        ariaLabel={selectAllLabel}
+                        checked={allRowsSelected}
+                        indeterminate={someRowsSelected && !allRowsSelected}
+                        onChange={setVisibleRowsSelected}
+                        disabled={rows.length === 0 || isLoading}
+                      />
+                      <span className="text-theme-xs font-medium text-gray-700 dark:text-gray-400">
+                        {column.header ?? column.label}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-theme-xs font-medium text-gray-700 dark:text-gray-400">
+                      {column.header ?? column.label}
+                    </span>
+                  )}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="border border-gray-100 px-4 py-10 text-center text-sm text-gray-500 dark:border-white/[0.05] dark:text-gray-400">
+                  {loadingMessage}
+                </TableCell>
+              </TableRow>
+            ) : rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="border border-gray-100 px-4 py-10 text-center text-sm text-gray-500 dark:border-white/[0.05] dark:text-gray-400">
+                  {emptyMessage}
+                </TableCell>
+              </TableRow>
+            ) : rows.map((row) => (
+              <TableRow key={getRowKey(row)} className="transition-colors hover:bg-gray-50 dark:hover:bg-white/3">
+                {columns.map((column, index) => (
+                  <TableCell
+                    key={column.key}
+                    className={`border border-gray-100 px-4 py-4 text-start text-theme-sm font-normal text-gray-800 dark:border-white/[0.05] dark:text-gray-400/90 ${column.className ?? ""}`}
+                  >
+                    {index === 0 ? (
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          ariaLabel={getRowLabel(row)}
+                          checked={selectedRowIds.has(getRowKey(row))}
+                          onChange={(selected) => setRowSelected(row, selected)}
+                        />
+                        <div className="min-w-0 flex-1">{column.render(row)}</div>
+                      </div>
+                    ) : column.render(row)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="rounded-b-xl border-t border-gray-100 px-4 py-4 dark:border-white/[0.05]">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between">
+          <p className="border-b border-gray-100 pb-3 text-center text-sm font-medium text-gray-500 xl:border-b-0 xl:pb-0 xl:text-start dark:border-gray-800 dark:text-gray-400">
+            {showingMessage}
+          </p>
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+            previousLabel={previousLabel}
+            nextLabel={nextLabel}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function DataTableThree(): ReactElement;
+export default function DataTableThree<T>(props: DataTableThreeProps<T>): ReactElement;
+export default function DataTableThree<T = unknown>(props?: DataTableThreeProps<T>) {
+  return props
+    ? <ConfiguredDataTableThree {...props} />
+    : <DefaultDataTableThree />;
 }

@@ -83,6 +83,11 @@ export function createAuthenticationApp(): Express {
   app.get("/internal/eris/attendance", erisDirectory.getAttendanceReport);
   app.get("/internal/eris/attendance/statistics", erisDirectory.getAttendanceMonthlyStatistics);
   app.put("/internal/eris/attendance/:employeeId/:attendanceDate", erisDirectory.updateAttendanceRecord);
+  app.delete("/internal/eris/attendance/:employeeId/:attendanceDate", erisDirectory.deleteAttendanceRecord);
+  app.get("/internal/eris/payroll-runs", erisDirectory.getPayrollRunsReport);
+  app.post("/internal/eris/payroll-runs", erisDirectory.createPayrollRun);
+  app.put("/internal/eris/payroll-runs/:runId/items/:itemId", erisDirectory.updatePayrollRunItem);
+  app.post("/internal/eris/payroll-runs/:runId/process", erisDirectory.processPayrollRun);
   app.get("/internal/eris/timesheets", erisDirectory.getTimesheetReport);
   app.put("/internal/eris/timesheets/:employeeId/:workDate", erisDirectory.saveTimesheetEntry);
   app.get("/internal/eris/recruitment", recruitment.getReport);

@@ -50,7 +50,7 @@
       "calendar": "التقويم",
       "employeeDirectory": "الموظفون",
       "organization": "الهيكل التنظيمي",
-      "attendance": "الدوام والحضور",
+      "attendance": "الحضور",
       "leaveManagement": "إدارة الإجازات",
       "userProfile": "الملف الشخصي",
       "task": "المهام",
@@ -981,6 +981,15 @@
     },
     "loading": "جارٍ تحميل طلبات الإجازة...",
     "empty": "لا توجد طلبات تطابق هذا العرض.",
+    "table": {
+      "show": "عرض",
+      "entries": "طلبات",
+      "showing": "عرض {{start}} إلى {{end}} من أصل {{total}} طلبًا",
+      "previous": "السابق",
+      "next": "التالي",
+      "selectAll": "تحديد جميع الطلبات في هذه الصفحة",
+      "selectRequest": "تحديد طلب إجازة {{employee}}"
+    },
     "messages": {
       "created": "تم إرسال طلب الإجازة للمراجعة.",
       "approved": "تم اعتماد طلب الإجازة.",
@@ -994,8 +1003,8 @@
     }
   },
   "attendancePage": {
-    "title": "الدوام والحضور",
-    "description": "راجع حضور الموظفين وسجلات ساعات العمل اليومية في عرض يومي أو أسبوعي أو شهري.",
+    "title": "الحضور",
+    "description": "اعرض أوقات دخول الموظفين وخروجهم وساعاتهم الإضافية للتاريخ المحدد.",
     "tabs": {
       "label": "طرق عرض الحضور",
       "attendance": "الحضور",
@@ -1082,13 +1091,33 @@
     "loading": "جارٍ تحميل الحضور...",
     "noEmployees": "لم يتم العثور على موظفين نشطين في هذا النطاق.",
     "noMatches": "لا يوجد موظفون يطابقون البحث.",
+    "noRecords": "لا توجد سجلات وقت لهذا التاريخ.",
+    "table": {
+      "show": "عرض",
+      "entries": "سجلات",
+      "showing": "عرض {start} إلى {end} من أصل {total} موظفًا"
+    },
     "notRecorded": "لا يوجد سجل حضور",
     "employee": "الموظف",
+    "shift": "الوردية",
     "department": "القسم",
     "unassigned": "غير محدد",
     "status": "الحالة",
     "clockIn": "وقت الحضور",
     "clockOut": "وقت الانصراف",
+    "clockTimes": "الدخول / الخروج",
+    "clockInStates": {
+      "early": "حضور مبكر",
+      "late": "حضور متأخر",
+      "halfDay": "حضور لنصف يوم",
+      "onTime": "حضور في الموعد"
+    },
+    "clockOutStates": {
+      "early": "انصراف مبكر",
+      "late": "انصراف متأخر",
+      "onTime": "انصراف في الموعد"
+    },
+    "duration": "{hours} س {minutes} د",
     "netHoursShort": "صافي {{hours}} ساعة",
     "totalBreakMinutesShort": "الاستراحات {{minutes}} دقيقة",
     "clockTimesLegend": "أوقات تسجيل الحضور",
@@ -1121,8 +1150,26 @@
     },
     "errors": {
       "loadFailed": "تعذر تحميل الحضور. يرجى المحاولة مرة أخرى.",
-      "saveFailed": "تعذر حفظ سجل الحضور. يرجى المحاولة مرة أخرى."
-    }
+      "saveFailed": "تعذر حفظ سجل الحضور. يرجى المحاولة مرة أخرى.",
+      "deleteFailed": "تعذر حذف سجل الحضور. يرجى المحاولة مرة أخرى.",
+      "invalidEntry": "أدخل ساعات غير سالبة ودقائق استراحة صالحة."
+    },
+    "selectAll": "تحديد جميع الموظفين في هذه الصفحة",
+    "selectEmployee": "تحديد {{employee}}",
+    "regularHours": "الساعات العادية",
+    "editRecord": "تعديل سجل {{employee}}",
+    "deleteRecord": "حذف سجل {{employee}}",
+    "deleteConfirmTitle": "حذف سجل الحضور؟",
+    "deleteConfirm": "هل تريد حذف سجلات الحضور وسجل ساعات العمل المحفوظة لـ {{employee}} بتاريخ {{date}}؟",
+    "delete": "حذف",
+    "deleting": "جارٍ الحذف...",
+    "saveChanges": "حفظ التغييرات",
+    "addAttendance": "إضافة الحضور",
+    "manualEntryTitle": "إضافة حضور يدوي",
+    "chooseEmployee": "اختر موظفًا",
+    "noAvailableEmployees": "لدى جميع الموظفين سجلات وقت لهذا اليوم بالفعل.",
+    "adding": "جارٍ الإضافة...",
+    "add": "إضافة سجل"
   },
   "timesheetPage": {
     "title": "سجل ساعات العمل",
@@ -1700,10 +1747,10 @@
     "description": "خطط لدورات التقييم واجمع الملاحظات وتابع تطور الموظفين.",
     "overview": "نظرة عامة على الأداء",
     "stats": {
-      "cycles": "الدورات النشطة",
-      "dueReviews": "التقييمات المستحقة",
-      "completed": "التقييمات المكتملة",
-      "participants": "المشاركون"
+      "activeGoals": "الأهداف النشطة",
+      "completedGoals": "الأهداف المكتملة",
+      "feedbackNotes": "ملاحظات التقييم",
+      "averageRating": "متوسط التقييم"
     },
     "process": {
       "title": "عملية التقييم",
@@ -1737,12 +1784,6 @@
     },
     "loading": "جارٍ تحميل بيانات الأداء…",
     "saving": "جارٍ الحفظ…",
-    "stats": {
-      "activeGoals": "الأهداف النشطة",
-      "completedGoals": "الأهداف المكتملة",
-      "feedbackNotes": "ملاحظات التقييم",
-      "averageRating": "متوسط التقييم"
-    },
     "employees": {
       "title": "الموظفون",
       "description": "اختر موظفًا لمراجعة أهدافه وملاحظاته وتقييماته.",
@@ -1822,7 +1863,7 @@
   },
   "payrollPage": {
     "title": "الرواتب",
-    "description": "راجع ملفات التعويضات المسجلة حاليًا في ERIS.",
+    "description": "جهّز الرواتب حسب فترة الدفع، وراجع الاستحقاقات والخصومات، وأكد تاريخ صرف الراتب.",
     "overview": "نظرة عامة على ملفات الرواتب",
     "manageEmployees": "إدارة الموظفين",
     "stats": {
@@ -1833,11 +1874,20 @@
       "title": "ملفات تعويضات الموظفين",
       "description": "الراتب وتكرار الدفع والدرجة من سجل كل موظف."
     },
+    "monthLabel": "شهر الرواتب",
+    "periodOverview": "فترة الرواتب المحددة",
+    "salaryPeriod": "فترة الراتب",
+    "payoutDate": "تاريخ صرف الراتب",
+    "expectedPayoutDate": "تاريخ الصرف المتوقع",
+    "noRunForMonth": "لا توجد عملية صرف رواتب لهذا الشهر بعد. أنشئ واحدة لإعداد رواتب الشهر.",
     "searchPlaceholder": "ابحث عن موظفين",
     "table": {
       "employee": "الموظف",
       "department": "القسم",
       "baseSalary": "الراتب الأساسي",
+      "deductions": "الاستقطاعات",
+      "contributionsOthers": "المساهمات / أخرى",
+      "additionalEarnings": "الأرباح الإضافية",
       "frequency": "تكرار الدفع",
       "grade": "الدرجة الوظيفية",
       "action": "الإجراء",
@@ -1862,7 +1912,7 @@
     "pagination": "عرض {{from}}–{{to}} من {{total}} موظفًا",
     "previous": "السابق",
     "next": "التالي",
-    "scopeNote": "يدير قسم الموارد البشرية ملفات التعويضات ويجهز بيانات الرواتب. وتتولى المحاسبة حساب الرواتب والمدفوعات."
+    "scopeNote": "يمكن للموارد البشرية إعداد سجل الرواتب ومراجعته ومعالجته. ويُحدد موعد استلام الراتب في كل عملية صرف."
   },
   "reportsAnalyticsPage": {
     "title": "التقارير والتحليلات",

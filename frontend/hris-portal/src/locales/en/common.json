@@ -50,7 +50,7 @@
       "calendar": "Calendar",
       "employeeDirectory": "Employees",
       "organization": "Organization",
-      "attendance": "Time & Attendance",
+      "attendance": "Attendance",
       "leaveManagement": "Leave management",
       "userProfile": "User Profile",
       "task": "Task",
@@ -981,6 +981,15 @@
     },
     "loading": "Loading leave requests...",
     "empty": "No leave requests match this view.",
+    "table": {
+      "show": "Show",
+      "entries": "entries",
+      "showing": "Showing {{start}} to {{end}} of {{total}} requests",
+      "previous": "Previous",
+      "next": "Next",
+      "selectAll": "Select all requests on this page",
+      "selectRequest": "Select leave request for {{employee}}"
+    },
     "messages": {
       "created": "Leave request submitted for review.",
       "approved": "Leave request approved.",
@@ -994,8 +1003,8 @@
     }
   },
   "attendancePage": {
-    "title": "Time & Attendance",
-    "description": "Review employee attendance and daily timesheets in a daily, weekly, or monthly view.",
+    "title": "Attendance",
+    "description": "Review employee clock-in, clock-out, and overtime hours for a selected date.",
     "tabs": {
       "label": "Attendance views",
       "attendance": "Attendance",
@@ -1082,13 +1091,33 @@
     "loading": "Loading attendance...",
     "noEmployees": "No active employees found for this range.",
     "noMatches": "No employees match your search.",
+    "noRecords": "No time records for this date.",
+    "table": {
+      "show": "Show",
+      "entries": "entries",
+      "showing": "Showing {start} to {end} of {total} employees"
+    },
     "notRecorded": "No attendance record",
     "employee": "Employee",
+    "shift": "Shift",
     "department": "Department",
     "unassigned": "Unassigned",
     "status": "Status",
     "clockIn": "Clock in",
     "clockOut": "Clock out",
+    "clockTimes": "Clock in / out",
+    "clockInStates": {
+      "early": "Early clock-in",
+      "late": "Late clock-in",
+      "halfDay": "Half-day attendance",
+      "onTime": "On-time clock-in"
+    },
+    "clockOutStates": {
+      "early": "Early clock-out",
+      "late": "Late clock-out",
+      "onTime": "On-time clock-out"
+    },
+    "duration": "{hours}h {minutes}m",
     "netHoursShort": "Net {{hours}}h",
     "totalBreakMinutesShort": "Breaks {{minutes}}m",
     "clockTimesLegend": "Clock times",
@@ -1121,8 +1150,26 @@
     },
     "errors": {
       "loadFailed": "We couldn't load attendance. Please try again.",
-      "saveFailed": "We couldn't save this attendance record. Please try again."
-    }
+      "saveFailed": "We couldn't save this attendance record. Please try again.",
+      "deleteFailed": "We could not delete this attendance record. Please try again.",
+      "invalidEntry": "Enter valid non-negative hours and break minutes."
+    },
+    "selectAll": "Select all employees on this page",
+    "selectEmployee": "Select {{employee}}",
+    "regularHours": "Regular hours",
+    "editRecord": "Edit time record for {{employee}}",
+    "deleteRecord": "Delete time record for {{employee}}",
+    "deleteConfirmTitle": "Delete attendance record?",
+    "deleteConfirm": "Delete the saved attendance and timesheet entries for {{employee}} on {{date}}?",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "saveChanges": "Save changes",
+    "addAttendance": "Add attendance",
+    "manualEntryTitle": "Add manual attendance",
+    "chooseEmployee": "Choose an employee",
+    "noAvailableEmployees": "All employees already have time records for this day.",
+    "adding": "Adding...",
+    "add": "Add entry"
   },
   "timesheetPage": {
     "title": "Timesheet",
@@ -1700,10 +1747,10 @@
     "description": "Plan review cycles, collect feedback, and follow employee development.",
     "overview": "Performance overview",
     "stats": {
-      "cycles": "Active cycles",
-      "dueReviews": "Reviews due",
-      "completed": "Completed reviews",
-      "participants": "Participants"
+      "activeGoals": "Active goals",
+      "completedGoals": "Completed goals",
+      "feedbackNotes": "Feedback notes",
+      "averageRating": "Average rating"
     },
     "process": {
       "title": "Review process",
@@ -1737,12 +1784,6 @@
     },
     "loading": "Loading performance data…",
     "saving": "Saving…",
-    "stats": {
-      "activeGoals": "Active goals",
-      "completedGoals": "Completed goals",
-      "feedbackNotes": "Feedback notes",
-      "averageRating": "Average rating"
-    },
     "employees": {
       "title": "Employees",
       "description": "Choose an employee to review their goals, feedback, and ratings.",
@@ -1822,7 +1863,7 @@
   },
   "payrollPage": {
     "title": "Payroll",
-    "description": "Review employee compensation profiles currently recorded in ERIS.",
+    "description": "Prepare payroll by pay period, review employee earnings and deductions, and confirm the scheduled salary date.",
     "overview": "Payroll profile overview",
     "manageEmployees": "Manage employees",
     "stats": {
@@ -1833,11 +1874,83 @@
       "title": "Employee compensation profiles",
       "description": "Salary, pay frequency, and grade from each employee record."
     },
+    "runs": {
+      "title": "Pay runs",
+      "description": "Create a payroll register for a date range, review each employee's pay components, then process the run.",
+      "period": "Salary period",
+      "periodStart": "Period start",
+      "periodEnd": "Period end",
+      "payDate": "Salary pay date",
+      "employees": "Employees",
+      "status": "Status",
+      "statuses": {
+        "draft": "Draft",
+        "processed": "Processed"
+      },
+      "create": "Create pay run",
+      "createTitle": "Create pay run",
+      "createDescription": "Choose the salary period and the date employees are scheduled to receive their salary.",
+      "creating": "Creating…",
+      "loading": "Loading pay runs…",
+      "empty": "No pay runs yet. Create one to prepare a payroll register.",
+      "selected": "Selected",
+      "review": "Review",
+      "detailTitle": "Pay run: {{start}} – {{end}}",
+      "paydayDescription": "Employees are scheduled to receive salary on {{date}}.",
+      "payFrequencyNote": "Base amounts are prefilled from current employee pay profiles.",
+      "excludedEmployees": "{{count}} active employee(s) were left out because a base salary or currency is missing.",
+      "basePay": "Base pay",
+      "basePayHint": "Starts from the employee's saved salary profile. Adjust it for this pay period if needed.",
+      "overtime": "Overtime",
+      "overtimeHours": "Overtime hours in this period",
+      "hoursShort": "h",
+      "otherEarnings": "Other earnings",
+      "earnings": "Earnings and overtime pay",
+      "deductions": "Deductions",
+      "contributions": "Contributions",
+      "grossPay": "Gross pay",
+      "netPay": "Net pay",
+      "totalDeductions": "Total deductions",
+      "addLine": "Add line",
+      "noLines": "No items added.",
+      "componentName": "Description",
+      "amount": "Amount",
+      "hours": "Hours",
+      "defaultEarning": "Allowance or bonus",
+      "defaultDeduction": "Deduction",
+      "defaultContribution": "Contribution",
+      "removeLine": "Remove {{name}}",
+      "remove": "Remove",
+      "notes": "Payroll notes",
+      "edit": "Edit pay",
+      "editPay": "Edit pay: {{name}}",
+      "editPayDescription": "Review base pay and add itemized earnings, deductions, and employee contributions.",
+      "saving": "Saving…",
+      "saveChanges": "Save changes",
+      "cancel": "Cancel",
+      "calculationNote": "Overtime hours come from saved timesheets. Enter the corresponding overtime amount and any other earning, deduction, or employee contribution lines. Gross pay is base pay plus earnings; net pay subtracts deductions and contributions. ERIS does not apply statutory rates automatically.",
+      "process": "Process pay run",
+      "processing": "Processing…",
+      "processTitle": "Process this pay run?",
+      "processDescription": "Processing locks the payroll register for this period. Employees are scheduled to receive salary on {{payDate}}. This does not send a bank payment.",
+      "excludedAcknowledgement": "I understand that {{count}} active employee(s) are excluded from this run because their salary or currency profile is incomplete.",
+      "processedOn": "Processed {{date}}",
+      "noEmployees": "No employees are included in this pay run."
+    },
+    "monthLabel": "Payroll month",
+    "periodOverview": "Selected payroll period",
+    "salaryPeriod": "Salary period",
+    "payoutDate": "Payout date",
+    "expectedPayoutDate": "Expected payout date",
+    "noRunForMonth": "No pay run exists for this month yet. Create one to prepare the monthly payroll.",
     "searchPlaceholder": "Search employees",
     "table": {
       "employee": "Employee",
       "department": "Department",
       "baseSalary": "Base salary",
+      "deductions": "Deductions",
+      "contributionsOthers": "Contributions / others",
+      "additionalEarnings": "Additional earnings",
       "frequency": "Pay frequency",
       "grade": "Pay grade",
       "action": "Action",
@@ -1855,14 +1968,22 @@
     },
     "errors": {
       "accessDenied": "You do not have permission to view compensation profiles.",
-      "loadFailed": "Compensation profiles could not be loaded. Try again."
+      "loadFailed": "Compensation profiles could not be loaded. Try again.",
+      "runsLoadFailed": "Pay runs could not be loaded. Try again.",
+      "actionFailed": "The payroll update could not be completed. Check the details and try again.",
+      "periodExists": "A pay run already exists for this salary period.",
+      "profilesRequired": "No active employee has a complete salary profile with a currency. Set up at least one profile before creating a run.",
+      "mixedCurrencies": "This pay run includes different currencies. Use a separate run for each currency.",
+      "runNotDraft": "This pay run has already been processed and can no longer be edited.",
+      "negativeNetPay": "Deductions and contributions cannot exceed gross pay.",
+      "runNotFound": "This pay run could not be found. Refresh the page and try again."
     },
     "empty": "No employees match this search.",
     "loading": "Loading compensation profiles…",
     "pagination": "Showing {{from}}–{{to}} of {{total}} employees",
     "previous": "Previous",
     "next": "Next",
-    "scopeNote": "HR maintains employee compensation profiles and prepares payroll inputs. Accounting handles payroll calculations and payments."
+    "scopeNote": "HR can prepare, review, and process the payroll register. Salary payment is scheduled for the pay date selected for each run."
   },
   "reportsAnalyticsPage": {
     "title": "Reports & analytics",

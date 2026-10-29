@@ -3,10 +3,17 @@ import {
   type AttendanceRecordStatus,
   EmployeeRecordError,
   EmployeeLeaveRequestError,
+  PayrollRunError,
   type EmployeeLeaveDecisionInput,
   type EmployeeLeaveManagementReport,
   type EmployeeLeaveRequest,
   type EmployeeLeaveRequestInput,
+  type PayrollRun,
+  type PayrollRunComponent,
+  type PayrollRunInput,
+  type PayrollRunItem,
+  type PayrollRunItemInput,
+  type PayrollRunsReport,
   type AttendanceDailyReport,
   type AttendanceMonthlyStatistics,
   type AttendanceRecordInput,
@@ -113,6 +120,9 @@ interface EmployeeAttendanceRow {
   break_minutes: number | null;
   notes: string | null;
   hours_worked: number | null;
+  overtime_hours: number | null;
+  regular_hours: number | null;
+  timesheet_entry_id: string | null;
 }
 
 interface EmployeeLeaveRequestRow {
@@ -133,6 +143,55 @@ interface EmployeeLeaveRequestRow {
   decided_by_name: string | null;
 }
 
+interface PayrollRunEmployeeRow {
+  id: string;
+  display_name: string;
+  employee_number: string | null;
+  department: string | null;
+  base_salary: string | null;
+  currency: string | null;
+  pay_frequency: PayrollRunItem["payFrequency"];
+  overtime_hours: string | number;
+}
+
+interface PayrollRunRow {
+  id: string;
+  period_start: string;
+  period_end: string;
+  pay_date: string;
+  currency: string;
+  status: PayrollRun["status"];
+  employee_count: number;
+  excluded_employee_count: number;
+  gross_total: string | number;
+  deduction_total: string | number;
+  contribution_total: string | number;
+  net_total: string | number;
+  created_at: Date;
+  processed_at: Date | null;
+}
+
+interface PayrollRunItemRow {
+  id: string;
+  payroll_run_id: string;
+  employee_id: string;
+  employee_name: string;
+  employee_number: string | null;
+  department: string | null;
+  pay_frequency: PayrollRunItem["payFrequency"];
+  base_pay: string | number;
+  overtime_hours: string | number;
+  earnings: unknown;
+  earning_total: string | number;
+  deductions: unknown;
+  deduction_total: string | number;
+  contributions: unknown;
+  contribution_total: string | number;
+  gross_pay: string | number;
+  net_pay: string | number;
+  notes: string | null;
+}
+
 const employeeAttendanceSelect = [
   "SELECT record.id::text AS id, employee.id::text AS employee_id, employee.display_name,",
   "       employee.employee_number, employee.work_email, employee.department, employee.job_title,",
@@ -144,7 +203,10 @@ const employeeAttendanceSelect = [
   "            ELSE GREATEST(0::numeric, ROUND((EXTRACT(EPOCH FROM (merged.clock_out - merged.clock_in +",
   "              CASE WHEN merged.clock_out < merged.clock_in THEN interval '24 hours' ELSE interval '0' END))",
   "              / 3600.0 - merged.break_minutes / 60.0)::numeric, 2))::double precision",
-  "       END AS hours_worked",
+  "       END AS hours_worked,",
+  "       CASE WHEN timesheet.id IS NULL THEN NULL ELSE COALESCE(timesheet.overtime_hours, 0)::double precision END AS overtime_hours,",
+  "       CASE WHEN timesheet.id IS NULL THEN NULL ELSE COALESCE(timesheet.regular_hours, 0)::double precision END AS regular_hours,",
+  "       timesheet.id::text AS timesheet_entry_id",
   "  FROM huma.employees AS employee",
   "  LEFT JOIN huma.employee_attendance_records AS record",
   "    ON record.employee_id = employee.id AND record.attendance_date = $1::date",
@@ -617,7 +679,62 @@ export class EmployeeMasterRepository {
         breakMinutes: input.breakMinutes,
         notes: input.notes,
         hoursWorked: calculateAttendanceHours(input.clockIn, input.clockOut, input.breakMinutes),
+        overtimeHours: null,
+        regularHours: null,
+        timesheetEntryId: null,
       };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async deleteAttendanceRecord(
+    employeeId: string,
+    date: string,
+    requestedByEmployeeId: string,
+  ): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await requireEmployeePermission(client, requestedByEmployeeId, "hris.employee.read");
+      const employee = await client.query<{ id: string }>(
+        "SELECT id::text FROM huma.employees WHERE id = $1 FOR UPDATE",
+        [employeeId],
+      );
+      if (!employee.rows[0]) throw new EmployeeRecordError("not_found");
+
+      const attendance = await client.query<{ id: string }>(
+        [
+          "DELETE FROM huma.employee_attendance_records",
+          " WHERE employee_id = $1 AND attendance_date = $2::date",
+          "RETURNING id::text",
+        ].join("\n"),
+        [employeeId, date],
+      );
+      const timesheet = await client.query<{ id: string }>(
+        [
+          "DELETE FROM huma.employee_timesheet_entries",
+          " WHERE employee_id = $1 AND work_date = $2::date",
+          "RETURNING id::text",
+        ].join("\n"),
+        [employeeId, date],
+      );
+      const changedFields = [
+        ...(attendance.rowCount ? ["attendanceRecord"] : []),
+        ...(timesheet.rowCount ? ["timesheetEntry"] : []),
+      ];
+      if (changedFields.length === 0) throw new EmployeeRecordError("not_found");
+      await auditEmployeeChange(
+        client,
+        requestedByEmployeeId,
+        employeeId,
+        "eris.attendance_record.delete",
+        changedFields,
+      );
+      await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
       throw error;
@@ -657,9 +774,9 @@ export class EmployeeMasterRepository {
         [
           "INSERT INTO audit.events",
           "  (actor_type, actor_employee_id, action, outcome, target_type, target_id, source, details)",
-          "VALUES ('employee', $1, 'eris.leave_requests.read', 'success', 'leave_management', $1, 'eris', $2::jsonb)",
+          "VALUES ('employee', $1, 'eris.leave_requests.read', 'success', 'leave_management', $2, 'eris', $3::jsonb)",
         ].join("\n"),
-        [requestedByEmployeeId, JSON.stringify({ resultCount: requests.rowCount ?? 0 })],
+        [requestedByEmployeeId, requestedByEmployeeId, JSON.stringify({ resultCount: requests.rowCount ?? 0 })],
       );
       await client.query("COMMIT");
       const counts = summary.rows[0]!;
@@ -768,6 +885,233 @@ export class EmployeeMasterRepository {
       );
       await client.query("COMMIT");
       return toEmployeeLeaveRequest(saved.rows[0]!);
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getPayrollRunsReport(requestedByEmployeeId: string): Promise<PayrollRunsReport> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+      await requireEmployeePermission(client, requestedByEmployeeId, "hris.employee.read");
+      const report = await loadPayrollRuns(client);
+      await client.query(
+        [
+          "INSERT INTO audit.events",
+          "  (actor_type, actor_employee_id, action, outcome, target_type, target_id, source, details)",
+          "VALUES ('employee', $1, 'eris.payroll_runs.read', 'success', 'payroll', $2, 'eris', $3::jsonb)",
+        ].join("\n"),
+        [requestedByEmployeeId, "all", JSON.stringify({ runCount: report.runs.length })],
+      );
+      await client.query("COMMIT");
+      return report;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async createPayrollRun(input: PayrollRunInput, requestedByEmployeeId: string): Promise<PayrollRun> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await requireEmployeePermission(client, requestedByEmployeeId, "hris.employee.read");
+      const employees = await client.query<PayrollRunEmployeeRow>(
+        [
+          "SELECT employee.id::text AS id, employee.display_name, employee.employee_number, employee.department,",
+          "       payroll.base_salary::text, payroll.currency, payroll.pay_frequency,",
+          "       COALESCE(timesheet.overtime_hours, 0)::text AS overtime_hours",
+          "  FROM huma.employees AS employee",
+          "  LEFT JOIN huma.employee_payroll_details AS payroll ON payroll.employee_id = employee.id",
+          "  LEFT JOIN LATERAL (",
+          "    SELECT SUM(entry.overtime_hours) AS overtime_hours",
+          "      FROM huma.employee_timesheet_entries AS entry",
+          "     WHERE entry.employee_id = employee.id",
+          "       AND entry.work_date BETWEEN $1::date AND $2::date",
+          "  ) AS timesheet ON TRUE",
+          " WHERE employee.employment_status IN ('active', 'on_leave')",
+          "   AND (employee.hire_date IS NULL OR employee.hire_date <= $2::date)",
+          "   AND (employee.termination_date IS NULL OR employee.termination_date >= $1::date)",
+          " ORDER BY lower(employee.department) NULLS LAST, lower(employee.display_name), employee.id",
+        ].join("\n"),
+        [input.periodStart, input.periodEnd],
+      );
+      const configuredEmployees = employees.rows.filter(
+        (employee) => employee.base_salary !== null && employee.currency !== null,
+      );
+      if (configuredEmployees.length === 0) throw new PayrollRunError("no_payroll_profiles");
+      const currencies = new Set(configuredEmployees.map((employee) => employee.currency!));
+      if (currencies.size > 1) throw new PayrollRunError("mixed_currencies");
+      const currency = configuredEmployees[0]!.currency!;
+      const excludedEmployeeCount = employees.rows.length - configuredEmployees.length;
+      const created = await client.query<{ id: string }>(
+        [
+          "INSERT INTO huma.payroll_runs",
+          "  (period_start, period_end, pay_date, currency, excluded_employee_count, created_by_employee_id)",
+          "VALUES ($1::date, $2::date, $3::date, $4, $5, $6)",
+          "RETURNING id::text",
+        ].join("\n"),
+        [input.periodStart, input.periodEnd, input.payDate, currency, excludedEmployeeCount, requestedByEmployeeId],
+      );
+      const runId = created.rows[0]!.id;
+      for (const employee of configuredEmployees) {
+        const overtimeHours = roundMoney(Number(employee.overtime_hours));
+        const earnings: PayrollRunComponent[] = overtimeHours > 0
+          ? [{ name: "Overtime pay", amount: 0, hours: overtimeHours }]
+          : [];
+        await client.query(
+          [
+            "INSERT INTO huma.payroll_run_items",
+            "  (payroll_run_id, employee_id, employee_name, employee_number, department, pay_frequency, base_pay, overtime_hours, earnings)",
+            "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)",
+          ].join("\n"),
+          [
+            runId,
+            employee.id,
+            employee.display_name,
+            employee.employee_number,
+            employee.department,
+            employee.pay_frequency,
+            employee.base_salary,
+            overtimeHours,
+            JSON.stringify(earnings),
+          ],
+        );
+      }
+      await client.query(
+        [
+          "INSERT INTO audit.events",
+          "  (actor_type, actor_employee_id, action, outcome, target_type, target_id, source, details)",
+          "VALUES ('employee', $1, 'eris.payroll_run.create', 'success', 'payroll_run', $2, 'eris', $3::jsonb)",
+        ].join("\n"),
+        [requestedByEmployeeId, runId, JSON.stringify({ periodStart: input.periodStart, periodEnd: input.periodEnd, employeeCount: configuredEmployees.length })],
+      );
+      const report = await loadPayrollRuns(client, runId);
+      await client.query("COMMIT");
+      const run = report.runs[0];
+      if (!run) throw new Error("Payroll run was not returned after creation.");
+      return run;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      if (isPostgresUniqueViolation(error)) throw new PayrollRunError("duplicate_period");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updatePayrollRunItem(
+    runId: string,
+    itemId: string,
+    input: PayrollRunItemInput,
+    requestedByEmployeeId: string,
+  ): Promise<PayrollRun> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await requireEmployeePermission(client, requestedByEmployeeId, "hris.employee.read");
+      const runResult = await client.query<{ status: PayrollRun["status"] }>(
+        "SELECT status FROM huma.payroll_runs WHERE id = $1 FOR UPDATE",
+        [runId],
+      );
+      const runStatus = runResult.rows[0]?.status;
+      if (!runStatus) throw new PayrollRunError("not_found");
+      if (runStatus !== "draft") throw new PayrollRunError("not_draft");
+
+      const earningTotal = sumPayrollComponents(input.earnings);
+      const deductionTotal = sumPayrollComponents(input.deductions);
+      const contributionTotal = sumPayrollComponents(input.contributions);
+      const basePay = roundMoney(input.basePay);
+      if (basePay + earningTotal < deductionTotal + contributionTotal) {
+        throw new PayrollRunError("negative_net_pay");
+      }
+      const updated = await client.query(
+        [
+          "UPDATE huma.payroll_run_items",
+          "   SET base_pay = $1, earnings = $2::jsonb, earning_total = $3,",
+          "       deductions = $4::jsonb, deduction_total = $5,",
+          "       contributions = $6::jsonb, contribution_total = $7, notes = $8, updated_at = now()",
+          " WHERE payroll_run_id = $9 AND id = $10",
+        ].join("\n"),
+        [
+          basePay,
+          JSON.stringify(input.earnings),
+          earningTotal,
+          JSON.stringify(input.deductions),
+          deductionTotal,
+          JSON.stringify(input.contributions),
+          contributionTotal,
+          input.notes,
+          runId,
+          itemId,
+        ],
+      );
+      if (!updated.rowCount) throw new PayrollRunError("not_found");
+      await client.query(
+        [
+          "INSERT INTO audit.events",
+          "  (actor_type, actor_employee_id, action, outcome, target_type, target_id, source, details)",
+          "VALUES ('employee', $1, 'eris.payroll_run.item.update', 'success', 'payroll_run_item', $2, 'eris', $3::jsonb)",
+        ].join("\n"),
+        [requestedByEmployeeId, itemId, JSON.stringify({ payrollRunId: runId })],
+      );
+      const report = await loadPayrollRuns(client, runId);
+      await client.query("COMMIT");
+      const run = report.runs[0];
+      if (!run) throw new PayrollRunError("not_found");
+      return run;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async processPayrollRun(runId: string, requestedByEmployeeId: string): Promise<PayrollRun> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await requireEmployeePermission(client, requestedByEmployeeId, "hris.employee.read");
+      const runResult = await client.query<{ status: PayrollRun["status"] }>(
+        "SELECT status FROM huma.payroll_runs WHERE id = $1 FOR UPDATE",
+        [runId],
+      );
+      const status = runResult.rows[0]?.status;
+      if (!status) throw new PayrollRunError("not_found");
+      if (status !== "draft") throw new PayrollRunError("not_draft");
+      const itemCount = await client.query<{ count: number }>(
+        "SELECT COUNT(*)::int AS count FROM huma.payroll_run_items WHERE payroll_run_id = $1",
+        [runId],
+      );
+      if (!itemCount.rows[0]?.count) throw new PayrollRunError("no_payroll_profiles");
+      await client.query(
+        [
+          "UPDATE huma.payroll_runs",
+          "   SET status = 'processed', processed_by_employee_id = $2, processed_at = now(), updated_at = now()",
+          " WHERE id = $1",
+        ].join("\n"),
+        [runId, requestedByEmployeeId],
+      );
+      await client.query(
+        [
+          "INSERT INTO audit.events",
+          "  (actor_type, actor_employee_id, action, outcome, target_type, target_id, source)",
+          "VALUES ('employee', $1, 'eris.payroll_run.process', 'success', 'payroll_run', $2, 'eris')",
+        ].join("\n"),
+        [requestedByEmployeeId, runId],
+      );
+      const report = await loadPayrollRuns(client, runId);
+      await client.query("COMMIT");
+      const run = report.runs[0];
+      if (!run) throw new PayrollRunError("not_found");
+      return run;
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
       throw error;
@@ -1523,6 +1867,123 @@ async function auditEmployeeChange(
   );
 }
 
+async function loadPayrollRuns(client: PoolClient, runId?: string): Promise<PayrollRunsReport> {
+  const runs = await client.query<PayrollRunRow>(
+    [
+      "SELECT run.id::text AS id, run.period_start::text, run.period_end::text, run.pay_date::text,",
+      "       run.currency, run.status, COUNT(item.id)::int AS employee_count,",
+      "       run.excluded_employee_count, COALESCE(SUM(item.gross_pay), 0)::text AS gross_total,",
+      "       COALESCE(SUM(item.deduction_total), 0)::text AS deduction_total,",
+      "       COALESCE(SUM(item.contribution_total), 0)::text AS contribution_total,",
+      "       COALESCE(SUM(item.net_pay), 0)::text AS net_total, run.created_at, run.processed_at",
+      "  FROM huma.payroll_runs AS run",
+      "  LEFT JOIN huma.payroll_run_items AS item ON item.payroll_run_id = run.id",
+      ...(runId ? [" WHERE run.id = $1"] : []),
+      " GROUP BY run.id",
+      " ORDER BY run.created_at DESC, run.id",
+    ].join("\n"),
+    runId ? [runId] : [],
+  );
+  if (runs.rows.length === 0) return { runs: [] };
+
+  const items = await client.query<PayrollRunItemRow>(
+    [
+      "SELECT item.id::text AS id, item.payroll_run_id::text, item.employee_id::text,",
+      "       item.employee_name, item.employee_number, item.department, item.pay_frequency,",
+      "       item.base_pay::text, item.overtime_hours::text, item.earnings, item.earning_total::text,",
+      "       item.deductions, item.deduction_total::text, item.contributions, item.contribution_total::text,",
+      "       item.gross_pay::text, item.net_pay::text, item.notes",
+      "  FROM huma.payroll_run_items AS item",
+      " WHERE item.payroll_run_id = ANY($1::uuid[])",
+      " ORDER BY lower(item.employee_name), item.employee_id",
+    ].join("\n"),
+    [runs.rows.map((run) => run.id)],
+  );
+  const itemsByRun = new Map<string, PayrollRunItem[]>();
+  for (const row of items.rows) {
+    const grouped = itemsByRun.get(row.payroll_run_id) ?? [];
+    grouped.push(toPayrollRunItem(row));
+    itemsByRun.set(row.payroll_run_id, grouped);
+  }
+
+  return {
+    runs: runs.rows.map((run) => ({
+      id: run.id,
+      periodStart: run.period_start,
+      periodEnd: run.period_end,
+      payDate: run.pay_date,
+      currency: run.currency,
+      status: run.status,
+      employeeCount: run.employee_count,
+      excludedEmployeeCount: run.excluded_employee_count,
+      grossTotal: Number(run.gross_total),
+      deductionTotal: Number(run.deduction_total),
+      contributionTotal: Number(run.contribution_total),
+      netTotal: Number(run.net_total),
+      createdAt: run.created_at.toISOString(),
+      processedAt: run.processed_at?.toISOString() ?? null,
+      items: itemsByRun.get(run.id) ?? [],
+    })),
+  };
+}
+
+function toPayrollRunItem(row: PayrollRunItemRow): PayrollRunItem {
+  return {
+    id: row.id,
+    employeeId: row.employee_id,
+    employeeName: row.employee_name,
+    employeeNumber: row.employee_number,
+    department: row.department,
+    payFrequency: row.pay_frequency,
+    basePay: Number(row.base_pay),
+    overtimeHours: Number(row.overtime_hours),
+    earnings: parsePayrollComponents(row.earnings),
+    deductions: parsePayrollComponents(row.deductions),
+    contributions: parsePayrollComponents(row.contributions),
+    notes: row.notes,
+    earningTotal: Number(row.earning_total),
+    deductionTotal: Number(row.deduction_total),
+    contributionTotal: Number(row.contribution_total),
+    grossPay: Number(row.gross_pay),
+    netPay: Number(row.net_pay),
+  };
+}
+
+function parsePayrollComponents(value: unknown): PayrollRunComponent[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry): PayrollRunComponent[] => {
+    if (typeof entry !== "object" || entry === null) return [];
+    const component = entry as Record<string, unknown>;
+    if (
+      typeof component.name !== "string" ||
+      typeof component.amount !== "number" ||
+      !Number.isFinite(component.amount)
+    ) return [];
+    const hours = component.hours;
+    return [{
+      name: component.name,
+      amount: roundMoney(component.amount),
+      ...(typeof hours === "number" && Number.isFinite(hours) ? { hours: roundMoney(hours) } : {}),
+    }];
+  });
+}
+
+function sumPayrollComponents(components: PayrollRunComponent[]): number {
+  const cents = components.reduce((total, component) => total + Math.round(component.amount * 100), 0);
+  return cents / 100;
+}
+
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function isPostgresUniqueViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const databaseError = error as { code?: unknown; constraint?: unknown };
+  return databaseError.code === "23505" &&
+    databaseError.constraint === "payroll_runs_period_start_period_end_key";
+}
+
 function toEmployeeAttendanceRecord(row: EmployeeAttendanceRow): EmployeeAttendanceRecord {
   return {
     id: row.id,
@@ -1539,6 +2000,9 @@ function toEmployeeAttendanceRecord(row: EmployeeAttendanceRow): EmployeeAttenda
     breakMinutes: row.break_minutes ?? 0,
     notes: row.notes,
     hoursWorked: row.hours_worked === null ? null : Number(row.hours_worked),
+    overtimeHours: row.overtime_hours === null ? null : Number(row.overtime_hours),
+    regularHours: row.regular_hours === null ? null : Number(row.regular_hours),
+    timesheetEntryId: row.timesheet_entry_id,
   };
 }
 

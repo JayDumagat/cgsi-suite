@@ -50,7 +50,7 @@
       "calendar": "Calendario",
       "employeeDirectory": "Empleados",
       "organization": "Organización",
-      "attendance": "Tiempo y asistencia",
+      "attendance": "Asistencia",
       "leaveManagement": "Gestión de permisos",
       "userProfile": "Perfil de usuario",
       "task": "Tareas",
@@ -981,6 +981,15 @@
     },
     "loading": "Cargando solicitudes de permiso...",
     "empty": "No hay solicitudes que coincidan con esta vista.",
+    "table": {
+      "show": "Mostrar",
+      "entries": "registros",
+      "showing": "Mostrando {{start}} a {{end}} de {{total}} solicitudes",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "selectAll": "Seleccionar todas las solicitudes de esta página",
+      "selectRequest": "Seleccionar la solicitud de {{employee}}"
+    },
     "messages": {
       "created": "La solicitud de permiso se envió para revisión.",
       "approved": "Solicitud de permiso aprobada.",
@@ -994,8 +1003,8 @@
     }
   },
   "attendancePage": {
-    "title": "Tiempo y asistencia",
-    "description": "Consulta la asistencia y los registros diarios de horas de los empleados en una vista diaria, semanal o mensual.",
+    "title": "Asistencia",
+    "description": "Consulta las horas de entrada, salida y horas extra de los empleados para una fecha seleccionada.",
     "tabs": {
       "label": "Vistas de asistencia",
       "attendance": "Asistencia",
@@ -1082,13 +1091,33 @@
     "loading": "Cargando asistencia...",
     "noEmployees": "No hay empleados activos en este periodo.",
     "noMatches": "Ningún empleado coincide con la búsqueda.",
+    "noRecords": "No hay registros de horas para esta fecha.",
+    "table": {
+      "show": "Mostrar",
+      "entries": "registros",
+      "showing": "Mostrando {start} a {end} de {total} empleados"
+    },
     "notRecorded": "Sin registro de asistencia",
     "employee": "Empleado",
+    "shift": "Turno",
     "department": "Departamento",
     "unassigned": "Sin asignar",
     "status": "Estado",
     "clockIn": "Entrada",
     "clockOut": "Salida",
+    "clockTimes": "Entrada / salida",
+    "clockInStates": {
+      "early": "Entrada anticipada",
+      "late": "Entrada tardía",
+      "halfDay": "Asistencia de medio día",
+      "onTime": "Entrada puntual"
+    },
+    "clockOutStates": {
+      "early": "Salida anticipada",
+      "late": "Salida tardía",
+      "onTime": "Salida puntual"
+    },
+    "duration": "{hours} h {minutes} min",
     "netHoursShort": "{{hours}} h netas",
     "totalBreakMinutesShort": "Descansos {{minutes}} min",
     "clockTimesLegend": "Horas registradas",
@@ -1121,8 +1150,26 @@
     },
     "errors": {
       "loadFailed": "No se pudo cargar la asistencia. Inténtalo de nuevo.",
-      "saveFailed": "No se pudo guardar el registro. Inténtalo de nuevo."
-    }
+      "saveFailed": "No se pudo guardar el registro. Inténtalo de nuevo.",
+      "deleteFailed": "No se pudo eliminar el registro de asistencia. Inténtalo de nuevo.",
+      "invalidEntry": "Introduce horas no negativas y minutos de descanso válidos."
+    },
+    "selectAll": "Seleccionar empleados de esta página",
+    "selectEmployee": "Seleccionar a {{employee}}",
+    "regularHours": "Horas regulares",
+    "editRecord": "Editar registro de {{employee}}",
+    "deleteRecord": "Eliminar registro de {{employee}}",
+    "deleteConfirmTitle": "¿Eliminar el registro de asistencia?",
+    "deleteConfirm": "¿Eliminar los registros guardados de asistencia y horas de {{employee}} el {{date}}?",
+    "delete": "Eliminar",
+    "deleting": "Eliminando...",
+    "saveChanges": "Guardar cambios",
+    "addAttendance": "Añadir asistencia",
+    "manualEntryTitle": "Añadir asistencia manual",
+    "chooseEmployee": "Elegir un empleado",
+    "noAvailableEmployees": "Todos los empleados ya tienen registros de horas para este día.",
+    "adding": "Añadiendo...",
+    "add": "Añadir registro"
   },
   "timesheetPage": {
     "title": "Hoja de horas",
@@ -1700,10 +1747,10 @@
     "description": "Planifica ciclos de evaluación, recopila comentarios y sigue el desarrollo del personal.",
     "overview": "Resumen del desempeño",
     "stats": {
-      "cycles": "Ciclos activos",
-      "dueReviews": "Evaluaciones pendientes",
-      "completed": "Evaluaciones completadas",
-      "participants": "Participantes"
+      "activeGoals": "Objetivos activos",
+      "completedGoals": "Objetivos completados",
+      "feedbackNotes": "Notas de comentarios",
+      "averageRating": "Calificación promedio"
     },
     "process": {
       "title": "Proceso de evaluación",
@@ -1737,12 +1784,6 @@
     },
     "loading": "Cargando datos de desempeño…",
     "saving": "Guardando…",
-    "stats": {
-      "activeGoals": "Objetivos activos",
-      "completedGoals": "Objetivos completados",
-      "feedbackNotes": "Notas de comentarios",
-      "averageRating": "Calificación promedio"
-    },
     "employees": {
       "title": "Empleados",
       "description": "Elige a un empleado para revisar sus objetivos, comentarios y calificaciones.",
@@ -1822,7 +1863,7 @@
   },
   "payrollPage": {
     "title": "Nómina",
-    "description": "Consulta los perfiles de compensación registrados en ERIS.",
+    "description": "Prepara la nómina por período, revisa ingresos y deducciones, y confirma la fecha de pago prevista.",
     "overview": "Resumen de perfiles de nómina",
     "manageEmployees": "Gestionar empleados",
     "stats": {
@@ -1833,11 +1874,20 @@
       "title": "Perfiles de compensación",
       "description": "Salario, frecuencia de pago y nivel registrados en cada ficha."
     },
+    "monthLabel": "Mes de nómina",
+    "periodOverview": "Período de nómina seleccionado",
+    "salaryPeriod": "Período salarial",
+    "payoutDate": "Fecha de pago",
+    "expectedPayoutDate": "Fecha de pago prevista",
+    "noRunForMonth": "Aún no hay una nómina para este mes. Crea una para preparar el pago mensual.",
     "searchPlaceholder": "Buscar empleados",
     "table": {
       "employee": "Empleado",
       "department": "Departamento",
       "baseSalary": "Salario base",
+      "deductions": "Deducciones",
+      "contributionsOthers": "Aportaciones / otros",
+      "additionalEarnings": "Ingresos adicionales",
       "frequency": "Frecuencia de pago",
       "grade": "Nivel salarial",
       "action": "Acción",
@@ -1862,7 +1912,7 @@
     "pagination": "Mostrando {{from}}–{{to}} de {{total}} empleados",
     "previous": "Anterior",
     "next": "Siguiente",
-    "scopeNote": "RR. HH. mantiene los perfiles de compensación y prepara los datos de nómina. Contabilidad se encarga de los cálculos y pagos."
+    "scopeNote": "RR. HH. puede preparar, revisar y procesar el registro de nómina. El pago está programado para la fecha indicada en cada ejecución."
   },
   "reportsAnalyticsPage": {
     "title": "Informes y análisis",

@@ -1,223 +1,61 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import PageMeta from "@/components/common/PageMeta";
-import AttendanceRateCard from "@/components/attendance/AttendanceRateCard";
-import { getAttendanceDisplayStatus } from "@/components/attendance/attendanceStatus";
-import CrmStatisticsChart from "@/components/crm/CrmStatisticsChart";
+import AvatarText from "@/components/ui/avatar/AvatarText";
 import Input from "@/components/form/input/InputField";
-import { Card } from "@/components/ui/card";
-import { TabButton } from "@/components/ui/tabs/TabWithUnderline";
-import TimesheetTab from "@/pages/Attendance/TimesheetTab";
+import Checkbox from "@/components/form/input/Checkbox";
+import Button from "@/components/ui/button/Button";
+import { Modal } from "@/components/ui/modal";
+import DataTableOne, {
+  type DataTableOneColumn,
+} from "@/components/tables/DataTables/TableOne/DataTableOne";
+import { ChevronLeftIcon, PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import {
+  deleteAttendanceRecord,
   EmployeeDirectoryRequestError,
-  getAttendanceMonthlyStatistics,
   getAttendanceReport,
-  getLeaveManagementReport,
-  type AttendanceDailyReport,
-  type AttendanceMonthlyStatistics,
-  type AttendanceRecordStatus,
+  saveTimesheetEntry,
   type EmployeeAttendanceRecord,
-  type EmployeeLeaveRequest,
 } from "@/components/employee-directory/employeeDirectoryApi";
-import { ChevronLeftIcon, ChevronDownIcon, SearchIcon } from "@/icons";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-type AttendanceRange = "day" | "week" | "month";
-type AttendancePageTab = "attendance" | "timesheet";
-
-interface AttendanceWeekEmployee {
-  employee: EmployeeAttendanceRecord;
-  records: Map<string, EmployeeAttendanceRecord>;
-}
-
-interface AttendanceWeekData {
-  requestKey: string;
-  reports: AttendanceDailyReport[];
-  leaveRequests: EmployeeLeaveRequest[];
-  errorKey: string | null;
-}
-
-interface AnnualAttendanceStatisticsState {
-  year: number | null;
-  months: AttendanceMonthlyStatistics["months"];
-  isLoading: boolean;
-  errorKey: string | null;
-}
-
-type AttendanceDisplayStatus = AttendanceRecordStatus;
-interface AttendanceTimelineEmployeeInfo {
-  status: AttendanceDisplayStatus | null;
-  clockIn: string | null;
-  clockOut: string | null;
-  breakMinutes: number | null;
-  notes: string | null;
-  workSchedule: string | null;
-}
-
-const statusStyles: Record<
-  AttendanceDisplayStatus,
-  { card: string; dot: string; stripe: string }
-> = {
-  present: {
-    card: "border-success-200 bg-success-50 text-success-700 dark:border-success-500/25 dark:bg-success-500/15 dark:text-success-300",
-    dot: "bg-success-500",
-    stripe: "bg-success-500",
-  },
-  late: {
-    card: "border-warning-200 bg-warning-50 text-warning-700 dark:border-warning-500/25 dark:bg-warning-500/15 dark:text-warning-300",
-    dot: "bg-warning-500",
-    stripe: "bg-warning-500",
-  },
-  absent: {
-    card: "border-error-200 bg-error-50 text-error-700 dark:border-error-500/25 dark:bg-error-500/15 dark:text-error-300",
-    dot: "bg-error-500",
-    stripe: "bg-error-500",
-  },
-  on_leave: {
-    card: "border-gray-300 bg-gray-100 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300",
-    dot: "bg-gray-500",
-    stripe: "bg-gray-500",
-  },
-  sick_leave: {
-    card: "border-warning-200 bg-warning-50 text-warning-800 dark:border-warning-500/25 dark:bg-warning-500/15 dark:text-warning-200",
-    dot: "bg-warning-400",
-    stripe: "bg-warning-400",
-  },
-  half_day_sick_leave: {
-    card: "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-500/25 dark:bg-orange-500/15 dark:text-orange-200",
-    dot: "bg-orange-500",
-    stripe: "bg-orange-500",
-  },
-  vacation_leave: {
-    card: "border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-200",
-    dot: "bg-purple-500",
-    stripe: "bg-purple-500",
-  },
-  half_day_vacation_leave: {
-    card: "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-500/25 dark:bg-orange-500/15 dark:text-orange-200",
-    dot: "bg-orange-500",
-    stripe: "bg-orange-500",
-  },
-  official_business: {
-    card: "border-blue-light-200 bg-blue-light-50 text-blue-light-800 dark:border-blue-light-500/25 dark:bg-blue-light-500/15 dark:text-blue-light-200",
-    dot: "bg-blue-light-500",
-    stripe: "bg-blue-light-500",
-  },
-  nuptial: {
-    card: "border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300",
-    dot: "bg-gray-300",
-    stripe: "bg-gray-300",
-  },
-  bereavement: {
-    card: "border-gray-900 bg-gray-900 text-white dark:border-black dark:bg-black dark:text-white",
-    dot: "bg-gray-900 dark:bg-black",
-    stripe: "bg-white/90 dark:bg-gray-400",
-  },
+type AttendanceSortKey = "displayName" | "department" | "clockIn" | "overtimeHours";
+const STANDARD_BREAK_MINUTES = 60;
+type ClockInTone = "early" | "late" | "halfDay" | "onTime" | "neutral";
+type ClockOutTone = "early" | "late" | "onTime" | "neutral";
+const clockInToneClasses: Record<ClockInTone, string> = {
+  early: "text-blue-600 dark:text-blue-400",
+  late: "text-warning-600 dark:text-warning-400",
+  halfDay: "text-orange-600 dark:text-orange-400",
+  onTime: "text-success-600 dark:text-success-400",
+  neutral: "text-gray-800 dark:text-white/90",
+};
+const clockOutToneClasses: Record<ClockOutTone, string> = {
+  early: "text-warning-600 dark:text-warning-400",
+  late: "text-error-600 dark:text-error-400",
+  onTime: "text-success-600 dark:text-success-400",
+  neutral: "text-gray-800 dark:text-white/90",
+};
+type AttendanceTimeDraft = {
+  clockIn: string;
+  clockOut: string;
+  regularHours: string;
+  overtimeHours: string;
+  breakMinutes: string;
+  notes: string;
 };
 
 function todayAsInput() {
-  return dateAsInput(new Date());
-}
-
-function dateAsInput(date: Date) {
-  const year = date.getFullYear();
+  const date = new Date();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
-function parseInputDate(value: string) {
+function shiftDate(value: string, amount: number) {
   const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function getWeekDates(anchorDate: string) {
-  const start = parseInputDate(anchorDate);
-  start.setDate(start.getDate() - start.getDay());
-  return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    return {
-      date,
-      key: dateAsInput(date),
-      isWeekend: index === 0 || index === 6,
-    };
-  });
-}
-
-function getMonthDates(anchorDate: string) {
-  const first = parseInputDate(`${anchorDate.slice(0, 7)}-01`);
-  const year = first.getFullYear();
-  const month = first.getMonth();
-  const dayCount = new Date(year, month + 1, 0).getDate();
-  return Array.from({ length: dayCount }, (_, index) => {
-    const date = new Date(year, month, index + 1);
-    return {
-      date,
-      key: dateAsInput(date),
-      isWeekend: date.getDay() === 0 || date.getDay() === 6,
-    };
-  });
-}
-
-function getDayDates(anchorDate: string) {
-  const date = parseInputDate(anchorDate);
-  return [
-    {
-      date,
-      key: anchorDate,
-      isWeekend: date.getDay() === 0 || date.getDay() === 6,
-    },
-  ];
-}
-
-function getRangeDates(anchorDate: string, range: AttendanceRange) {
-  if (range === "day") return getDayDates(anchorDate);
-  return range === "month"
-    ? getMonthDates(anchorDate)
-    : getWeekDates(anchorDate);
-}
-
-function getPreviousRangeDates(anchorDate: string, range: AttendanceRange) {
-  const previousAnchorDate =
-    range === "month" ? moveMonth(anchorDate, -1) : moveDate(anchorDate, -7);
-  return getRangeDates(previousAnchorDate, range);
-}
-
-function clockTimeToMinutes(value: string | null) {
-  if (!value) return null;
-  const match = /^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(am|pm)?$/i.exec(
-    value.trim(),
-  );
-  if (!match) return null;
-
-  let hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  const meridiem = match[3]?.toLowerCase();
-  if (meridiem) {
-    if (hours < 1 || hours > 12) return null;
-    if (meridiem === "am" && hours === 12) hours = 0;
-    if (meridiem === "pm" && hours < 12) hours += 12;
-  }
-  return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
-}
-
-function average(values: number[]) {
-  return values.length
-    ? values.reduce((total, value) => total + value, 0) / values.length
-    : null;
-}
-
-function moveMonth(value: string, amount: -1 | 1) {
-  const date = parseInputDate(`${value.slice(0, 7)}-01`);
-  date.setMonth(date.getMonth() + amount);
-  return dateAsInput(date);
-}
-
-function moveDate(value: string, days: number) {
-  const date = parseInputDate(value);
-  date.setDate(date.getDate() + days);
-  return dateAsInput(date);
+  const date = new Date(year, month - 1, day + amount);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function attendanceErrorKey(error: unknown) {
@@ -230,487 +68,510 @@ function attendanceErrorKey(error: unknown) {
   return "attendancePage.errors.loadFailed";
 }
 
-interface AttendanceStatusCardProps {
-  status: AttendanceDisplayStatus;
-  statusLabel: string;
-  ariaLabel: string;
+function attendanceMutationErrorKey(error: unknown, action: "save" | "delete") {
+  if (error instanceof EmployeeDirectoryRequestError) {
+    if (error.status === 401) return "employeeDirectory.errors.sessionExpired";
+    if (error.status === 403 || error.code === "forbidden") {
+      return "employeeDirectory.errors.accessDenied";
+    }
+  }
+  return action === "delete"
+    ? "attendancePage.errors.deleteFailed"
+    : "attendancePage.errors.saveFailed";
 }
 
-function AttendanceStatusCard({
-  status,
-  statusLabel,
-  ariaLabel,
-}: AttendanceStatusCardProps) {
-  const style = statusStyles[status];
+function toTimeDraft(record: EmployeeAttendanceRecord): AttendanceTimeDraft {
+  const defaultRegularHours = (workedMinutes(record) ?? 0) / 60;
+  return {
+    clockIn: record.clockIn ?? "",
+    clockOut: record.clockOut ?? "",
+    regularHours: String(record.regularHours ?? Number(defaultRegularHours.toFixed(2))),
+    overtimeHours: String(record.overtimeHours ?? 0),
+    breakMinutes: String(record.breakMinutes),
+    notes: record.notes ?? "",
+  };
+}
 
-  return (
-    <div
-      role="group"
-      aria-label={ariaLabel}
-      className={`flex min-h-9 w-full items-center gap-2 rounded-md border px-2 py-1.5 text-start text-xs font-medium ${style.card}`}
-    >
-      <span
-        aria-hidden="true"
-        className={`min-h-4 w-1 shrink-0 self-stretch rounded-full ${style.stripe}`}
-      />
-      <span className="min-w-0">
-        <span className="line-clamp-2 leading-4" title={statusLabel}>
-          {statusLabel}
-        </span>
-      </span>
-    </div>
+function emptyTimeDraft(): AttendanceTimeDraft {
+  return {
+    clockIn: "",
+    clockOut: "",
+    regularHours: "0",
+    overtimeHours: "0",
+    breakMinutes: String(STANDARD_BREAK_MINUTES),
+    notes: "",
+  };
+}
+
+function timeToMinutes(value: string | null) {
+  if (!value) return null;
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(value.trim());
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
+}
+
+function compareClockTimes(first: string | null, second: string | null) {
+  const firstMinutes = timeToMinutes(first);
+  const secondMinutes = timeToMinutes(second);
+  if (firstMinutes === null && secondMinutes === null) return 0;
+  if (firstMinutes === null) return 1;
+  if (secondMinutes === null) return -1;
+  return firstMinutes - secondMinutes;
+}
+
+function formatClockTime(value: string | null, locale: string) {
+  const minutes = timeToMinutes(value);
+  if (minutes === null) return value || "—";
+  return new Intl.DateTimeFormat(locale, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(2000, 0, 1, Math.floor(minutes / 60), minutes % 60));
+}
+
+function parseWorkShift(value: string | null) {
+  if (!value) return null;
+  const match = /(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?\s*(?:-|–|—|\bto\b)\s*(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i.exec(value);
+  if (!match) return null;
+
+  const parseHour = (hourValue: string, markerValue?: string) => {
+    let hour = Number(hourValue);
+    const marker = markerValue?.toLowerCase().replaceAll(".", "");
+    if (marker === "am" && hour === 12) hour = 0;
+    if (marker === "pm" && hour < 12) hour += 12;
+    return hour;
+  };
+  const startMarker = match[3];
+  const endMarker = match[6] ?? startMarker;
+  let startHour = parseHour(match[1]!, startMarker);
+  let endHour = parseHour(match[4]!, endMarker);
+  const startMinute = Number(match[2] ?? 0);
+  const endMinute = Number(match[5] ?? 0);
+  if (!startMarker && !match[6]) {
+    if (startHour < 12 && startHour !== 0) startHour %= 12;
+    if (endHour <= startHour && endHour < 12) endHour += 12;
+  }
+  if (
+    startHour < 0 || startHour > 23 || endHour < 0 || endHour > 23 ||
+    startMinute > 59 || endMinute > 59
+  ) return null;
+  return {
+    start: startHour * 60 + startMinute,
+    end: endHour * 60 + endMinute,
+  };
+}
+
+function formatWorkShift(value: string | null, locale: string) {
+  const shift = parseWorkShift(value);
+  if (!shift) return value?.replace(/\s*(?:-|–|—|\bto\b)\s*/i, " – ") ?? null;
+  return `${formatClockTime(`${String(Math.floor(shift.start / 60)).padStart(2, "0")}:${String(shift.start % 60).padStart(2, "0")}`, locale)} – ${formatClockTime(`${String(Math.floor(shift.end / 60)).padStart(2, "0")}:${String(shift.end % 60).padStart(2, "0")}`, locale)}`;
+}
+
+function getClockInTone(record: EmployeeAttendanceRecord): ClockInTone {
+  const actual = timeToMinutes(record.clockIn);
+  if (actual === null) return "neutral";
+  if (record.status === "half_day_sick_leave" || record.status === "half_day_vacation_leave") {
+    return "halfDay";
+  }
+  const shift = parseWorkShift(record.workSchedule);
+  if (shift) {
+    if (actual < shift.start) return "early";
+    if (actual > shift.start) return "late";
+    return "onTime";
+  }
+  if (record.status === "late") return "late";
+  if (record.status === "present") return "onTime";
+  return "neutral";
+}
+
+function getClockOutTone(record: EmployeeAttendanceRecord): ClockOutTone {
+  const actualTime = timeToMinutes(record.clockOut);
+  const shift = parseWorkShift(record.workSchedule);
+  if (actualTime === null || !shift) return "neutral";
+  const isOvernightShift = shift.end < shift.start;
+  const scheduledEnd = isOvernightShift ? shift.end + 1440 : shift.end;
+  const actual = isOvernightShift && actualTime < shift.start
+    ? actualTime + 1440
+    : actualTime;
+  if (actual < scheduledEnd) return "early";
+  if (actual > scheduledEnd) return "late";
+  return "onTime";
+}
+
+function workedMinutes(record: EmployeeAttendanceRecord) {
+  const recordedBreakMinutes = Math.max(0, record.breakMinutes);
+  const additionalBreakMinutes = Math.max(
+    0,
+    STANDARD_BREAK_MINUTES - recordedBreakMinutes,
+  );
+  if (record.hoursWorked !== null) {
+    return Math.max(
+      0,
+      Math.round(record.hoursWorked * 60) - additionalBreakMinutes,
+    );
+  }
+
+  const clockIn = timeToMinutes(record.clockIn);
+  const clockOut = timeToMinutes(record.clockOut);
+  if (clockIn === null || clockOut === null) return null;
+  const end = clockOut < clockIn ? clockOut + 24 * 60 : clockOut;
+  return Math.max(
+    0,
+    end - clockIn - Math.max(recordedBreakMinutes, STANDARD_BREAK_MINUTES),
   );
 }
 
 export default function AttendancePage() {
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState<AttendancePageTab>("attendance");
   const [selectedDate, setSelectedDate] = useState(todayAsInput);
-  const [selectedRange, setSelectedRange] = useState<AttendanceRange>("day");
-  const [timesheetRevision, setTimesheetRevision] = useState(0);
-  const [search, setSearch] = useState("");
-  const [comparisonData, setComparisonData] = useState<{
-    requestKey: string;
-    reports: AttendanceDailyReport[];
-  }>({ requestKey: "", reports: [] });
-  const [weekData, setWeekData] = useState<AttendanceWeekData>({
-    requestKey: "",
-    reports: [],
-    leaveRequests: [],
-    errorKey: null,
-  });
-  const [annualTimeStatistics, setAnnualTimeStatistics] =
-    useState<AnnualAttendanceStatisticsState>({
-      year: null,
-      months: [],
-      isLoading: false,
-      errorKey: null,
-    });
-  const calendarDates = useMemo(
-    () => getRangeDates(selectedDate, selectedRange),
-    [selectedDate, selectedRange],
+  const [records, setRecords] = useState<EmployeeAttendanceRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortKey, setSortKey] = useState<AttendanceSortKey>("displayName");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [reloadToken, setReloadToken] = useState(0);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<string>>(
+    () => new Set(),
   );
-  const periodStart = calendarDates[0]?.key ?? selectedDate;
-  const periodEnd =
-    calendarDates[calendarDates.length - 1]?.key ?? selectedDate;
-  const today = todayAsInput();
-  const selectedDayDate = parseInputDate(selectedDate);
-  const selectedYear = selectedDayDate.getFullYear();
-  const selectedDayIsWeekend =
-    selectedDayDate.getDay() === 0 || selectedDayDate.getDay() === 6;
-  const selectedDayIsToday = selectedDate === today;
-  const previousCalendarDates = useMemo(
-    () => getPreviousRangeDates(selectedDate, selectedRange),
-    [selectedDate, selectedRange],
-  );
-  const comparisonRequestKey = `${selectedRange}:${previousCalendarDates[0]?.key ?? selectedDate}:${previousCalendarDates[previousCalendarDates.length - 1]?.key ?? selectedDate}`;
-  const requestKey = `${selectedRange}:${periodStart}:${periodEnd}:${timesheetRevision}`;
-  const isLoading = weekData.requestKey !== requestKey;
-  const reports = useMemo(
-    () => (isLoading ? [] : weekData.reports),
-    [isLoading, weekData],
-  );
-  const leaveRequests = useMemo(
-    () => (isLoading ? [] : weekData.leaveRequests),
-    [isLoading, weekData],
-  );
-  const loadErrorKey = isLoading ? null : weekData.errorKey;
-  const previousReports =
-    comparisonData.requestKey === comparisonRequestKey
-      ? comparisonData.reports
-      : [];
-  const attendanceInfoByDateAndEmployee = useMemo(
-    () =>
-      Object.fromEntries(
-        reports.map((report) => [
-          report.date,
-          Object.fromEntries(
-            report.items.map((record) => [
-              record.employeeId,
-              {
-                status: getAttendanceDisplayStatus(
-                  record,
-                  report.date,
-                  leaveRequests,
-                ),
-                clockIn: record.clockIn,
-                clockOut: record.clockOut,
-                breakMinutes: record.breakMinutes,
-                notes: record.notes,
-                workSchedule: record.workSchedule,
-              },
-            ]),
-          ),
-        ]),
-      ) as Record<string, Record<string, AttendanceTimelineEmployeeInfo>>,
-    [leaveRequests, reports],
-  );
-  const selectedAttendanceInfoByEmployee =
-    attendanceInfoByDateAndEmployee[selectedDate] ?? {};
-
-  const weekdayFormatter = useMemo(
-    () => new Intl.DateTimeFormat(i18n.language, { weekday: "short" }),
-    [i18n.language],
-  );
-  const fullWeekdayFormatter = useMemo(
-    () => new Intl.DateTimeFormat(i18n.language, { weekday: "long" }),
-    [i18n.language],
-  );
-  const monthDayFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(i18n.language, {
-        month: "short",
-        day: "numeric",
-      }),
-    [i18n.language],
-  );
-  const monthNameFormatter = useMemo(
-    () => new Intl.DateTimeFormat(i18n.language, { month: "short" }),
-    [i18n.language],
-  );
-  const fullDateFormatter = useMemo(
-    () => new Intl.DateTimeFormat(i18n.language, { dateStyle: "full" }),
-    [i18n.language],
-  );
-  const clockTimeFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(i18n.language, {
-        hour: "numeric",
-        minute: "2-digit",
-      }),
-    [i18n.language],
-  );
-  const formatClockMinutes = useMemo(
-    () => (minutes: number) => {
-      if (!Number.isFinite(minutes)) return "—";
-      const normalizedMinutes = ((Math.round(minutes) % 1440) + 1440) % 1440;
-      return clockTimeFormatter.format(
-        new Date(2000, 0, 1, 0, normalizedMinutes),
-      );
-    },
-    [clockTimeFormatter],
-  );
-  const periodLabel = useMemo(() => {
-    if (selectedRange === "day") {
-      return fullDateFormatter.format(parseInputDate(periodStart));
-    }
-    if (selectedRange === "month") {
-      return new Intl.DateTimeFormat(i18n.language, {
-        month: "long",
-        year: "numeric",
-      }).format(parseInputDate(periodStart));
-    }
-
-    const first = parseInputDate(periodStart);
-    const last = parseInputDate(periodEnd);
-    const rangeFormatter = new Intl.DateTimeFormat(i18n.language, {
-      month: "short",
-      day: "numeric",
-    });
-    const yearFormatter = new Intl.DateTimeFormat(i18n.language, {
-      year: "numeric",
-    });
-    return `${rangeFormatter.format(first)} – ${rangeFormatter.format(last)}, ${yearFormatter.format(last)}`;
-  }, [fullDateFormatter, i18n.language, periodEnd, periodStart, selectedRange]);
-  const timeStatistics = useMemo(() => {
-    const allClockIns: number[] = [];
-    const allClockOuts: number[] = [];
-    const daily = reports.map((report) => {
-      const clockIns = report.items
-        .map((record) => clockTimeToMinutes(record.clockIn))
-        .filter((value): value is number => value !== null);
-      const clockOuts = report.items
-        .map((record) => clockTimeToMinutes(record.clockOut))
-        .filter((value): value is number => value !== null);
-      allClockIns.push(...clockIns);
-      allClockOuts.push(...clockOuts);
-      return {
-        date: report.date,
-        averageClockIn: average(clockIns),
-        averageClockOut: average(clockOuts),
-      };
-    });
-
-    return {
-      averageClockIn: average(allClockIns),
-      averageClockOut: average(allClockOuts),
-      daily,
-    };
-  }, [reports]);
-  const selectedDayReport = reports.find(
-    (report) => report.date === selectedDate,
-  );
-  const selectedDayClockIns = (selectedDayReport?.items ?? [])
-    .map((record) => clockTimeToMinutes(record.clockIn))
-    .filter((value): value is number => value !== null);
-  const selectedDayClockOuts = (selectedDayReport?.items ?? [])
-    .map((record) => clockTimeToMinutes(record.clockOut))
-    .filter((value): value is number => value !== null);
-  const averageClockInForMetric =
-    selectedRange === "day"
-      ? average(selectedDayClockIns)
-      : timeStatistics.averageClockIn;
-  const averageClockOutForMetric =
-    selectedRange === "day"
-      ? average(selectedDayClockOuts)
-      : timeStatistics.averageClockOut;
-  const annualMonthlyAverageMap = useMemo(
-    () =>
-      new Map(
-        (annualTimeStatistics.year === selectedYear
-          ? annualTimeStatistics.months
-          : []
-        ).map((month) => [month.month, month]),
-      ),
-    [annualTimeStatistics.months, annualTimeStatistics.year, selectedYear],
-  );
-  const annualMonthCategories = useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, month) =>
-        monthNameFormatter.format(new Date(selectedYear, month, 1)),
-      ),
-    [monthNameFormatter, selectedYear],
-  );
-  const weeklyStatisticsByDate = new Map(
-    timeStatistics.daily.map((point) => [point.date, point]),
-  );
-  const statisticsCategories =
-    selectedRange === "day"
-      ? [periodLabel]
-      : selectedRange === "week"
-        ? calendarDates.map(({ date }) => fullWeekdayFormatter.format(date))
-        : annualMonthCategories;
-  const statisticsSeries =
-    selectedRange === "day"
-      ? [
-          {
-            name: t("attendancePage.statistics.timeIn"),
-            data: [averageClockInForMetric],
-          },
-          {
-            name: t("attendancePage.statistics.timeOut"),
-            data: [averageClockOutForMetric],
-          },
-        ]
-      : selectedRange === "week"
-        ? [
-            {
-              name: t("attendancePage.statistics.timeIn"),
-              data: calendarDates.map(
-                ({ key }) => weeklyStatisticsByDate.get(key)?.averageClockIn ?? null,
-              ),
-            },
-            {
-              name: t("attendancePage.statistics.timeOut"),
-              data: calendarDates.map(
-                ({ key }) => weeklyStatisticsByDate.get(key)?.averageClockOut ?? null,
-              ),
-            },
-          ]
-        : [
-            {
-              name: t("attendancePage.statistics.timeIn"),
-              data: Array.from(
-                { length: 12 },
-                (_, index) => annualMonthlyAverageMap.get(index + 1)?.averageClockIn ?? null,
-              ),
-            },
-            {
-              name: t("attendancePage.statistics.timeOut"),
-              data: Array.from(
-                { length: 12 },
-                (_, index) => annualMonthlyAverageMap.get(index + 1)?.averageClockOut ?? null,
-              ),
-            },
-          ];
-  const statisticsSubtitle =
-    selectedRange === "day"
-      ? t("attendancePage.statistics.daySubtitle", { period: periodLabel })
-      : selectedRange === "month"
-        ? annualTimeStatistics.errorKey && annualTimeStatistics.year === selectedYear
-          ? t(annualTimeStatistics.errorKey)
-          : annualTimeStatistics.isLoading || annualTimeStatistics.year !== selectedYear
-            ? t("attendancePage.statistics.loadingYear", { year: selectedYear })
-          : t("attendancePage.statistics.yearSubtitle", { year: selectedYear })
-        : t("attendancePage.statistics.subtitle", { period: periodLabel });
-  const statisticsXAxisTitle = t(
-    `attendancePage.statistics.${selectedRange === "day" ? "dayAxis" : selectedRange === "week" ? "weekdayAxis" : "monthAxis"}`,
-  );
-  const statisticsYAxisTitle = t(
-    "attendancePage.statistics.averageTimeAxis",
-  );
+  const [editingRecord, setEditingRecord] = useState<EmployeeAttendanceRecord | null>(null);
+  const [isAddingAttendance, setIsAddingAttendance] = useState(false);
+  const [newAttendanceEmployeeId, setNewAttendanceEmployeeId] = useState("");
+  const [timeDraft, setTimeDraft] = useState<AttendanceTimeDraft | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<EmployeeAttendanceRecord | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [mutationErrorKey, setMutationErrorKey] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    const currentRequestKey = requestKey;
-    const attendancePromise = Promise.all(
-      calendarDates.map(({ key }) =>
-        getAttendanceReport(key, "", controller.signal),
-      ),
+    setIsLoading(true);
+    setErrorKey(null);
+
+    void getAttendanceReport(selectedDate, "", controller.signal)
+      .then((report) => {
+        if (!controller.signal.aborted) setRecords(report.items);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setRecords([]);
+        setErrorKey(attendanceErrorKey(error));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [reloadToken, selectedDate]);
+
+  const collator = useMemo(() => new Intl.Collator(i18n.language), [i18n.language]);
+  const numberFormat = useMemo(
+    () => new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }),
+    [i18n.language],
+  );
+  const filteredAndSortedRecords = useMemo(() => {
+    const query = searchTerm.trim().toLocaleLowerCase(i18n.language);
+    const filtered = records.filter((record) =>
+      !query || [
+        record.displayName,
+        record.employeeNumber,
+        record.workEmail,
+        record.department,
+        record.jobTitle,
+        record.clockIn,
+        record.clockOut,
+        record.overtimeHours?.toString(),
+      ].some((value) => value?.toLocaleLowerCase(i18n.language).includes(query)),
     );
-    const leavePromise = getLeaveManagementReport(controller.signal)
-      .then((report) => report.items)
-      .catch(() => [] as EmployeeLeaveRequest[]);
 
-    void Promise.all([attendancePromise, leavePromise])
-      .then(([dailyReports, approvedAndPendingLeaves]) => {
-        if (controller.signal.aborted) return;
-        setWeekData({
-          requestKey: currentRequestKey,
-          reports: dailyReports,
-          leaveRequests: approvedAndPendingLeaves,
-          errorKey: null,
-        });
-      })
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) return;
-        setWeekData({
-          requestKey: currentRequestKey,
-          reports: [],
-          leaveRequests: [],
-          errorKey: attendanceErrorKey(error),
-        });
-      });
-
-    return () => controller.abort();
-  }, [calendarDates, requestKey]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const currentRequestKey = comparisonRequestKey;
-    setComparisonData({ requestKey: currentRequestKey, reports: [] });
-    void Promise.all(
-      previousCalendarDates.map(({ key }) =>
-        getAttendanceReport(key, "", controller.signal),
-      ),
-    )
-      .then((reports) => {
-        if (!controller.signal.aborted) {
-          setComparisonData({ requestKey: currentRequestKey, reports });
-        }
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setComparisonData({ requestKey: currentRequestKey, reports: [] });
-        }
-      });
-
-    return () => controller.abort();
-  }, [comparisonRequestKey, previousCalendarDates]);
-
-  useEffect(() => {
-    if (selectedRange !== "month") return;
-    const controller = new AbortController();
-    setAnnualTimeStatistics({
-      year: selectedYear,
-      months: [],
-      isLoading: true,
-      errorKey: null,
-    });
-    void getAttendanceMonthlyStatistics(selectedYear, controller.signal)
-      .then((statistics) => {
-        if (controller.signal.aborted) return;
-        setAnnualTimeStatistics({
-          year: statistics.year,
-          months: statistics.months,
-          isLoading: false,
-          errorKey: null,
-        });
-      })
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) return;
-        setAnnualTimeStatistics({
-          year: selectedYear,
-          months: [],
-          isLoading: false,
-          errorKey: attendanceErrorKey(error),
-        });
-      });
-
-    return () => controller.abort();
-  }, [selectedRange, selectedYear, timesheetRevision]);
-
-  const collator = useMemo(
-    () => new Intl.Collator(i18n.language),
-    [i18n.language],
-  );
-  const employees = useMemo(() => {
-    const employeeMap = new Map<string, AttendanceWeekEmployee>();
-    for (const report of reports) {
-      for (const record of report.items) {
-        const existing = employeeMap.get(record.employeeId);
-        if (existing) {
-          existing.records.set(report.date, record);
-        } else {
-          employeeMap.set(record.employeeId, {
-            employee: record,
-            records: new Map([[report.date, record]]),
-          });
-        }
+    return filtered.sort((first, second) => {
+      let comparison = 0;
+      if (sortKey === "overtimeHours") {
+        if (first.overtimeHours === null && second.overtimeHours === null) return 0;
+        if (first.overtimeHours === null) return 1;
+        if (second.overtimeHours === null) return -1;
+        comparison = first.overtimeHours - second.overtimeHours;
+      } else if (sortKey === "clockIn") {
+        comparison = compareClockTimes(first.clockIn, second.clockIn);
+        if (first.clockIn === null || second.clockIn === null) return comparison;
+      } else if (sortKey === "department") {
+        comparison = collator.compare(first.department ?? "", second.department ?? "");
+      } else {
+        comparison = collator.compare(first.displayName, second.displayName);
       }
-    }
-    return [...employeeMap.values()].sort((a, b) => {
-      const departmentOrder = collator.compare(
-        a.employee.department ?? "",
-        b.employee.department ?? "",
-      );
-      return (
-        departmentOrder ||
-        collator.compare(a.employee.displayName, b.employee.displayName)
-      );
+      return sortOrder === "asc" ? comparison : -comparison;
     });
-  }, [collator, reports]);
+  }, [collator, i18n.language, records, searchTerm, sortKey, sortOrder]);
 
-  const searchQuery = search.trim().toLocaleLowerCase();
-  const visibleEmployees = employees.filter(({ employee }) => {
-    if (!searchQuery) return true;
-    return [
-      employee.displayName,
-      employee.employeeNumber,
-      employee.department,
-      employee.jobTitle,
-      employee.workEmail,
-    ].some((value) => value?.toLocaleLowerCase().includes(searchQuery));
-  });
-  const attendanceStats = [
-    {
-      label: t("attendancePage.summary.totalEmployees"),
-      value: Object.keys(selectedAttendanceInfoByEmployee).length,
-    },
-    {
-      label: t("attendancePage.summary.presentEmployees"),
-      value: Object.values(selectedAttendanceInfoByEmployee).filter(
-        ({ status }) => status === "present" || status === "official_business",
-      ).length,
-    },
-    {
-      label: t("attendancePage.summary.absentEmployees"),
-      value: Object.values(selectedAttendanceInfoByEmployee).filter(
-        ({ status }) => status === "absent",
-      ).length,
-    },
-    {
-      label: t("attendancePage.summary.onLeaveEmployees"),
-      value: Object.values(selectedAttendanceInfoByEmployee).filter(
-        ({ status }) =>
-          status === "on_leave" ||
-          status === "sick_leave" ||
-          status === "half_day_sick_leave" ||
-          status === "vacation_leave" ||
-          status === "half_day_vacation_leave" ||
-          status === "nuptial" ||
-          status === "bereavement",
-      ).length,
-    },
-  ];
+  const totalItems = filteredAndSortedRecords.length;
+  const manualEntryEmployees = records.filter(
+    (record) => !record.timesheetEntryId && !record.clockIn && !record.clockOut,
+  );
+  const firstVisibleIndex = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastVisibleIndex = Math.min(page * pageSize, totalItems);
+  const visibleRecords = filteredAndSortedRecords.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+  const allVisibleSelected = visibleRecords.length > 0 && visibleRecords.every(
+    (record) => selectedEmployeeIds.has(record.employeeId),
+  );
+  const someVisibleSelected = visibleRecords.some(
+    (record) => selectedEmployeeIds.has(record.employeeId),
+  );
 
-  const movePeriod = (direction: -1 | 1) => {
-    setSelectedDate((current) =>
-      selectedRange === "month"
-        ? moveMonth(current, direction)
-        : moveDate(current, direction * (selectedRange === "week" ? 7 : 1)),
+  const columns = useMemo<DataTableOneColumn<EmployeeAttendanceRecord>[]>(
+    () => [
+      {
+        key: "select",
+        label: t("attendancePage.selectAll"),
+        className: "w-12",
+        header: (
+          <Checkbox
+            ariaLabel={t("attendancePage.selectAll")}
+            checked={allVisibleSelected}
+            indeterminate={someVisibleSelected && !allVisibleSelected}
+            onChange={(checked) => {
+              setSelectedEmployeeIds((current) => {
+                const next = new Set(current);
+                visibleRecords.forEach((record) => {
+                  if (checked) next.add(record.employeeId);
+                  else next.delete(record.employeeId);
+                });
+                return next;
+              });
+            }}
+          />
+        ),
+        render: (record) => (
+          <Checkbox
+            ariaLabel={t("attendancePage.selectEmployee", { employee: record.displayName })}
+            checked={selectedEmployeeIds.has(record.employeeId)}
+            onChange={(checked) => {
+              setSelectedEmployeeIds((current) => {
+                const next = new Set(current);
+                if (checked) next.add(record.employeeId);
+                else next.delete(record.employeeId);
+                return next;
+              });
+            }}
+          />
+        ),
+      },
+      {
+        key: "employee",
+        label: t("attendancePage.employee"),
+        sortKey: "displayName",
+        className: "min-w-56",
+        render: (record) => (
+          <div className="flex items-center gap-3">
+            <AvatarText
+              name={record.displayName}
+              className="h-10 w-10 shrink-0"
+            />
+            <div className="min-w-0">
+              <span className="block font-medium text-gray-800 dark:text-white/90">
+                {record.displayName}
+              </span>
+              <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+                {t("attendancePage.shift")}: {formatWorkShift(record.workSchedule, i18n.language) ?? t("employeeDirectory.notProvided")}
+              </span>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: "department",
+        label: t("attendancePage.department"),
+        sortKey: "department",
+        render: (record) => record.department || t("attendancePage.unassigned"),
+      },
+      {
+        key: "time",
+        label: t("attendancePage.clockTimes"),
+        sortKey: "clockIn",
+        className: "min-w-[22rem]",
+        render: (record) => {
+          const clockIn = formatClockTime(record.clockIn, i18n.language);
+          const clockOut = formatClockTime(record.clockOut, i18n.language);
+          const clockInTone = getClockInTone(record);
+          const clockOutTone = getClockOutTone(record);
+          const minutes = workedMinutes(record);
+          const duration = minutes === null
+            ? "—"
+            : t("attendancePage.duration", {
+                hours: Math.floor(minutes / 60),
+                minutes: minutes % 60,
+              });
+          return (
+            <div className="flex min-w-[22rem] items-center gap-3">
+              <span
+                title={clockInTone === "neutral" ? undefined : t(`attendancePage.clockInStates.${clockInTone}`)}
+                className={`w-20 shrink-0 whitespace-nowrap text-start font-medium ${clockInToneClasses[clockInTone]}`}
+              >
+                {clockIn}
+              </span>
+              <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                <span aria-hidden="true" className="size-1 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600" />
+                <span aria-hidden="true" className="h-px min-w-2 flex-1 bg-gray-300 dark:bg-gray-700" />
+                <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-500 dark:text-gray-400">
+                  {duration}
+                </span>
+                <span aria-hidden="true" className="h-px min-w-2 flex-1 bg-gray-300 dark:bg-gray-700" />
+                <span aria-hidden="true" className="size-1 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600" />
+              </div>
+              <span
+                title={clockOutTone === "neutral" ? undefined : t(`attendancePage.clockOutStates.${clockOutTone}`)}
+                className={`w-20 shrink-0 whitespace-nowrap text-end font-medium ${clockOutToneClasses[clockOutTone]}`}
+              >
+                {clockOut}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "overtime",
+        label: t("timesheetPage.fields.overtimeHours"),
+        sortKey: "overtimeHours",
+        className: "min-w-32",
+        render: (record) => record.overtimeHours === null
+          ? "—"
+          : numberFormat.format(record.overtimeHours),
+      },
+      {
+        key: "actions",
+        label: t("attendancePage.actions"),
+        className: "min-w-28",
+        render: (record) => (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label={t("attendancePage.editRecord", { employee: record.displayName })}
+              title={t("attendancePage.edit")}
+              onClick={() => {
+                setMutationErrorKey(null);
+                setIsAddingAttendance(false);
+                setEditingRecord(record);
+                setTimeDraft(toTimeDraft(record));
+              }}
+              className="flex size-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-brand-400"
+            >
+              <PencilIcon className="size-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-label={t("attendancePage.deleteRecord", { employee: record.displayName })}
+              title={t("attendancePage.delete")}
+              disabled={!record.id && !record.timesheetEntryId}
+              onClick={() => {
+                setMutationErrorKey(null);
+                setDeleteTarget(record);
+              }}
+              className="flex size-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-error-50 hover:text-error-600 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
+            >
+              <TrashBinIcon className="size-4" aria-hidden="true" />
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [
+      allVisibleSelected,
+      i18n.language,
+      numberFormat,
+      selectedEmployeeIds,
+      someVisibleSelected,
+      t,
+      visibleRecords,
+    ],
+  );
+
+  function handleSortChange(nextSortKey: string) {
+    const nextKey = nextSortKey as AttendanceSortKey;
+    if (sortKey === nextKey) {
+      setSortOrder((current) => current === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(nextKey);
+      setSortOrder("asc");
+    }
+    setPage(1);
+  }
+
+  async function handleSaveTimeEntry(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const targetEmployeeId = editingRecord?.employeeId ?? (
+      isAddingAttendance ? newAttendanceEmployeeId : ""
     );
-  };
+    if (!targetEmployeeId || !timeDraft) return;
+    const regularHours = Number(timeDraft.regularHours);
+    const overtimeHours = Number(timeDraft.overtimeHours);
+    const breakMinutes = Number(timeDraft.breakMinutes);
+    if (
+      !Number.isFinite(regularHours) || regularHours < 0 ||
+      !Number.isFinite(overtimeHours) || overtimeHours < 0 ||
+      !Number.isInteger(breakMinutes) || breakMinutes < 0
+    ) {
+      setMutationErrorKey("attendancePage.errors.invalidEntry");
+      return;
+    }
+
+    setIsSaving(true);
+    setMutationErrorKey(null);
+    try {
+      await saveTimesheetEntry(targetEmployeeId, selectedDate, {
+        clockIn: timeDraft.clockIn || null,
+        clockOut: timeDraft.clockOut || null,
+        regularHours,
+        overtimeHours,
+        breakMinutes,
+        notes: timeDraft.notes.trim() || null,
+      });
+      setSelectedEmployeeIds((current) => {
+        const next = new Set(current);
+        next.delete(targetEmployeeId);
+        return next;
+      });
+      setEditingRecord(null);
+      setIsAddingAttendance(false);
+      setNewAttendanceEmployeeId("");
+      setTimeDraft(null);
+      setReloadToken((current) => current + 1);
+    } catch (error) {
+      setMutationErrorKey(attendanceMutationErrorKey(error, "save"));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteTimeEntry() {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    setMutationErrorKey(null);
+    try {
+      await deleteAttendanceRecord(deleteTarget.employeeId, selectedDate);
+      setSelectedEmployeeIds((current) => {
+        const next = new Set(current);
+        next.delete(deleteTarget.employeeId);
+        return next;
+      });
+      setDeleteTarget(null);
+      setReloadToken((current) => current + 1);
+    } catch (error) {
+      setMutationErrorKey(attendanceMutationErrorKey(error, "delete"));
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  const showingMessage = t("attendancePage.table.showing", {
+    start: firstVisibleIndex,
+    end: lastVisibleIndex,
+    total: totalItems,
+  });
 
   return (
     <>
@@ -720,477 +581,296 @@ export default function AttendancePage() {
       />
       <div className="space-y-6">
         <PageBreadcrumb pageTitle={t("attendancePage.title")} />
-
-        <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-center 2xl:justify-between">
-          <div className="flex min-w-0 flex-wrap items-center gap-4">
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => movePeriod(-1)}
-                aria-label={t(
-                  selectedRange === "month"
-                    ? "attendancePage.previousMonth"
-                    : selectedRange === "day"
-                      ? "attendancePage.previousDay"
-                      : "attendancePage.previousWeek",
-                )}
-                className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/5"
-              >
-                <ChevronLeftIcon className="size-4 rtl:rotate-180" />
-              </button>
-              <button
-                type="button"
-                onClick={() => movePeriod(1)}
-                aria-label={t(
-                  selectedRange === "month"
-                    ? "attendancePage.nextMonth"
-                    : selectedRange === "day"
-                      ? "attendancePage.nextDay"
-                      : "attendancePage.nextWeek",
-                )}
-                className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/5"
-              >
-                <ChevronLeftIcon className="size-4 rotate-180 rtl:rotate-0" />
-              </button>
-            </div>
-            <h2
-              id="attendance-period-heading"
-              className="min-w-0 truncate text-xl leading-tight font-semibold tracking-tight text-gray-800 dark:text-white/90"
-            >
-              {periodLabel}
-            </h2>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-[9rem_14rem]">
-            <div className="relative">
-              <select
-                value={selectedRange}
-                aria-label={t("attendancePage.rangeLabel")}
-                onChange={(event) =>
-                  setSelectedRange(event.target.value as AttendanceRange)
-                }
-                className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 pe-9 text-sm text-gray-800 shadow-theme-xs outline-none focus:border-brand-300 focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-              >
-                <option value="day">
-                  {t("attendancePage.rangeOptions.day")}
-                </option>
-                <option value="week">
-                  {t("attendancePage.rangeOptions.week")}
-                </option>
-                <option value="month">
-                  {t("attendancePage.rangeOptions.month")}
-                </option>
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-gray-500" />
-            </div>
-            <Input
-              type="date"
-              aria-label={t("attendancePage.date")}
-              value={selectedDate}
-              onChange={(event) => {
-                if (event.target.value) setSelectedDate(event.target.value);
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <nav
-            role="tablist"
-            aria-label={t("attendancePage.tabs.label")}
-            className="flex gap-5 overflow-x-auto border-b border-gray-200 dark:border-gray-800"
-            onKeyDown={(event) => {
-              if (
-                !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
-              )
-                return;
-              const tabs: AttendancePageTab[] = ["attendance", "timesheet"];
-              const activeIndex = tabs.indexOf(activeTab);
-              const isRtl = document.documentElement.dir === "rtl";
-              const nextIndex =
-                event.key === "Home"
-                  ? 0
-                  : event.key === "End"
-                    ? tabs.length - 1
-                    : (activeIndex +
-                        (event.key === "ArrowRight"
-                          ? isRtl
-                            ? -1
-                            : 1
-                          : isRtl
-                            ? 1
-                            : -1) +
-                        tabs.length) %
-                      tabs.length;
-              event.preventDefault();
-              setActiveTab(tabs[nextIndex]!);
-              event.currentTarget
-                .querySelectorAll<HTMLButtonElement>('[role="tab"]')
-                [nextIndex]?.focus();
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Button
+            type="button"
+            startIcon={<PlusIcon className="size-4" aria-hidden="true" />}
+            onClick={() => {
+              setMutationErrorKey(null);
+              setEditingRecord(null);
+              setIsAddingAttendance(true);
+              setNewAttendanceEmployeeId(manualEntryEmployees[0]?.employeeId ?? "");
+              setTimeDraft(emptyTimeDraft());
             }}
+            disabled={isLoading}
           >
-            <TabButton
-              id="attendance-tab"
-              label={t("attendancePage.tabs.attendance")}
-              isActive={activeTab === "attendance"}
-              onClick={() => setActiveTab("attendance")}
-              role="tab"
-              tabIndex={activeTab === "attendance" ? 0 : -1}
-              ariaControls="attendance-panel"
-            />
-            <TabButton
-              id="timesheet-tab"
-              label={t("attendancePage.tabs.timesheet")}
-              isActive={activeTab === "timesheet"}
-              onClick={() => setActiveTab("timesheet")}
-              role="tab"
-              tabIndex={activeTab === "timesheet" ? 0 : -1}
-              ariaControls="timesheet-panel"
-            />
-          </nav>
-
-          <div
-            id="attendance-panel"
-            role="tabpanel"
-            aria-labelledby="attendance-tab"
-            hidden={activeTab !== "attendance"}
-            className="space-y-6"
-          >
-            <section
-              aria-label={t("attendancePage.summary.title")}
-              className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+            {t("attendancePage.addAttendance")}
+          </Button>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <button
+              type="button"
+              aria-label={t("attendancePage.previousDay")}
+              title={t("attendancePage.previousDay")}
+              onClick={() => {
+                setSelectedDate((current) => shiftDate(current, -1));
+                setPage(1);
+                setSelectedEmployeeIds(new Set());
+              }}
+              className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 shadow-theme-xs transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/5"
             >
-              {attendanceStats.map((stat) => (
-                <Card key={stat.label}>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {stat.label}
-                  </p>
-                  <p className="mt-3 text-2xl font-semibold text-gray-800 dark:text-white/90">
-                    {isLoading ? "—" : stat.value}
-                  </p>
-                </Card>
-              ))}
-            </section>
-
-            <CrmStatisticsChart
-              title={t("attendancePage.statistics.title")}
-              subtitle={statisticsSubtitle}
-              firstMetric={{
-                value:
-                  averageClockInForMetric === null
-                    ? "—"
-                    : formatClockMinutes(averageClockInForMetric),
-                label: t("attendancePage.statistics.averageTimeIn"),
-              }}
-              secondMetric={{
-                value:
-                  averageClockOutForMetric === null
-                    ? "—"
-                    : formatClockMinutes(averageClockOutForMetric),
-                label: t("attendancePage.statistics.averageTimeOut"),
-              }}
-              categories={statisticsCategories}
-              series={statisticsSeries}
-              showLegend
-              showPeriodTabs={false}
-              xAxisTitle={statisticsXAxisTitle}
-              yAxisTitle={statisticsYAxisTitle}
-              yAxisFormatter={formatClockMinutes}
-            />
-
-            <Card>
-              <section
-                aria-labelledby="attendance-period-heading"
-                className="space-y-4"
-              >
-                <div className="flex justify-end">
-                  <div className="relative w-full max-w-sm">
-                    <Input
-                      type="search"
-                      aria-label={t("attendancePage.search")}
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder={t("attendancePage.search")}
-                      className="ps-10"
-                    />
-                    <SearchIcon
-                      className="pointer-events-none absolute start-3 top-1/2 z-10 size-4 -translate-y-1/2 fill-gray-500 text-gray-500 dark:fill-gray-400 dark:text-gray-400"
-                      aria-hidden="true"
-                    />
-                  </div>
-                </div>
-
-                {loadErrorKey ? (
-                  <p
-                    className="py-10 text-center text-sm text-error-600 dark:text-error-400"
-                    role="alert"
-                  >
-                    {t(loadErrorKey)}
-                  </p>
-                ) : isLoading ? (
-                  <p className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-                    {t("attendancePage.loading")}
-                  </p>
-                ) : visibleEmployees.length === 0 ? (
-                  <div className="border-y border-gray-200 py-10 text-center dark:border-gray-800">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {employees.length === 0
-                        ? t("attendancePage.noEmployees")
-                        : t("attendancePage.noMatches")}
-                    </p>
-                  </div>
-                ) : selectedRange === "day" ? (
-                  <div className="flex min-w-0 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
-                    <div className="w-48 shrink-0 bg-white dark:bg-gray-900">
-                      <div className="flex min-h-[4.5rem] items-center border-e border-b border-gray-200 bg-gray-50 px-4 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
-                        {t("attendancePage.employee")}
-                      </div>
-                      {visibleEmployees.map(({ employee }) => (
-                        <div
-                          key={employee.employeeId}
-                          className="flex h-[6.5rem] min-w-0 flex-col justify-center border-e border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900"
-                        >
-                          <span className="truncate text-sm font-semibold text-gray-800 dark:text-white/90">
-                            {employee.displayName}
-                          </span>
-                          {employee.jobTitle && (
-                            <span className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
-                              {employee.jobTitle}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="min-w-0 flex-1 overflow-x-auto">
-                      <div
-                        className="grid min-w-full"
-                        style={{ gridTemplateColumns: "minmax(8.5rem, 1fr)" }}
-                      >
-                        <div
-                          className={`relative flex min-h-[4.5rem] flex-col justify-center border-e border-b border-gray-200 px-3 text-center dark:border-gray-800 ${selectedDayIsWeekend ? "bg-gray-50 dark:bg-gray-900" : selectedDayIsToday ? "bg-gray-50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"}`}
-                          style={
-                            selectedDayIsWeekend
-                              ? weekendStripeStyle
-                              : undefined
-                          }
-                        >
-                          <span className="text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400">
-                            {fullWeekdayFormatter.format(selectedDayDate)}
-                          </span>
-                          <span className="mt-1 text-sm font-semibold text-gray-800 dark:text-white/90">
-                            {monthDayFormatter.format(selectedDayDate)}
-                          </span>
-                          {selectedDayIsWeekend && (
-                            <span className="sr-only">
-                              {t("attendancePage.weekend")}
-                            </span>
-                          )}
-                          {selectedDayIsToday && (
-                            <span className="sr-only">
-                              {t("attendancePage.today")}
-                            </span>
-                          )}
-                        </div>
-
-                        {visibleEmployees.map(({ employee, records }) => {
-                          const record = records.get(selectedDate);
-                          const status = getAttendanceDisplayStatus(
-                            record,
-                            selectedDate,
-                            leaveRequests,
-                          );
-                          const statusLabel = status
-                            ? t(`attendancePage.statuses.${status}`)
-                            : "";
-                          const ariaLabel = status
-                            ? t("attendancePage.cellAriaLabel", {
-                                employee: employee.displayName,
-                                date: fullDateFormatter.format(selectedDayDate),
-                                status: statusLabel,
-                              })
-                            : t("attendancePage.recordCellAriaLabel", {
-                                employee: employee.displayName,
-                                date: fullDateFormatter.format(selectedDayDate),
-                              });
-
-                          return (
-                            <div
-                              key={employee.employeeId}
-                              className={`h-[6.5rem] border-e border-b border-gray-200 p-2 dark:border-gray-800 ${selectedDayIsWeekend ? "bg-gray-50 dark:bg-gray-900" : selectedDayIsToday ? "bg-gray-50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"}`}
-                              style={
-                                selectedDayIsWeekend
-                                  ? weekendStripeStyle
-                                  : undefined
-                              }
-                            >
-                              {status ? (
-                                <AttendanceStatusCard
-                                  status={status}
-                                  statusLabel={statusLabel}
-                                  ariaLabel={ariaLabel}
-                                />
-                              ) : (
-                                <div className="min-h-[4.5rem]" />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex min-w-0 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
-                    <div className="w-48 shrink-0 bg-white dark:bg-gray-900">
-                      <div className="flex min-h-[4.5rem] items-center border-e border-b border-gray-200 bg-gray-50 px-4 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
-                        {t("attendancePage.employee")}
-                      </div>
-                      {visibleEmployees.map(({ employee }) => (
-                        <div
-                          key={employee.employeeId}
-                          className="flex h-[6.5rem] min-w-0 flex-col justify-center border-e border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900"
-                        >
-                          <span className="truncate text-sm font-semibold text-gray-800 dark:text-white/90">
-                            {employee.displayName}
-                          </span>
-                          {employee.jobTitle && (
-                            <span className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
-                              {employee.jobTitle}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="custom-scrollbar min-w-0 flex-1 overflow-x-auto">
-                      <div
-                        className="grid"
-                        style={{
-                          gridTemplateColumns: `repeat(${calendarDates.length}, minmax(8.5rem, 1fr))`,
-                          minWidth: `${Math.max(60, calendarDates.length * 8.5)}rem`,
-                        }}
-                      >
-                        {calendarDates.map(({ date, key, isWeekend }) => {
-                          const isToday = key === today;
-                          return (
-                            <div
-                              key={key}
-                              className={`relative flex min-h-[4.5rem] flex-col justify-center border-e border-b border-gray-200 px-3 text-center dark:border-gray-800 ${isWeekend ? "bg-gray-50 dark:bg-gray-900" : isToday ? "bg-gray-50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"}`}
-                              style={isWeekend ? weekendStripeStyle : undefined}
-                            >
-                              <span className="text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400">
-                                {weekdayFormatter.format(date)}
-                              </span>
-                              <span className="mt-1 text-sm font-semibold text-gray-800 dark:text-white/90">
-                                {monthDayFormatter.format(date)}
-                              </span>
-                              {isWeekend && (
-                                <span className="sr-only">
-                                  {t("attendancePage.weekend")}
-                                </span>
-                              )}
-                              {isToday && (
-                                <span className="sr-only">
-                                  {t("attendancePage.today")}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        {visibleEmployees.flatMap(({ employee, records }) =>
-                          calendarDates.map(({ key, isWeekend }) => {
-                            const isToday = key === today;
-                            const record = records.get(key);
-                            const status = getAttendanceDisplayStatus(
-                              record,
-                              key,
-                              leaveRequests,
-                            );
-                            const statusLabel = status
-                              ? t(`attendancePage.statuses.${status}`)
-                              : "";
-                            const dateLabel = fullDateFormatter.format(
-                              parseInputDate(key),
-                            );
-                            const ariaLabel = status
-                              ? t("attendancePage.cellAriaLabel", {
-                                  employee: employee.displayName,
-                                  date: dateLabel,
-                                  status: statusLabel,
-                                })
-                              : t("attendancePage.recordCellAriaLabel", {
-                                  employee: employee.displayName,
-                                  date: dateLabel,
-                                });
-                            return (
-                              <div
-                                key={`${employee.employeeId}-${key}`}
-                                className={`h-[6.5rem] border-e border-b border-gray-200 p-2 dark:border-gray-800 ${isWeekend ? "bg-gray-50 dark:bg-gray-900" : isToday ? "bg-gray-50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"}`}
-                                style={
-                                  isWeekend ? weekendStripeStyle : undefined
-                                }
-                              >
-                                {record && status ? (
-                                  <AttendanceStatusCard
-                                    status={status}
-                                    statusLabel={statusLabel}
-                                    ariaLabel={ariaLabel}
-                                  />
-                                ) : (
-                                  <div className="min-h-[4.5rem]" />
-                                )}
-                              </div>
-                            );
-                          }),
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </section>
-            </Card>
-          </div>
-
-          <div
-            id="timesheet-panel"
-            role="tabpanel"
-            aria-labelledby="timesheet-tab"
-            hidden={activeTab !== "timesheet"}
-            className="space-y-6"
-          >
-            <div>
-              <AttendanceRateCard
-                currentReports={reports}
-                previousReports={previousReports}
-                leaveRequests={leaveRequests}
-                period={selectedRange}
-                isLoading={isLoading}
-                loadErrorKey={loadErrorKey}
-                description={t(
-                  "attendancePage.rate.selectedPeriodDescription",
-                  {
-                    period: periodLabel,
-                  },
-                )}
+              <ChevronLeftIcon className="size-5" aria-hidden="true" />
+            </button>
+            <div className="min-w-0 flex-1 sm:w-56 sm:flex-none">
+              <Input
+                type="date"
+                aria-label={t("attendancePage.date")}
+                value={selectedDate}
+                onChange={(event) => {
+                  if (!event.target.value) return;
+                  setSelectedDate(event.target.value);
+                  setPage(1);
+                  setSelectedEmployeeIds(new Set());
+                }}
+                className="w-full"
               />
             </div>
-            <TimesheetTab
-              selectedDate={selectedDate}
-              selectedRange={selectedRange}
-              dateKeys={calendarDates.map(({ key }) => key)}
-              isActive={activeTab === "timesheet"}
-              onTimesheetSaved={() => setTimesheetRevision((revision) => revision + 1)}
-              attendanceInfoByDateAndEmployee={attendanceInfoByDateAndEmployee}
-            />
+            <button
+              type="button"
+              aria-label={t("attendancePage.nextDay")}
+              title={t("attendancePage.nextDay")}
+              onClick={() => {
+                setSelectedDate((current) => shiftDate(current, 1));
+                setPage(1);
+                setSelectedEmployeeIds(new Set());
+              }}
+              className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 shadow-theme-xs transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/5"
+            >
+              <ChevronLeftIcon className="size-5 rotate-180" aria-hidden="true" />
+            </button>
           </div>
         </div>
+
+        {errorKey && (
+          <div
+            className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-400"
+            role="alert"
+          >
+            {t(errorKey)}
+          </div>
+        )}
+        {mutationErrorKey && (
+          <div
+            className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-400"
+            role="alert"
+          >
+            {t(mutationErrorKey)}
+          </div>
+        )}
+
+        <DataTableOne
+          rows={visibleRecords}
+          columns={columns}
+          getRowKey={(record) => record.employeeId}
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          pageSizeOptions={[10, 25, 50]}
+          onPageChange={setPage}
+          onPageSizeChange={(nextPageSize) => {
+            setPageSize(nextPageSize);
+            setPage(1);
+          }}
+          searchTerm={searchTerm}
+          onSearchTermChange={(value) => {
+            setSearchTerm(value);
+            setPage(1);
+          }}
+          searchPlaceholder={t("attendancePage.search")}
+          showLabel={t("attendancePage.table.show")}
+          entriesLabel={t("attendancePage.table.entries")}
+          emptyMessage={t(searchTerm.trim() ? "attendancePage.noMatches" : "attendancePage.noRecords")}
+          loadingMessage={t("attendancePage.loading")}
+          showingMessage={showingMessage}
+          isLoading={isLoading}
+          sortKey={sortKey}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
+        />
+
+        <Modal
+          isOpen={Boolean(timeDraft && (editingRecord || isAddingAttendance))}
+          onClose={() => {
+            if (isSaving) return;
+            setEditingRecord(null);
+            setIsAddingAttendance(false);
+            setNewAttendanceEmployeeId("");
+            setTimeDraft(null);
+            setMutationErrorKey(null);
+          }}
+          className="mx-4 max-w-2xl p-6 sm:p-8"
+        >
+          {timeDraft && (editingRecord || isAddingAttendance) && (
+            <form onSubmit={handleSaveTimeEntry} className="space-y-5">
+              <div className="pe-10">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+                  {isAddingAttendance
+                    ? t("attendancePage.manualEntryTitle")
+                    : t("attendancePage.editRecord", { employee: editingRecord?.displayName })}
+                </h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {t("attendancePage.date")}: {selectedDate}
+                </p>
+              </div>
+              {isAddingAttendance && (
+                <label className="block space-y-1.5 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="attendance-employee">
+                  {t("attendancePage.employee")}
+                  <select
+                    id="attendance-employee"
+                    required
+                    value={newAttendanceEmployeeId}
+                    onChange={(event) => setNewAttendanceEmployeeId(event.target.value)}
+                    disabled={manualEntryEmployees.length === 0}
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                  >
+                    <option value="">{t("attendancePage.chooseEmployee")}</option>
+                    {manualEntryEmployees.map((record) => (
+                      <option key={record.employeeId} value={record.employeeId}>
+                        {record.displayName}{record.department ? ` · ${record.department}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {manualEntryEmployees.length === 0 && (
+                    <span className="block text-xs font-normal text-gray-500 dark:text-gray-400">
+                      {t("attendancePage.noAvailableEmployees")}
+                    </span>
+                  )}
+                </label>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-1.5 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="attendance-clock-in">
+                  {t("attendancePage.clockIn")}
+                  <Input
+                    id="attendance-clock-in"
+                    type="time"
+                    value={timeDraft.clockIn}
+                    onChange={(event) => setTimeDraft({ ...timeDraft, clockIn: event.target.value })}
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="attendance-clock-out">
+                  {t("attendancePage.clockOut")}
+                  <Input
+                    id="attendance-clock-out"
+                    type="time"
+                    value={timeDraft.clockOut}
+                    onChange={(event) => setTimeDraft({ ...timeDraft, clockOut: event.target.value })}
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="attendance-regular-hours">
+                  {t("attendancePage.regularHours")}
+                  <Input
+                    id="attendance-regular-hours"
+                    type="number"
+                    min="0"
+                    step={0.01}
+                    value={timeDraft.regularHours}
+                    onChange={(event) => setTimeDraft({ ...timeDraft, regularHours: event.target.value })}
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="attendance-overtime-hours">
+                  {t("timesheetPage.fields.overtimeHours")}
+                  <Input
+                    id="attendance-overtime-hours"
+                    type="number"
+                    min="0"
+                    step={0.01}
+                    value={timeDraft.overtimeHours}
+                    onChange={(event) => setTimeDraft({ ...timeDraft, overtimeHours: event.target.value })}
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="attendance-break-minutes">
+                  {t("attendancePage.breakMinutes")}
+                  <Input
+                    id="attendance-break-minutes"
+                    type="number"
+                    min="0"
+                    step={1}
+                    value={timeDraft.breakMinutes}
+                    onChange={(event) => setTimeDraft({ ...timeDraft, breakMinutes: event.target.value })}
+                  />
+                </label>
+              </div>
+              <label className="block space-y-1.5 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="attendance-notes">
+                {t("attendancePage.notes")}
+                <textarea
+                  id="attendance-notes"
+                  rows={3}
+                  value={timeDraft.notes}
+                  onChange={(event) => setTimeDraft({ ...timeDraft, notes: event.target.value })}
+                  className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 shadow-theme-xs outline-none placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                />
+              </label>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingRecord(null);
+                    setIsAddingAttendance(false);
+                    setNewAttendanceEmployeeId("");
+                    setTimeDraft(null);
+                    setMutationErrorKey(null);
+                  }}
+                  disabled={isSaving}
+                >
+                  {t("attendancePage.cancel")}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSaving || (isAddingAttendance && !newAttendanceEmployeeId)}
+                >
+                  {isSaving
+                    ? isAddingAttendance ? t("attendancePage.adding") : t("attendancePage.saving")
+                    : isAddingAttendance ? t("attendancePage.add") : t("attendancePage.saveChanges")}
+                </Button>
+              </div>
+            </form>
+          )}
+        </Modal>
+
+        <Modal
+          isOpen={Boolean(deleteTarget)}
+          onClose={() => {
+            if (isDeleting) return;
+            setDeleteTarget(null);
+            setMutationErrorKey(null);
+          }}
+          className="mx-4 max-w-lg p-6 sm:p-8"
+        >
+          {deleteTarget && (
+            <div className="space-y-5">
+              <div className="pe-10">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+                  {t("attendancePage.deleteConfirmTitle")}
+                </h2>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  {t("attendancePage.deleteConfirm", {
+                    employee: deleteTarget.displayName,
+                    date: selectedDate,
+                  })}
+                </p>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={isDeleting}
+                >
+                  {t("attendancePage.cancel")}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteTimeEntry()}
+                  disabled={isDeleting}
+                  className="inline-flex items-center justify-center rounded-lg bg-error-600 px-5 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-error-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isDeleting ? t("attendancePage.deleting") : t("attendancePage.delete")}
+                </button>
+              </div>
+            </div>
+          )}
+        </Modal>
       </div>
     </>
   );
 }
-
-const weekendStripeStyle: CSSProperties = {
-  backgroundImage:
-    "repeating-linear-gradient(135deg, transparent 0, transparent 8px, color-mix(in srgb, var(--color-gray-400) 26%, transparent) 8px, color-mix(in srgb, var(--color-gray-400) 26%, transparent) 9px)",
-};

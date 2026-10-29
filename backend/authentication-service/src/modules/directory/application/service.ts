@@ -18,6 +18,10 @@ import type {
   ProvisionedEmployee,
   TimesheetDailyReport,
   TimesheetEntryInput,
+  PayrollRun,
+  PayrollRunInput,
+  PayrollRunItemInput,
+  PayrollRunsReport,
 } from "../domain/employee.js";
 import type {
   BranchInput,
@@ -52,6 +56,11 @@ export interface EmployeeDirectory {
     input: AttendanceRecordInput,
     requestedByEmployeeId: string,
   ): Promise<AttendanceDailyReport["items"][number]>;
+  deleteAttendanceRecord(
+    employeeId: string,
+    date: string,
+    requestedByEmployeeId: string,
+  ): Promise<void>;
   getLeaveManagementReport(requestedByEmployeeId: string): Promise<EmployeeLeaveManagementReport>;
   createLeaveRequest(input: EmployeeLeaveRequestInput, requestedByEmployeeId: string): Promise<EmployeeLeaveRequest>;
   decideLeaveRequest(
@@ -59,6 +68,15 @@ export interface EmployeeDirectory {
     input: EmployeeLeaveDecisionInput,
     requestedByEmployeeId: string,
   ): Promise<EmployeeLeaveRequest>;
+  getPayrollRunsReport(requestedByEmployeeId: string): Promise<PayrollRunsReport>;
+  createPayrollRun(input: PayrollRunInput, requestedByEmployeeId: string): Promise<PayrollRun>;
+  updatePayrollRunItem(
+    runId: string,
+    itemId: string,
+    input: PayrollRunItemInput,
+    requestedByEmployeeId: string,
+  ): Promise<PayrollRun>;
+  processPayrollRun(runId: string, requestedByEmployeeId: string): Promise<PayrollRun>;
   createEmployeeRecord(input: EmployeeMasterInput, requestedByEmployeeId: string): Promise<EmployeeMasterRecord>;
   updateEmployeeRecord(employeeId: string, input: EmployeeMasterInput, requestedByEmployeeId: string): Promise<EmployeeMasterRecord>;
   getOrganizationStructure(requestedByEmployeeId: string): Promise<OrganizationStructure>;
@@ -168,6 +186,14 @@ export class EmployeeDirectoryService {
     return this.directory.updateAttendanceRecord(employeeId, date, input, requestedByEmployeeId);
   }
 
+  deleteAttendanceRecord(
+    employeeId: string,
+    date: string,
+    requestedByEmployeeId: string,
+  ): Promise<void> {
+    return this.directory.deleteAttendanceRecord(employeeId, date, requestedByEmployeeId);
+  }
+
   getLeaveManagementReport(requestedByEmployeeId: string): Promise<EmployeeLeaveManagementReport> {
     return this.directory.getLeaveManagementReport(requestedByEmployeeId);
   }
@@ -182,6 +208,27 @@ export class EmployeeDirectoryService {
     requestedByEmployeeId: string,
   ): Promise<EmployeeLeaveRequest> {
     return this.directory.decideLeaveRequest(requestId, input, requestedByEmployeeId);
+  }
+
+  getPayrollRunsReport(requestedByEmployeeId: string): Promise<PayrollRunsReport> {
+    return this.directory.getPayrollRunsReport(requestedByEmployeeId);
+  }
+
+  createPayrollRun(input: PayrollRunInput, requestedByEmployeeId: string): Promise<PayrollRun> {
+    return this.directory.createPayrollRun(input, requestedByEmployeeId);
+  }
+
+  updatePayrollRunItem(
+    runId: string,
+    itemId: string,
+    input: PayrollRunItemInput,
+    requestedByEmployeeId: string,
+  ): Promise<PayrollRun> {
+    return this.directory.updatePayrollRunItem(runId, itemId, input, requestedByEmployeeId);
+  }
+
+  processPayrollRun(runId: string, requestedByEmployeeId: string): Promise<PayrollRun> {
+    return this.directory.processPayrollRun(runId, requestedByEmployeeId);
   }
 
   createEmployeeRecord(input: EmployeeMasterInput, requestedByEmployeeId: string): Promise<EmployeeMasterRecord> {
